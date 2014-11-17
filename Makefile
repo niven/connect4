@@ -1,5 +1,6 @@
 CC=clang
-CFLAGS=-Weverything -pedantic -O3
+DONTCARE_WARNINGS=-Wno-sign-compare -Wno-missing-prototypes -Wno-padded -Wno-sign-conversion
+CFLAGS=-Weverything -pedantic ${DONTCARE_WARNINGS} -O3
 CMD=${CC} ${CFLAGS}
 
 all: clean libs
@@ -10,7 +11,7 @@ all: clean libs
 clean:
 	rm -rf bfcf *.gc *.o bin/*.o
 
-libs:
+libs: clean
 	${CMD} -c bplustree.c -o bin/bplustree.o
 	${CMD} -c c4_index.c -o bin/c4_index.o
 	${CMD} -c utils.c -o bin/utils.o

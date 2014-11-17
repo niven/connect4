@@ -114,7 +114,7 @@ void print_winbits( unsigned char player[9] ) {
 	out[1] = 'b';
 	int offset = 2;
 	for( int i=0; i<8*NUM_WINLINE_BYTES; i++ ) {
-		unsigned char target_byte = i/8;
+		unsigned char target_byte = (unsigned char)i/8;
 		int target_bit = i%8;
 
 		if( i%8 == 0 && i>0 ) {
@@ -257,7 +257,7 @@ void update_winlines( board* b, int move_y, int move_x ) {
 //		printf("Turn off bit %d of byte %d\n", (winline_index % 8), winline_index/8);
 		
 		// I'm sure we can do this more elegantly, but I've had a few pints and I'm the train and this works.
-		int old_state = winline[winline_index/8];
+		unsigned char old_state = winline[winline_index/8];
 		int new_stuff = ~bit_to_turn_off;
 		winline[winline_index/8] = old_state & new_stuff;
 

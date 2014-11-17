@@ -5,7 +5,6 @@ CMD=${CC} ${CFLAGS}
 
 all: clean libs
 	${CMD} bin/bplustree.o bpt_test.c -o bpt
-	${CMD} bin/c4_index.o c4_index_test.c -o c4it
 	${CMD} bin/utils.o bin/counter.o bin/board63.o bin/board.o bruteforce_connect_four.c -o bfcf
 
 clean:

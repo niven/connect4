@@ -107,8 +107,17 @@ void bpt_split( bpt** root ) {
 		*root = new_root;
 		
 	} else {
-		printf("Inserting median(%d) + sibling into parent\n", n->keys[n->num_keys/2] );
-
+		int up_key = n->keys[SPLIT_KEY_INDEX];
+		printf("Inserting median(%d) + sibling into parent\n", up_key );
+		// so what we have here is (Node)Key(Node) so we need to insert this into the
+		// parent as a package. Parent also has NkNkNkN and we've just replaced a Node
+		// with a NkN. The parent is actually kkk, NNNN so finding where to insert the key
+		// is easy and obvious, and the node we can just add the sibling beside our current node
+		// (since in essence we represent the same data as before so must be adjacent)
+		
+		// now this is fairly doable, but it might lead to having to split the parent
+		// as well, so I really need some better insert() function to do this
+		// (insert a key+node kind of thing)
 	}
 	
 }

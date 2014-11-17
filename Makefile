@@ -12,7 +12,6 @@ clean:
 
 libs: clean
 	${CMD} -c bplustree.c -o bin/bplustree.o
-	${CMD} -c c4_index.c -o bin/c4_index.o
 	${CMD} -c utils.c -o bin/utils.o
 	${CMD} -c counter.c -o bin/counter.o
 	${CMD} -c board.c -o bin/board.o

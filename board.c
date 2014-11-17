@@ -51,6 +51,8 @@ winline winlines[NUM_WINLINES] = {
 	// total = 24+21+12+12=69
 };
 
+int* s2w[42];
+
 void map_squares_to_winlines() {
 	
 	int temp[13];

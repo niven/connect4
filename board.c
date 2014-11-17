@@ -9,6 +9,10 @@
 
 #include "board.h"
 
+// states for squares
+char states[4] = {' ', 'O', 'X', '@'}; // empty, white, black, unused | 00, 01, 10, 11
+
+
 winline winlines[NUM_WINLINES] = {
 
 	// 6x4 horizontal = 24
@@ -284,8 +288,6 @@ void update_winlines( board* b, int move_y, int move_x ) {
 //	print_winlines( b->winlines );
 }
 
-// states for squares
-char states[4] = {' ', 'O', 'X', '@'}; // empty, white, black, unused | 00, 01, 10, 11
 
 
 

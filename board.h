@@ -1,9 +1,12 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__	
 
+extern winline winlines[NUM_WINLINES];
+extern char states[4];
 
 // 42 lists of ints, every one a list of [num_winlines, winline_0, winline_1, ...]
-int* s2w[42];
+extern int* s2w[42];
+
 void map_squares_to_winlines();
 void free_s2w();
 

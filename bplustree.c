@@ -70,15 +70,17 @@ void bpt_split( bpt** root ) {
 	
 	bpt* n = *root;
 	printf("Split around key[%d] = %d\n", SPLIT_KEY_INDEX, n->keys[SPLIT_KEY_INDEX] );
+	print_bpt( n, 0 );
 	
 	// create a sibling node and copy everything from median to end
 	bpt* sibling = new_bptree();	
-	memcpy( &sibling->keys[0], &n->keys[SPLIT_KEY_INDEX], sizeof(int)*RIGHT_SIZE );
-	memcpy( &sibling->pointers[0], &n->pointers[SPLIT_KEY_INDEX], sizeof(pointer)*RIGHT_SIZE );
+	int elements_moving_right = (ORDER - ORDER/2) +1; // top half plus our new item
+	memcpy( &sibling->keys[0], &n->keys[SPLIT_KEY_INDEX], sizeof(int)*elements_moving_right );
+	memcpy( &sibling->pointers[0], &n->pointers[SPLIT_KEY_INDEX], sizeof(pointer)*elements_moving_right );
 	// housekeeping
 	sibling->parent = n->parent;
-	sibling->num_keys = RIGHT_SIZE;
-	n->num_keys = LEFT_SIZE;
+	sibling->num_keys = elements_moving_right;
+	n->num_keys = n->num_keys - elements_moving_right; // 1 goes up
 
 	/*
 	printf("Created sibling\n");
@@ -89,6 +91,7 @@ void bpt_split( bpt** root ) {
 	
 	// now insert median into our parent, along with sibling
 	// but if parent is NULL, we're at the root and need to make a new one
+	printf("Haz parent? %p\n", n->parent );
 	if( n->parent == NULL ) {
 //		printf("No parent, creating new root\n");
 		bpt* new_root = new_bptree();
@@ -100,10 +103,12 @@ void bpt_split( bpt** root ) {
 		new_root->is_leaf = false;
 		new_root->num_keys = 1;
 
+		n->parent = sibling->parent = new_root;
 		*root = new_root;
 		
 	} else {
 		printf("Inserting median(%d) + sibling into parent\n", n->keys[n->num_keys/2] );
+
 	}
 	
 }

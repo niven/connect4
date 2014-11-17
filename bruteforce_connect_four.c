@@ -16,6 +16,7 @@
 #include "counter.h"
 
 
+
 void update_counters( gen_counter* gc, board* b ) {
 	
 	gc->total_boards++;

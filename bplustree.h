@@ -6,8 +6,6 @@
 
 #define ORDER 4
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
-#define RIGHT_SIZE (ORDER - ORDER/2)
-#define LEFT_SIZE (ORDER/2)
 
 typedef union pointer {
 	struct node* node_ptr;

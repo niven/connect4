@@ -276,7 +276,7 @@ record* bpt_find( bpt* root, int key ) {
 
 void print_bpt_leaf( node* n, int indent ) {
 	
-	char* ind = malloc( indent+1 );
+	char ind[100];
 	for(int i=0; i<indent; i++) { ind[i] = '\t'; }
 	ind[indent] = '\0';
 	
@@ -285,12 +285,12 @@ void print_bpt_leaf( node* n, int indent ) {
 		printf("%d ", n->keys[i] );
 	}
 	printf("]\n");
-	free(ind);
+
 }
 
 void print_bpt( bpt* root, int indent ) {
 
-	char* ind = malloc( indent+1 );
+	char ind[100];
 	for(int i=0; i<indent; i++) { ind[i] = '\t'; }
 	ind[indent] = '\0';
 
@@ -307,8 +307,6 @@ void print_bpt( bpt* root, int indent ) {
 	}
 	print_bpt( root->pointers[root->num_keys].node_ptr, indent+1 );
 
-	free(ind);
-	
 }
 
 unsigned long bpt_count_records( bpt* root ) {

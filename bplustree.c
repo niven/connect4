@@ -66,6 +66,35 @@ void free_bptree( bpt* b ) {
 	
 }
 
+void bpt_insert_node( bpt* node, int up_key, bpt* sibling ) {
+
+	printf("insert_node(): inserting %d into:\n", up_key);
+	print_bpt( node, 0 );
+	int k=0;
+	while( k<node->num_keys && node->keys[k] < up_key ) { // TODO: this is dumb and should binsearch
+		k++;
+	}
+	printf("insert_node(): should insert %d at position %d\n", up_key, k);
+	// move keys over (could be 0 if at end)
+	int elements_moving_right = node->num_keys - k;
+	printf("Moving %d elements\n", elements_moving_right);
+	memmove( &node->keys[k+1], &node->keys[k], sizeof(int)* elements_moving_right);
+	node->keys[k] = up_key;
+	
+	// move pointers over (given that sibling is the right part of the split node,
+	// move 1 more than the keys
+	memmove( &node->pointers[k+2], &node->pointers[k+1], sizeof(pointer)*elements_moving_right );
+	node->pointers[k+1].node_ptr = sibling;
+
+	node->num_keys++;
+
+	printf("insert_node(): after insert:\n");
+	print_bpt( node, 0 );
+
+
+}
+
+
 void bpt_split( bpt** root ) {
 	
 	bpt* n = *root;
@@ -118,6 +147,8 @@ void bpt_split( bpt** root ) {
 		// now this is fairly doable, but it might lead to having to split the parent
 		// as well, so I really need some better insert() function to do this
 		// (insert a key+node kind of thing)
+		print_bpt( sibling, 0 );
+		bpt_insert_node( n->parent, up_key, sibling );
 	}
 	
 }

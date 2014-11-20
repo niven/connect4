@@ -65,7 +65,8 @@ void test_store_cmdline_seq( char* seq ) {
 	
 	bpt* root = new_bptree();
 	
-	printf("Sequence: %s - SPLIT_KEY_INDEX %d\n", seq, SPLIT_KEY_INDEX);
+	printf("Sequence: %s\n", seq);
+	strtok( seq, "," );
 	for( int i=0; i<strlen(seq); i++ ) {
 		printf("\n##### insert %c ####\n", seq[i]);
 		bpt_insert_or_update( &root, (struct record){ .key = seq[i] - '0', { .value_int = i} } );
@@ -76,6 +77,8 @@ void test_store_cmdline_seq( char* seq ) {
 	
 }
 int main(int argc, char** argv) {
+
+	printf("ORDER %d, SPLIT_KEY_INDEX %d\n", ORDER, SPLIT_KEY_INDEX );
 
 	// run cmd line stuff OR all tests
 	if( argc == 2 ){
@@ -92,7 +95,5 @@ int main(int argc, char** argv) {
 	// insert a bunch of random numbers and find them
 	test_store_random();
 
-
-	
 	printf("Done\n");
 }

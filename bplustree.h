@@ -20,7 +20,7 @@ typedef struct record {
 typedef struct node {
 	
 	struct node* parent;
-	
+
 	int num_keys; // number of entries
 	
 	int keys[ORDER];

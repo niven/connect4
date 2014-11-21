@@ -6,6 +6,8 @@
 
 typedef unsigned long key_t;
 
+#define KEY_SIZE (sizeof(key_t))
+
 typedef union pointer {
 	struct node* node_ptr;
 	int value_int;

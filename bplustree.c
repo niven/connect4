@@ -80,7 +80,7 @@ internal void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling ) {
 	// move keys over (could be 0 if at end)
 	size_t elements_moving_right = node->num_keys - k;
 	printf("Moving %zu elements\n", elements_moving_right);
-	memmove( &node->keys[k+1], &node->keys[k], sizeof(int)* elements_moving_right);
+	memmove( &node->keys[k+1], &node->keys[k], KEY_SIZE* elements_moving_right);
 	node->keys[k] = up_key;
 	
 	// move pointers over (given that sibling is the right part of the split node,
@@ -106,19 +106,17 @@ internal void bpt_split( bpt** root ) {
 	// create a sibling node and copy everything from median to end
 	bpt* sibling = new_bptree();	
 	size_t elements_moving_right = (ORDER - ORDER/2) +1; // top half plus our new item
-	memcpy( &sibling->keys[0], &n->keys[SPLIT_KEY_INDEX], sizeof(int)*elements_moving_right );
+	memcpy( &sibling->keys[0], &n->keys[SPLIT_KEY_INDEX], KEY_SIZE*elements_moving_right );
 	memcpy( &sibling->pointers[0], &n->pointers[SPLIT_KEY_INDEX], sizeof(pointer)*elements_moving_right );
 	// housekeeping
 	sibling->parent = n->parent;
 	sibling->num_keys = elements_moving_right;
 	n->num_keys = n->num_keys - elements_moving_right; // 1 goes up
 
-	/*
 	printf("Created sibling %p\n", sibling);
 	print_bpt( sibling, 0 );
 	printf("Node left over %p\n", n);
 	print_bpt( n, 0 );
-	*/
 	
 	// now insert median into our parent, along with sibling
 	// but if parent is NULL, we're at the root and need to make a new one
@@ -186,7 +184,7 @@ void bpt_insert_or_update( bpt** tree, record r ) {
 		}
 		
 		// now insert at k, but first shift everything after k right
-		memmove( &root->keys[k+1], &root->keys[k], sizeof(int)*(root->num_keys - k) );
+		memmove( &root->keys[k+1], &root->keys[k], KEY_SIZE*(root->num_keys - k) );
 		memmove( &root->pointers[k+1], &root->pointers[k], sizeof(pointer)*(root->num_keys - k) );
 
 		root->keys[k]  = r.key;

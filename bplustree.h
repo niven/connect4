@@ -1,11 +1,10 @@
 #ifndef __B_PLUS_TREE__
 #define __B_PLUS_TREE__
 
-#define true 1
-#define false 0
-
 #define ORDER 4
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
+
+typedef unsigned long key_t;
 
 typedef union pointer {
 	struct node* node_ptr;
@@ -13,7 +12,7 @@ typedef union pointer {
 } pointer;
 
 typedef struct record {
-	int key;
+	key_t key;
 	pointer value;
 } record;
 
@@ -22,8 +21,8 @@ typedef struct node {
 	struct node* parent;
 
 	size_t num_keys; // number of entries
-	
-	int keys[ORDER];
+
+	key_t keys[ORDER];
 	pointer pointers[ORDER]; // points to a value, or to a node
 
 	char is_leaf;
@@ -36,7 +35,7 @@ bpt* new_bptree( void );
 void free_bptree( bpt* b );
 
 void bpt_insert_or_update( bpt** root, record r );
-record* bpt_find( bpt* root, int key );
+record* bpt_find( bpt* root, key_t key );
 
 void print_bpt( bpt* root, int indent );
 

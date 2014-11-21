@@ -12,19 +12,21 @@ internal void test_store_10() {
 	bpt* store = new_bptree();
 	printf("Test store: %d\n", 10);
 	for( size_t i=0; i<max; i++ ) {
-		bpt_insert_or_update( &store, (struct record){ .key = (int)i, { .value_int = (int)i } } );
-		record* r = bpt_find( store, (int)i );
+		key_t k = (key_t)i;
+		bpt_insert_or_update( &store, (struct record){ .key = k, { .value_int = (int)i } } );
+		record* r = bpt_find( store, (key_t)i );
 		assert( r != NULL );
-		assert( r->key == (int)i );
+		assert( r->key == k );
 		assert( r->value.value_int == (int)i );
 		assert( bpt_count_records( store ) == (i+1) );
 	}
 
 	// repeat the finding to ensure we didn't remove or lose stuff
 	for( size_t i=0; i<max; i++ ) {
-		record* r = bpt_find( store, (int)i );
+		key_t k = (key_t)i;
+		record* r = bpt_find( store, k );
 		assert( r != NULL );
-		assert( r->key == (int)i );
+		assert( r->key == k );
 		assert( r->value.value_int == (int)i );
 	}
 	free_bptree( store );
@@ -33,7 +35,7 @@ internal void test_store_10() {
 
 internal void test_overwrite_dupes() {
 	bpt* store = new_bptree();
-	int dupes[6] = { 1, 2, 3, 4, 2, 2 };
+	key_t dupes[6] = { 1, 2, 3, 4, 2, 2 };
 	for( int i=0; i<6; i++ ) {		
 		bpt_insert_or_update( &store, (struct record){ .key = dupes[i], { .value_int = i} } );
 //		print_bpt( store, 0 );
@@ -50,7 +52,7 @@ internal void test_store_random() {
 	bpt* store = new_bptree();
 	int num_rands = 20;
 	for( int i=0; i<num_rands; i++ ) {
-		int num = rand()%1024;
+		key_t num = rand()%1024;
 		bpt_insert_or_update( &store, (struct record){ .key = num, { .value_int = i} } );
 		record* r = bpt_find( store, num );
 		assert( r != NULL );
@@ -71,7 +73,7 @@ internal void test_store_cmdline_seq( char* seq ) {
 	int i = 0;
 	while( element != NULL ) {
 		printf("\n##### insert %s ####\n", element );
-		bpt_insert_or_update( &root, (struct record){ .key = atoi(element), { .value_int = i++} } );
+		bpt_insert_or_update( &root, (struct record){ .key = (key_t)atoi(element), { .value_int = i++} } );
 		print_bpt( root, 0 );
 		element = strtok( NULL, "," );
 	}

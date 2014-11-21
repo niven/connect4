@@ -5,7 +5,7 @@
 #include "base.h"
 #include "bplustree.h"
 
-internal int binary_search( int* keys, size_t num_keys, int target_key, size_t* key_index ) {
+internal int binary_search( key_t* keys, size_t num_keys, key_t target_key, size_t* key_index ) {
 	
 	// no data at all
 	if( keys == NULL || num_keys == 0 ) {
@@ -68,15 +68,15 @@ void free_bptree( bpt* b ) {
 	
 }
 
-internal void bpt_insert_node( bpt* node, int up_key, bpt* sibling ) {
+internal void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling ) {
 
-	printf("insert_node(): inserting %d into:\n", up_key);
+	printf("insert_node(): inserting %lu into:\n", up_key);
 	print_bpt( node, 0 );
 	size_t k=0;
 	while( k<node->num_keys && node->keys[k] < up_key ) { // TODO: this is dumb and should binsearch
 		k++;
 	}
-	printf("insert_node(): should insert key %d at position %zu\n", up_key, k);
+	printf("insert_node(): should insert key %lu at position %zu\n", up_key, k);
 	// move keys over (could be 0 if at end)
 	size_t elements_moving_right = node->num_keys - k;
 	printf("Moving %zu elements\n", elements_moving_right);
@@ -100,7 +100,7 @@ internal void bpt_insert_node( bpt* node, int up_key, bpt* sibling ) {
 internal void bpt_split( bpt** root ) {
 	
 	bpt* n = *root;
-	printf("Split around key[%d] = %d\n", SPLIT_KEY_INDEX, n->keys[SPLIT_KEY_INDEX] );
+	printf("Split around key[%d] = %lu\n", SPLIT_KEY_INDEX, n->keys[SPLIT_KEY_INDEX] );
 	print_bpt( n, 0 );
 	
 	// create a sibling node and copy everything from median to end
@@ -138,8 +138,8 @@ internal void bpt_split( bpt** root ) {
 		*root = new_root;
 		
 	} else {
-		int up_key = n->keys[SPLIT_KEY_INDEX];
-		printf("Inserting median(%d) + sibling into parent\n", up_key );
+		key_t up_key = n->keys[SPLIT_KEY_INDEX];
+		printf("Inserting median(%lu) + sibling into parent\n", up_key );
 		// so what we have here is (Node)Key(Node) so we need to insert this into the
 		// parent as a package. Parent also has NkNkNkN and we've just replaced a Node
 		// with a NkN. The parent is actually kkk, NNNN so finding where to insert the key
@@ -223,7 +223,7 @@ void bpt_insert_or_update( bpt** tree, record r ) {
 
 
 
-internal node* bpt_find_node( bpt* root, int key ) {
+internal node* bpt_find_node( bpt* root, key_t key ) {
 	
 	node* current = root;
 	int found = false;
@@ -246,7 +246,7 @@ internal node* bpt_find_node( bpt* root, int key ) {
 	return current;
 }
 
-record* bpt_find( bpt* root, int key ) {
+record* bpt_find( bpt* root, key_t key ) {
 	
 	node* dest_node = bpt_find_node( root, key );
 //	printf("Found correct node:\n");
@@ -283,7 +283,7 @@ internal void print_bpt_leaf( node* n, int indent ) {
 	
 	printf("%sL-[ ", ind);
 	for( size_t i=0; i<n->num_keys; i++ ) {
-		printf("%d ", n->keys[i] );
+		printf("%lu ", n->keys[i] );
 	}
 	printf("]\n");
 
@@ -306,7 +306,7 @@ void print_bpt( bpt* root, int indent ) {
 		} else {
 			print_bpt( root->pointers[i].node_ptr, indent+1 );			
 		}
-		printf("%sK-[ %d ]\n", ind, root->keys[i] );
+		printf("%sK-[ %lu ]\n", ind, root->keys[i] );
 	}
 	print_bpt( root->pointers[root->num_keys].node_ptr, indent+1 );
 

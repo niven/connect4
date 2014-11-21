@@ -52,12 +52,12 @@ winline winlines[NUM_WINLINES] = {
 	// total = 24+21+12+12=69
 };
 
-int* s2w[42];
+unsigned int* s2w[42];
 
 void map_squares_to_winlines() {
 	
 	int temp[13];
-	int wi = 0;
+	unsigned int wi = 0;
 	for( int i=0; i<42; i++ ) {
 		int x = i % 7;
 		int y = i / 7;
@@ -70,7 +70,7 @@ void map_squares_to_winlines() {
 				}
 			}
 		}
-		s2w[i] = (int*) malloc( sizeof(int) * (wi+1) ); // first int is count
+		s2w[i] = (unsigned int*) malloc( sizeof(int) * (wi+1) ); // first int is count
 		if( s2w[i] == NULL ) {
 			perror("malloc()");
 			abort();

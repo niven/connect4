@@ -1,5 +1,5 @@
 CC=clang
-DONTCARE_WARNINGS= -Wno-padded -Wno-sign-conversion
+DONTCARE_WARNINGS= -Wno-padded
 CFLAGS=-Weverything -pedantic ${DONTCARE_WARNINGS} -O3
 CMD=${CC} ${CFLAGS}
 

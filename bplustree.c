@@ -77,7 +77,7 @@ internal void bpt_insert_node( bpt* node, int up_key, bpt* sibling ) {
 	}
 	printf("insert_node(): should insert key %d at position %d\n", up_key, k);
 	// move keys over (could be 0 if at end)
-	int elements_moving_right = node->num_keys - k;
+	size_t elements_moving_right = node->num_keys - k;
 	printf("Moving %d elements\n", elements_moving_right);
 	memmove( &node->keys[k+1], &node->keys[k], sizeof(int)* elements_moving_right);
 	node->keys[k] = up_key;

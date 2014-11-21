@@ -54,7 +54,7 @@ board63* encode_board( board* src ) {
 	unsigned char pieces = 0;
 	for( int col=0; col<COLS; col++ ) {
 //		printf("Encoding col %d: ", col);
-		int row = 0;
+		unsigned int row = 0;
 		for( row=0; row<ROWS; row++ ) {
 			if( src->squares[col][row] == EMPTY ) {
 				break; // goto next col

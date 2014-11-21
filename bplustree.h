@@ -32,7 +32,7 @@ typedef struct node {
 
 typedef node bpt;
 
-bpt* new_bptree();
+bpt* new_bptree( void );
 void free_bptree( bpt* b );
 
 void bpt_insert_or_update( bpt** root, record r );

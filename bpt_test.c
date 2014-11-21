@@ -3,9 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "base.h"
 #include "bplustree.h"
 
-void test_store_10() {
+internal void test_store_10() {
 	
 	int max = 10;
 	bpt* store = new_bptree();
@@ -30,7 +31,7 @@ void test_store_10() {
 	
 }
 
-void test_overwrite_dupes() {
+internal void test_overwrite_dupes() {
 	bpt* store = new_bptree();
 	int dupes[6] = { 1, 2, 3, 4, 2, 2 };
 	for( int i=0; i<6; i++ ) {		
@@ -45,7 +46,7 @@ void test_overwrite_dupes() {
 	
 }
 
-void test_store_random() {
+internal void test_store_random() {
 	bpt* store = new_bptree();
 	int num_rands = 20;
 	for( int i=0; i<num_rands; i++ ) {
@@ -61,7 +62,7 @@ void test_store_random() {
 	
 }
 
-void test_store_cmdline_seq( char* seq ) {
+internal void test_store_cmdline_seq( char* seq ) {
 	
 	bpt* root = new_bptree();
 	
@@ -76,6 +77,7 @@ void test_store_cmdline_seq( char* seq ) {
 	free_bptree( root );
 	
 }
+
 int main(int argc, char** argv) {
 
 	printf("ORDER %d, SPLIT_KEY_INDEX %d\n", ORDER, SPLIT_KEY_INDEX );

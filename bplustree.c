@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "base.h"
 #include "bplustree.h"
 
-int binary_search( int* keys, int num_keys, int target_key ) {
+internal int binary_search( int* keys, int num_keys, int target_key ) {
 	
 	// no data at all
 	if( keys == NULL || num_keys == 0 ) {
@@ -66,7 +67,7 @@ void free_bptree( bpt* b ) {
 	
 }
 
-void bpt_insert_node( bpt* node, int up_key, bpt* sibling ) {
+internal void bpt_insert_node( bpt* node, int up_key, bpt* sibling ) {
 
 	printf("insert_node(): inserting %d into:\n", up_key);
 	print_bpt( node, 0 );
@@ -95,7 +96,7 @@ void bpt_insert_node( bpt* node, int up_key, bpt* sibling ) {
 }
 
 
-void bpt_split( bpt** root ) {
+internal void bpt_split( bpt** root ) {
 	
 	bpt* n = *root;
 	printf("Split around key[%d] = %d\n", SPLIT_KEY_INDEX, n->keys[SPLIT_KEY_INDEX] );
@@ -221,7 +222,7 @@ void bpt_insert_or_update( bpt** tree, record r ) {
 
 
 
-node* bpt_find_node( bpt* root, int key ) {
+internal node* bpt_find_node( bpt* root, int key ) {
 	
 	node* current = root;
 	int found = false;
@@ -274,7 +275,7 @@ record* bpt_find( bpt* root, int key ) {
 	
 }
 
-void print_bpt_leaf( node* n, int indent ) {
+internal void print_bpt_leaf( node* n, int indent ) {
 	
 	char ind[100] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tEND";
 	ind[indent] = '\0';

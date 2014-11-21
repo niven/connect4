@@ -10,6 +10,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "base.h"
+
 #include "c4types.h"
 #include "board.h"
 #include "board63.h"
@@ -17,7 +19,7 @@
 
 
 
-void update_counters( gen_counter* gc, board* b ) {
+internal void update_counters( gen_counter* gc, board* b ) {
 	
 	gc->total_boards++;
 	gc->draws += is_draw( b );
@@ -48,7 +50,7 @@ Gen	Boards
 
 Where the generation_9.c4 file is 995 MB
 */
-void generate_option_1( const char* filename ) {
+internal void generate_option_1( const char* filename ) {
 	
 	gen_counter gc = { .total_boards = 0 }; // will init the rest to default, which is 0
 	

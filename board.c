@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "base.h"
 #include "utils.h"
 
 #include "c4types.h"
@@ -233,7 +234,7 @@ unsigned char current_player( board* b ) {
 	return b->state & WHITE ? WHITE : BLACK;
 }
 
-void update_winlines( board* b, int move_y, int move_x ) {
+internal void update_winlines( board* b, int move_y, int move_x ) {
 	
 	player current = current_player( b );
 //	printf("Updating winlines after move by %s on [%d,%d]\n", current == WHITE ? "White" : "Black", move_x, move_y);

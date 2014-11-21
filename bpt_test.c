@@ -67,10 +67,13 @@ internal void test_store_cmdline_seq( char* seq ) {
 	bpt* root = new_bptree();
 	
 	printf("Sequence: %s\n", seq);
-	strtok( seq, "," );
-	for( int i=0; i<strlen(seq); i++ ) {
-		printf("\n##### insert %c ####\n", seq[i]);
-		bpt_insert_or_update( &root, (struct record){ .key = seq[i] - '0', { .value_int = i} } );
+	char* element = strtok( seq, "," );
+	int i = 0;
+	while( element != NULL ) {
+		printf("el: %s\n", element);
+		element = strtok( NULL, "," );
+		printf("\n##### insert %s ####\n", element );
+		bpt_insert_or_update( &root, (struct record){ .key = atoi(element), { .value_int = i++} } );
 		print_bpt( root, 0 );
 	}
 	

@@ -71,10 +71,10 @@ internal void test_store_cmdline_seq( char* seq ) {
 	int i = 0;
 	while( element != NULL ) {
 		printf("el: %s\n", element);
-		element = strtok( NULL, "," );
 		printf("\n##### insert %s ####\n", element );
 		bpt_insert_or_update( &root, (struct record){ .key = atoi(element), { .value_int = i++} } );
 		print_bpt( root, 0 );
+		element = strtok( NULL, "," );
 	}
 	
 	free_bptree( root );

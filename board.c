@@ -245,15 +245,15 @@ internal void update_winlines( board* b, int move_y, int move_x ) {
 //	printf("Square [%d,%d] = %d\n", move_x, move_y, square_index);
 //	printf("num winlines: %d\n", s2w[square_index][0]);
 
-	char* wstr = join( &s2w[square_index][1], s2w[square_index][0], ", ");
+	char* wstr = join( (int*) &s2w[square_index][1], s2w[square_index][0], ", ");
 //	printf("Winlines affected: %s\n", wstr);
 	free( wstr );
 	
 	unsigned char* winline = current == WHITE ? b->winlines->black : b->winlines->white;
 	char scratch[200];
 	
-	for( int w=1; w<=s2w[square_index][0]; w++ ) {
-		int winline_index = s2w[square_index][w];
+	for( unsigned int w=1; w<=s2w[square_index][0]; w++ ) {
+		unsigned int winline_index = s2w[square_index][w];
 
 		// clear it for opponent
 		int bit_to_turn_off = 1 << (winline_index % 8);

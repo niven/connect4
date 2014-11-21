@@ -21,7 +21,7 @@ typedef struct node {
 	
 	struct node* parent;
 
-	int num_keys; // number of entries
+	size_t num_keys; // number of entries
 	
 	int keys[ORDER];
 	pointer pointers[ORDER]; // points to a value, or to a node

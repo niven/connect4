@@ -63,7 +63,7 @@ typedef struct winline {
 	values: 0 empty, 1 white, 2 black (see #defines)
 */
 typedef struct board {
-	char squares[COLS][ROWS];
+	unsigned char squares[COLS][ROWS];
 	char state; /* WHITE, BLACK, OVER, DRAW */
 	wins* winlines;
 } board;

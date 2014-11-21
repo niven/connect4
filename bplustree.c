@@ -5,7 +5,7 @@
 #include "base.h"
 #include "bplustree.h"
 
-internal int binary_search( int* keys, int num_keys, int target_key ) {
+internal int binary_search( int* keys, size_t num_keys, int target_key, size_t* key_index ) {
 	
 	// no data at all
 	if( keys == NULL || num_keys == 0 ) {
@@ -17,12 +17,13 @@ internal int binary_search( int* keys, int num_keys, int target_key ) {
 		return -1;
 	}
 	
-	int mid = num_keys / 2;
-	int large_half;
+	size_t mid = num_keys / 2;
+	size_t large_half;
 	while( num_keys > 0 ) {
 
 		if( target_key == keys[mid] ) {
-			return mid;
+			*key_index = mid;
+			return true;
 		}
 		
 		num_keys = num_keys/2; // half the range left over
@@ -36,7 +37,7 @@ internal int binary_search( int* keys, int num_keys, int target_key ) {
 		
 	}
 
-	return -1;
+	return false;
 }
 
 bpt* new_bptree() {
@@ -59,7 +60,7 @@ void free_bptree( bpt* b ) {
 
 //	printf("free_bptree: %p\n", b);
 	if( !b->is_leaf ) {
-		for( int i=0; i<=b->num_keys; i++ ) { // Note: <= since pointers is num_keys+1
+		for( size_t i=0; i<=b->num_keys; i++ ) { // Note: <= since pointers is num_keys+1
 			free_bptree( b->pointers[i].node_ptr );
 		}
 	}
@@ -71,14 +72,14 @@ internal void bpt_insert_node( bpt* node, int up_key, bpt* sibling ) {
 
 	printf("insert_node(): inserting %d into:\n", up_key);
 	print_bpt( node, 0 );
-	int k=0;
+	size_t k=0;
 	while( k<node->num_keys && node->keys[k] < up_key ) { // TODO: this is dumb and should binsearch
 		k++;
 	}
-	printf("insert_node(): should insert key %d at position %d\n", up_key, k);
+	printf("insert_node(): should insert key %d at position %zu\n", up_key, k);
 	// move keys over (could be 0 if at end)
 	size_t elements_moving_right = node->num_keys - k;
-	printf("Moving %d elements\n", elements_moving_right);
+	printf("Moving %zu elements\n", elements_moving_right);
 	memmove( &node->keys[k+1], &node->keys[k], sizeof(int)* elements_moving_right);
 	node->keys[k] = up_key;
 	
@@ -104,7 +105,7 @@ internal void bpt_split( bpt** root ) {
 	
 	// create a sibling node and copy everything from median to end
 	bpt* sibling = new_bptree();	
-	int elements_moving_right = (ORDER - ORDER/2) +1; // top half plus our new item
+	size_t elements_moving_right = (ORDER - ORDER/2) +1; // top half plus our new item
 	memcpy( &sibling->keys[0], &n->keys[SPLIT_KEY_INDEX], sizeof(int)*elements_moving_right );
 	memcpy( &sibling->pointers[0], &n->pointers[SPLIT_KEY_INDEX], sizeof(pointer)*elements_moving_right );
 	// housekeeping
@@ -171,7 +172,7 @@ void bpt_insert_or_update( bpt** tree, record r ) {
 		// this shit sorted. (and remember to move the pointers as well)
 		// So maybe instead of a keys and pointers array just have a
 		// struct with key/pointer. But anyway.
-		int k=0;
+		size_t k=0;
 		while( k<root->num_keys && root->keys[k] < r.key ) { // TODO: this is dumb and should binsearch
 			k++;
 		}
@@ -202,7 +203,7 @@ void bpt_insert_or_update( bpt** tree, record r ) {
 	}
 
 
-	for( int i=0; i<root->num_keys; i++ ) {
+	for( size_t i=0; i<root->num_keys; i++ ) {
 //		printf("Checking %d against key %d\n", r.key, root->keys[i] );
 		if( r.key < root->keys[i] ) {
 //			printf("Must be in left pointer of keys[%d] = %d\n", i, root->keys[i] );
@@ -229,7 +230,7 @@ internal node* bpt_find_node( bpt* root, int key ) {
 	while( !current->is_leaf ) {
 		found = false;
 		
-		for( int i=0; i<current->num_keys; i++ ) {
+		for( size_t i=0; i<current->num_keys; i++ ) {
 //			printf("Checking %d against key %d\n", key, current->keys[i] );
 			if( key < current->keys[i] ) {
 				current = current->pointers[i].node_ptr;
@@ -257,9 +258,9 @@ record* bpt_find( bpt* root, int key ) {
 	}
 	
 	// now we have a leaf that *could* contain our key, but it's sorted
-	int key_index = binary_search( dest_node->keys, dest_node->num_keys, key );
+	size_t key_index;
 //	printf("Index for key we're looking for: %d\n", key_index);
-	if( key_index < 0 ) {
+	if( !binary_search( dest_node->keys, dest_node->num_keys, key, &key_index ) ) {
 		return NULL;
 	}
 	
@@ -281,7 +282,7 @@ internal void print_bpt_leaf( node* n, int indent ) {
 	ind[indent] = '\0';
 	
 	printf("%sL-[ ", ind);
-	for( int i=0; i<n->num_keys; i++ ) {
+	for( size_t i=0; i<n->num_keys; i++ ) {
 		printf("%d ", n->keys[i] );
 	}
 	printf("]\n");
@@ -297,9 +298,9 @@ void print_bpt( bpt* root, int indent ) {
 		print_bpt_leaf( root, indent );
 		return;
 	}
-	printf("%sN %p keys: %d\n", ind, root, root->num_keys);
+	printf("%sN %p keys: %zu\n", ind, root, root->num_keys);
 		
-	for( int i=0; i<root->num_keys; i++ ) {
+	for( size_t i=0; i<root->num_keys; i++ ) {
 		if( root->pointers[i].node_ptr->is_leaf ) {
 			print_bpt_leaf( root->pointers[i].node_ptr, indent );
 		} else {
@@ -318,7 +319,7 @@ unsigned long bpt_count_records( bpt* root ) {
 		return count + root->num_keys;
 	}
 	
-	for( int i=0; i<=root->num_keys; i++ ) { // 1 more pointer than keys
+	for( size_t i=0; i<=root->num_keys; i++ ) { // 1 more pointer than keys
 		count += bpt_count_records( root->pointers[i].node_ptr );
 	}
 	

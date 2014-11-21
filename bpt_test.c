@@ -8,24 +8,24 @@
 
 internal void test_store_10() {
 	
-	int max = 10;
+	size_t max = 10;
 	bpt* store = new_bptree();
 	printf("Test store: %d\n", 10);
-	for( int i=0; i<max; i++ ) {
-		bpt_insert_or_update( &store, (struct record){ .key = i, { .value_int = i} } );
-		record* r = bpt_find( store, i );
+	for( size_t i=0; i<max; i++ ) {
+		bpt_insert_or_update( &store, (struct record){ .key = (int)i, { .value_int = (int)i } } );
+		record* r = bpt_find( store, (int)i );
 		assert( r != NULL );
-		assert( r->key == i );
-		assert( r->value.value_int == i );
+		assert( r->key == (int)i );
+		assert( r->value.value_int == (int)i );
 		assert( bpt_count_records( store ) == (i+1) );
 	}
 
 	// repeat the finding to ensure we didn't remove or lose stuff
-	for( int i=0; i<max; i++ ) {
-		record* r = bpt_find( store, i );
+	for( size_t i=0; i<max; i++ ) {
+		record* r = bpt_find( store, (int)i );
 		assert( r != NULL );
-		assert( r->key == i );
-		assert( r->value.value_int == i );
+		assert( r->key == (int)i );
+		assert( r->value.value_int == (int)i );
 	}
 	free_bptree( store );
 	

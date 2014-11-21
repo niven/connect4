@@ -75,7 +75,7 @@ internal void bpt_insert_node( bpt* node, int up_key, bpt* sibling ) {
 	while( k<node->num_keys && node->keys[k] < up_key ) { // TODO: this is dumb and should binsearch
 		k++;
 	}
-	printf("insert_node(): should insert %d at position %d\n", up_key, k);
+	printf("insert_node(): should insert key %d at position %d\n", up_key, k);
 	// move keys over (could be 0 if at end)
 	int elements_moving_right = node->num_keys - k;
 	printf("Moving %d elements\n", elements_moving_right);

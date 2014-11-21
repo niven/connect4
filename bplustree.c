@@ -5,6 +5,8 @@
 #include "base.h"
 #include "bplustree.h"
 
+
+
 internal int binary_search( key_t* keys, size_t num_keys, key_t target_key, size_t* key_index ) {
 	
 	// no data at all
@@ -68,7 +70,7 @@ void free_bptree( bpt* b ) {
 	
 }
 
-internal void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling ) {
+void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling ) {
 
 	printf("insert_node(): inserting %lu into:\n", up_key);
 	print_bpt( node, 0 );
@@ -80,11 +82,13 @@ internal void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling ) {
 	// move keys over (could be 0 if at end)
 	size_t elements_moving_right = node->num_keys - k;
 	printf("Moving %zu elements\n", elements_moving_right);
-	memmove( &node->keys[k+1], &node->keys[k], KEY_SIZE* elements_moving_right);
+	
+	// move keys right and set the key in the open space
+	memmove( &node->keys[k+1], &node->keys[k], KEY_SIZE*elements_moving_right);
 	node->keys[k] = up_key;
 	
 	// move pointers over (given that sibling is the right part of the split node,
-	// move 1 more than the keys
+	// move 1 more than the keys)
 	memmove( &node->pointers[k+2], &node->pointers[k+1], sizeof(pointer)*elements_moving_right );
 	node->pointers[k+1].node_ptr = sibling;
 
@@ -93,11 +97,16 @@ internal void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling ) {
 	printf("insert_node(): after insert:\n");
 	print_bpt( node, 0 );
 
+	// we might need to split (again)
+	if( node->num_keys == ORDER ) {
+		printf("insert_node(): hit limit, have to split\n");
+		bpt_split( &node );
+	}
 
 }
 
 
-internal void bpt_split( bpt** root ) {
+void bpt_split( bpt** root ) {
 	
 	bpt* n = *root;
 	printf("Split around key[%d] = %lu\n", SPLIT_KEY_INDEX, n->keys[SPLIT_KEY_INDEX] );
@@ -111,6 +120,7 @@ internal void bpt_split( bpt** root ) {
 	// housekeeping
 	sibling->parent = n->parent;
 	sibling->num_keys = elements_moving_right;
+	sibling->is_leaf = n->is_leaf; // if n was NOT a leaf, then sibling can't be either.
 	n->num_keys = n->num_keys - elements_moving_right; // 1 goes up
 
 	printf("Created sibling %p\n", sibling);
@@ -122,7 +132,7 @@ internal void bpt_split( bpt** root ) {
 	// but if parent is NULL, we're at the root and need to make a new one
 	if( n->parent == NULL ) {
 		bpt* new_root = new_bptree();
-		printf("No parent, creating new root: %p n=%p\n", new_root, n);
+		printf("No parent, creating new root: %p\n", new_root);
 
 		new_root->keys[0] = sibling->keys[0]; // since left must all be smaller
 		new_root->pointers[0].node_ptr = n;

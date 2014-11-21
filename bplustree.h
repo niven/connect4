@@ -1,6 +1,8 @@
 #ifndef __B_PLUS_TREE__
 #define __B_PLUS_TREE__
 
+#include "base.h"
+
 #define ORDER 4
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 
@@ -24,8 +26,10 @@ typedef struct node {
 
 	size_t num_keys; // number of entries
 
+	// these are both 1 bigger than they can max be, but that makes
+	// splitting easier (just insert, then split)
 	key_t keys[ORDER];
-	pointer pointers[ORDER]; // points to a value, or to a node
+	pointer pointers[ORDER+1]; // points to a value, or to a node
 
 	char is_leaf;
 
@@ -42,5 +46,8 @@ record* bpt_find( bpt* root, key_t key );
 void print_bpt( bpt* root, int indent );
 
 unsigned long bpt_count_records( bpt* root );
+
+void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling );
+void bpt_split( bpt** root );
 
 #endif

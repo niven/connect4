@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -78,7 +79,7 @@ void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling ) {
 	while( k<node->num_keys && node->keys[k] < up_key ) { // TODO: this is dumb and should binsearch
 		k++;
 	}
-	printf("insert_node(): should insert key %lu at position %zu\n", up_key, k);
+	printf("insert_node(): should insert key %lu at position %zu, node at position %zu\n", up_key, k, k+1);
 	// move keys over (could be 0 if at end)
 	size_t elements_moving_right = node->num_keys - k;
 	printf("Moving %zu elements\n", elements_moving_right);
@@ -109,19 +110,85 @@ void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling ) {
 void bpt_split( bpt** root ) {
 	
 	bpt* n = *root;
-	printf("Split around key[%d] = %lu\n", SPLIT_KEY_INDEX, n->keys[SPLIT_KEY_INDEX] );
+	printf("bpt_split(): around key[%d] = %lu\n", SPLIT_KEY_INDEX, n->keys[SPLIT_KEY_INDEX] );
 	print_bpt( n, 0 );
 	
-	// create a sibling node and copy everything from median to end
+	/* 
+	Create a sibling node
+	
+	2 cases: (1) the node is a leaf, (2) the node isn't a leaf
+	
+	(1) - Leaf node
+	
+		Imagine a btp with ORDER=4. This means we split when we have 4 keys: [ 1 2 3 4 ]
+		We split this into 2 nodes around key index 1 = [ 2 ]
+		Result:	
+					[ 2 ]
+			 [ 1 ]    [ 2 3 4 ]
+		This means key 2 is pushed up, and we still have key 2 in the sibling node since that's
+		where we store the associated value.
+		This means the split means copying 3 keys/values from the node to the sibling, and pushing key 2 up.
+	
+	(2) - Not a leaf node
+	
+		Same example: [ 1 2 3 4 ]
+		But now these hold keys, and the values are pointers to nodes that hold the same keys (and the values).
+	
+		example:
+				[2]  [3]  [4]		    <-- keys + node pointers
+			[1]  [2]  [3]  [4 5 6 7] <-- keys + values
+	
+		The end structure should look like this:
+	
+							[3]						<-- keys + node pointers
+					[2]			[4] [5]			<-- keys + node pointers
+				[1]  [2]    [3]  [4]  [5 6 7]	<-- keys + values
+	
+		So first we split the leaf node [4 5 6 7] like before, and we end up with:
+	
+				[2]  [3]  [4]  [5]		   <-- keys + node pointers
+			[1]  [2]  [3]  [4]  [5 6 7]   <-- keys + values
+	
+		Now we need to split the node with keys + pointers, so call bpt_split() again.
+	
+		We need to push up key 3, but copy 2 keys: [4 5] to the sibling, and 3 node pointers: [3] [4] [5 6 7]
+		The reason is that we don't need an intermediary key 3 since the key+value of 3 are already in a 
+		leaf node at the bottom.
+	
+		Intermediate result:
+	
+			Node				Sibling
+			[2]			 [4]  [5]
+		[1]  [2]     [3]  [4]  [5 6 7]
+	
+		Now 2 more cases: (a) node above this level, (b) no node above this level
+	
+		(b) - No node above this level (it's easier)
+	
+		Create a new node with 1 key (3) and 2 node pointers to Node and Sibling
+		Set the parent pointers of Node and Sibling to point to the new root.
+	
+		(a) - Node above this level
+		
+		This node must already have a key and a pointer to Node (and the key in this example must be 1)
+		
+		Insert key 3 in the parent node (shifting others if needed)
+		Insert Sibling in the parent node (shifting others if needed)
+		
+	
+	
+	*/
+	// TODO bug is here, spitting node with nodes != splitting leaf node
 	bpt* sibling = new_bptree();	
-	size_t elements_moving_right = (ORDER - ORDER/2) +1; // top half plus our new item
-	memcpy( &sibling->keys[0], &n->keys[SPLIT_KEY_INDEX], KEY_SIZE*elements_moving_right );
-	memcpy( &sibling->pointers[0], &n->pointers[SPLIT_KEY_INDEX], sizeof(pointer)*elements_moving_right );
+	size_t keys_moving_right = (ORDER - ORDER/2) + (n->is_leaf); // top half (+1 since the key that goes up is also leftmost for the sibling)
+	printf("Moving %zu keys right\n", keys_moving_right );
+	memcpy( &sibling->keys[0], &n->keys[SPLIT_KEY_INDEX], KEY_SIZE*keys_moving_right );
+	memcpy( &sibling->pointers[0], &n->pointers[SPLIT_KEY_INDEX], sizeof(pointer)*(keys_moving_right+1) );
 	// housekeeping
 	sibling->parent = n->parent;
-	sibling->num_keys = elements_moving_right;
+	sibling->num_keys = keys_moving_right;
 	sibling->is_leaf = n->is_leaf; // if n was NOT a leaf, then sibling can't be either.
-	n->num_keys = n->num_keys - elements_moving_right; // 1 goes up
+	n->num_keys = n->num_keys - keys_moving_right;
 
 	printf("Created sibling %p\n", sibling);
 	print_bpt( sibling, 0 );
@@ -133,7 +200,7 @@ void bpt_split( bpt** root ) {
 	if( n->parent == NULL ) {
 		bpt* new_root = new_bptree();
 		printf("No parent, creating new root: %p\n", new_root);
-
+		printf("Key: %lu\n", sibling->keys[0]);
 		new_root->keys[0] = sibling->keys[0]; // since left must all be smaller
 		new_root->pointers[0].node_ptr = n;
 		new_root->pointers[1].node_ptr = sibling;
@@ -147,7 +214,7 @@ void bpt_split( bpt** root ) {
 		
 	} else {
 		key_t up_key = n->keys[SPLIT_KEY_INDEX];
-		printf("Inserting median(%lu) + sibling into parent\n", up_key );
+		printf("Inserting key %lu + sibling node into parent\n", up_key );
 		// so what we have here is (Node)Key(Node) so we need to insert this into the
 		// parent as a package. Parent also has NkNkNkN and we've just replaced a Node
 		// with a NkN. The parent is actually kkk, NNNN so finding where to insert the key
@@ -157,7 +224,8 @@ void bpt_split( bpt** root ) {
 		// now this is fairly doable, but it might lead to having to split the parent
 		// as well, so I really need some better insert() function to do this
 		// (insert a key+node kind of thing)
-		print_bpt( sibling, 0 );
+		printf("Parent node:\n");
+		print_bpt( n->parent, 0 );
 		bpt_insert_node( n->parent, up_key, sibling );
 	}
 	
@@ -204,6 +272,12 @@ void bpt_insert_or_update( bpt** tree, record r ) {
 
 		// split if full
 		if( root->num_keys == ORDER ) {
+			printf("Hit limit, have to split\n");
+			node* temp = root;
+			while( temp->parent != NULL ) {
+				temp = temp->parent;
+			}
+			print_bpt( temp, 0 );
 			bpt_split( tree );
 		}
 		
@@ -293,7 +367,7 @@ internal void print_bpt_leaf( node* n, int indent ) {
 	for( size_t i=0; i<n->num_keys; i++ ) {
 		printf("%lu ", n->keys[i] );
 	}
-	printf("]\n");
+	printf("] - %p\n", n);
 
 }
 
@@ -308,15 +382,23 @@ void print_bpt( bpt* root, int indent ) {
 	}
 	printf("%sN %p keys: %zu\n", ind, root, root->num_keys);
 		
+	// print every key/node
+	node* n;
 	for( size_t i=0; i<root->num_keys; i++ ) {
-		if( root->pointers[i].node_ptr->is_leaf ) {
-			print_bpt_leaf( root->pointers[i].node_ptr, indent );
+		n = root->pointers[i].node_ptr;
+		assert( n != NULL );
+
+		if( n->is_leaf ) {
+			print_bpt_leaf( n, indent );
 		} else {
-			print_bpt( root->pointers[i].node_ptr, indent+1 );			
+			print_bpt( n, indent+1 );			
 		}
 		printf("%sK-[ %lu ]\n", ind, root->keys[i] );
 	}
-	print_bpt( root->pointers[root->num_keys].node_ptr, indent+1 );
+	// print the last node
+	n = root->pointers[root->num_keys].node_ptr;
+	assert( n != NULL );
+	print_bpt( n, indent+1 );
 
 }
 

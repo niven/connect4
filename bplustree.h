@@ -31,7 +31,7 @@ typedef struct node {
 	key_t keys[ORDER];
 	pointer pointers[ORDER+1]; // points to a value, or to a node
 
-	char is_leaf;
+	bool is_leaf;
 
 } node;
 

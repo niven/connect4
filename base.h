@@ -10,6 +10,6 @@
 #define local_persist static
 #define global_variable static
 
-
+typedef unsigned char bool;
 
 #endif

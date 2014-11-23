@@ -5,7 +5,7 @@
 
 #define ORDER 4
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
-
+#define SPLIT_NODE_INDEX (ORDER/2)
 typedef unsigned long key_t;
 
 #define KEY_SIZE (sizeof(key_t))
@@ -47,7 +47,7 @@ void print_bpt( bpt* root, int indent );
 
 unsigned long bpt_count_records( bpt* root );
 
-void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling );
+void bpt_insert_node( bpt** tree, key_t up_key, bpt* sibling );
 void bpt_split( bpt** root );
 
 #endif

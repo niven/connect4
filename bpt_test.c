@@ -72,8 +72,9 @@ internal void test_store_cmdline_seq( char* seq ) {
 	char* element = strtok( seq, "," );
 	int i = 0;
 	while( element != NULL ) {
-		printf("\n##### insert %s ####\n", element );
+		printf("\n>>>>> Insert %s\n", element );
 		bpt_insert_or_update( &root, (struct record){ .key = (key_t)atoi(element), { .value_int = i++} } );
+		printf("<<<<< After insert %s %p\n", element, root );
 		print_bpt( root, 0 );
 		element = strtok( NULL, "," );
 	}

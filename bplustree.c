@@ -105,7 +105,6 @@ void bpt_insert_node( bpt** tree, key_t up_key, bpt* sibling ) {
 
 }
 
-
 bpt* bpt_split( bpt* n ) {
 	
 	print_bpt( n, 0 );
@@ -294,7 +293,7 @@ void bpt_insert_or_update( bpt** tree, record r ) {
 		// split if full
 		if( root->num_keys == ORDER ) {
 			printf("Hit limit, have to split\n");
-			bpt* result = bpt_split( root );
+			*tree = bpt_split( root );
 		}
 		
 		return;

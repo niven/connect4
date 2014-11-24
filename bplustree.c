@@ -71,9 +71,8 @@ void free_bptree( bpt* b ) {
 	
 }
 
-void bpt_insert_node( bpt** tree, key_t up_key, bpt* sibling ) {
+bpt* bpt_insert_node( bpt* n, key_t up_key, bpt* sibling ) {
 
-	bpt* n = *tree;
 	size_t k=0;
 	while( k<n->num_keys && n->keys[k] < up_key ) { // TODO: this is dumb and should binsearch
 		k++;
@@ -100,9 +99,10 @@ void bpt_insert_node( bpt** tree, key_t up_key, bpt* sibling ) {
 	// we might need to split (again)
 	if( n->num_keys == ORDER ) {
 		printf("insert_node(): hit limit, have to split\n");
-		bpt* result = bpt_split( n );
+		return bpt_split( n ); // propagate new node up
 	}
 
+	return n; // just return current node
 }
 
 bpt* bpt_split( bpt* n ) {
@@ -240,12 +240,12 @@ bpt* bpt_split( bpt* n ) {
 		// (since in essence we represent the same data as before so must be adjacent)
 		
 		// now this is fairly doable, but it might lead to having to split the parent
-		// as well, so I really need some better insert() function to do this
-		// (insert a key+node kind of thing)
+		// as well
 		printf("Parent node:\n");
 		print_bpt( n->parent, 0 );
-		bpt_insert_node( &n->parent, up_key, sibling );
-		
+		bpt* result = bpt_insert_node( n->parent, up_key, sibling );
+		// now her is the problem: we may have split the parent of the node we're inserting into
+		// in which case we need to update something we can't reach from here.
 		return n;
 	}
 	

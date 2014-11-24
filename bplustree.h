@@ -47,7 +47,7 @@ void print_bpt( bpt* root, int indent );
 
 unsigned long bpt_count_records( bpt* root );
 
-void bpt_insert_node( bpt** tree, key_t up_key, bpt* sibling );
+bpt* bpt_insert_node( bpt* tree, key_t up_key, bpt* sibling );
 bpt* bpt_split( bpt* root );
 
 #endif

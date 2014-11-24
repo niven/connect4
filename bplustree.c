@@ -100,15 +100,14 @@ void bpt_insert_node( bpt** tree, key_t up_key, bpt* sibling ) {
 	// we might need to split (again)
 	if( n->num_keys == ORDER ) {
 		printf("insert_node(): hit limit, have to split\n");
-		bpt_split( tree );
+		bpt* result = bpt_split( n );
 	}
 
 }
 
 
-void bpt_split( bpt** tree ) {
+bpt* bpt_split( bpt* n ) {
 	
-	bpt* n = *tree;
 	print_bpt( n, 0 );
 	printf("bpt_split: %s \n", (n->is_leaf ? "leaf" : "node") );
 	
@@ -228,9 +227,10 @@ void bpt_split( bpt** tree ) {
 
 		n->parent = sibling->parent = new_root;
 
-		*tree = new_root;
 		printf("new root %p\n", new_root);
 		print_bpt( new_root, 0 );
+		
+		return new_root;
 		
 	} else {
 		printf("Inserting key %lu + sibling node into parent\n", up_key );
@@ -246,9 +246,10 @@ void bpt_split( bpt** tree ) {
 		printf("Parent node:\n");
 		print_bpt( n->parent, 0 );
 		bpt_insert_node( &n->parent, up_key, sibling );
+		
+		return n;
 	}
 	
-	printf("###### END bpt_split() tree = %p\n", *tree);
 }
 
 /*
@@ -293,7 +294,7 @@ void bpt_insert_or_update( bpt** tree, record r ) {
 		// split if full
 		if( root->num_keys == ORDER ) {
 			printf("Hit limit, have to split\n");
-			bpt_split( tree );
+			bpt* result = bpt_split( root );
 		}
 		
 		return;

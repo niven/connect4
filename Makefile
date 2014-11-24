@@ -1,6 +1,6 @@
 CC=clang
 DONTCARE_WARNINGS= -Wno-padded
-CFLAGS=-Weverything -pedantic ${DONTCARE_WARNINGS} -O3
+CFLAGS=-std=c99 -Weverything -pedantic ${DONTCARE_WARNINGS} -O3
 CMD=${CC} ${CFLAGS}
 
 all: clean libs

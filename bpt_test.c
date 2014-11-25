@@ -23,14 +23,14 @@ internal void test_store_10() {
 	for( size_t i=0; i<max; i++ ) {
 		key_t k = (key_t)i;
 		store = bpt_insert_or_update( store, (struct record){ .key = k, { .value_int = (int)i } } );
-		printf("### Result after storing %d records\n", i+1);
+		printf("### Result after storing %lu records\n", i+1);
 		print_bpt( store, 0 );
 		record* r = bpt_find( store, (key_t)i );
 		assert( r != NULL );
 		assert( r->key == k );
 		assert( r->value.value_int == (int)i );
 		assert( bpt_count_records( store ) == (i+1) );
-		printf("### Test OK - store %d records\n", i+1);
+		printf("### Test OK - store %lu records\n", i+1);
 	}
 
 	// repeat the finding to ensure we didn't remove or lose stuff

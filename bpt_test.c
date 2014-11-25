@@ -13,7 +13,7 @@ internal void test_store_10() {
 	printf("Test store: %d\n", 10);
 	for( size_t i=0; i<max; i++ ) {
 		key_t k = (key_t)i;
-		bpt_insert_or_update( &store, (struct record){ .key = k, { .value_int = (int)i } } );
+		store = bpt_insert_or_update( store, (struct record){ .key = k, { .value_int = (int)i } } );
 		record* r = bpt_find( store, (key_t)i );
 		assert( r != NULL );
 		assert( r->key == k );
@@ -37,7 +37,7 @@ internal void test_overwrite_dupes() {
 	bpt* store = new_bptree();
 	key_t dupes[6] = { 1, 2, 3, 4, 2, 2 };
 	for( int i=0; i<6; i++ ) {		
-		bpt_insert_or_update( &store, (struct record){ .key = dupes[i], { .value_int = i} } );
+		store = bpt_insert_or_update( store, (struct record){ .key = dupes[i], { .value_int = i} } );
 //		print_bpt( store, 0 );
 		record* r = bpt_find( store, dupes[i] );
 		assert( r != NULL );
@@ -53,7 +53,7 @@ internal void test_store_random() {
 	int num_rands = 20;
 	for( int i=0; i<num_rands; i++ ) {
 		key_t num = rand()%1024;
-		bpt_insert_or_update( &store, (struct record){ .key = num, { .value_int = i} } );
+		store = bpt_insert_or_update( store, (struct record){ .key = num, { .value_int = i} } );
 		record* r = bpt_find( store, num );
 		assert( r != NULL );
 		assert( r->key == num );
@@ -73,7 +73,7 @@ internal void test_store_cmdline_seq( char* seq ) {
 	int i = 0;
 	while( element != NULL ) {
 		printf("\n>>>>> Insert %s\n", element );
-		bpt_insert_or_update( &root, (struct record){ .key = (key_t)atoi(element), { .value_int = i++} } );
+		root = bpt_insert_or_update( root, (struct record){ .key = (key_t)atoi(element), { .value_int = i++} } );
 		printf("<<<<< After insert %s %p\n", element, root );
 		print_bpt( root, 0 );
 		element = strtok( NULL, "," );

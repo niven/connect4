@@ -40,14 +40,14 @@ typedef node bpt;
 bpt* new_bptree( void );
 void free_bptree( bpt* b );
 
-void bpt_insert_or_update( bpt** root, record r );
+bpt* bpt_insert_or_update( bpt* root, record r );
 record* bpt_find( bpt* root, key_t key );
 
 void print_bpt( bpt* root, int indent );
 
-unsigned long bpt_count_records( bpt* root );
+unsigned long bpt_count_records( bpt* node );
 
-bpt* bpt_insert_node( bpt* tree, key_t up_key, bpt* sibling );
-bpt* bpt_split( bpt* root );
+bpt* bpt_insert_node( bpt* node, key_t up_key, bpt* sibling );
+bpt* bpt_split( bpt* node );
 
 #endif

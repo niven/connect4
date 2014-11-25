@@ -386,27 +386,27 @@ record* bpt_find( bpt* root, key_t key ) {
 
 internal void print_bpt_leaf( node* n, int indent ) {
 	
-	char ind[100] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tEND";
-	ind[indent] = '\0';
+	char ind[100] = "                               END";
+	ind[indent*2] = '\0';
 	
 	printf("%sL-[ ", ind);
 	for( size_t i=0; i<n->num_keys; i++ ) {
 		printf("%lu ", n->keys[i] );
 	}
-	printf("] - %p\n", n);
+	printf("] - %p (parent %p)\n", n, n->parent);
 
 }
 
 void print_bpt( bpt* root, int indent ) {
 
-	char ind[100] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tEND";
-	ind[indent] = '\0';
+	char ind[100] = "                               END";
+	ind[indent*2] = '\0';
 	
 	if( root->is_leaf ) {
 		print_bpt_leaf( root, indent );
 		return;
 	}
-	printf("%sN %p keys: %zu\n", ind, root, root->num_keys);
+	printf("%sN %p keys: %zu (parent %p)\n", ind, root, root->num_keys, root->parent);
 		
 	// print every key/node
 	node* n;
@@ -415,7 +415,7 @@ void print_bpt( bpt* root, int indent ) {
 		assert( n != NULL );
 
 		if( n->is_leaf ) {
-			print_bpt_leaf( n, indent );
+			print_bpt_leaf( n, indent+1 );
 		} else {
 			print_bpt( n, indent+1 );			
 		}
@@ -424,7 +424,7 @@ void print_bpt( bpt* root, int indent ) {
 	// print the last node
 	n = root->pointers[root->num_keys].node_ptr;
 	assert( n != NULL );
-	print_bpt( n, indent+1 );
+	print_bpt( n, indent + (n->is_leaf) );
 
 }
 

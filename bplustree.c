@@ -195,6 +195,8 @@ bpt* bpt_split( bpt* n ) {
 
 	bpt* sibling = new_bptree();	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
+	// TODO: BUG we copy the nodes to the sibling, but then we might create a new parent later
+	// on, resulting in the wrong parent pointers for these children
 	memcpy( &sibling->pointers[0], &n->pointers[offset], sizeof(pointer)*(keys_moving_right+1) );
 	// housekeeping
 	sibling->parent = n->parent;

@@ -6,19 +6,31 @@
 #include "base.h"
 #include "bplustree.h"
 
+internal void test_header( const char* title ) {
+	
+	char row[] = "#####################################################";
+	row[ strlen(title)+4 ] = '\0';
+	printf("\n%s\n# %s #\n%s\n", row, title, row);
+	
+}
+
 internal void test_store_10() {
 	
+	test_header( "Store 10 records and count" );
 	size_t max = 10;
 	bpt* store = new_bptree();
 	printf("Test store: %d\n", 10);
 	for( size_t i=0; i<max; i++ ) {
 		key_t k = (key_t)i;
 		store = bpt_insert_or_update( store, (struct record){ .key = k, { .value_int = (int)i } } );
+		printf("### Result after storing %d records\n", i+1);
+		print_bpt( store, 0 );
 		record* r = bpt_find( store, (key_t)i );
 		assert( r != NULL );
 		assert( r->key == k );
 		assert( r->value.value_int == (int)i );
 		assert( bpt_count_records( store ) == (i+1) );
+		printf("### Test OK - store %d records\n", i+1);
 	}
 
 	// repeat the finding to ensure we didn't remove or lose stuff

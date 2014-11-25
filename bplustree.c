@@ -426,7 +426,7 @@ void print_bpt( bpt* root, int indent ) {
 	// print the last node
 	n = root->pointers[root->num_keys].node_ptr;
 	assert( n != NULL );
-	print_bpt( n, indent + (n->is_leaf) );
+	print_bpt( n, indent + 1 );
 
 }
 

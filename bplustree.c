@@ -56,7 +56,7 @@ bpt* new_bptree() {
 	out->num_keys = 0;
 	out->is_leaf = true;
 	
-	printf("new_bptree(): created %p\n", out );
+	//print("created %p", out );
 	return out;
 }
 
@@ -72,13 +72,13 @@ void free_bptree( bpt* b ) {
 	
 }
 
-bpt* bpt_insert_node( bpt* n, key_t up_key, bpt* sibling ) {
+void bpt_insert_node( bpt* n, key_t up_key, bpt* sibling ) {
 
 	size_t k=0;
 	while( k<n->num_keys && n->keys[k] < up_key ) { // TODO: this is dumb and should binsearch
 		k++;
 	}
-	printf("insert_node(): insert key %lu at position %zu, node at position %zu\n", up_key, k, k+1);
+	print("insert key %lu at position %zu, node at position %zu", up_key, k, k+1);
 	// move keys over (could be 0 if at end)
 	size_t elements_moving_right = n->num_keys - k;
 //	printf("Moving %zu elements\n", elements_moving_right);
@@ -94,24 +94,39 @@ bpt* bpt_insert_node( bpt* n, key_t up_key, bpt* sibling ) {
 
 	n->num_keys++;
 
-	printf("insert_node(): after insert:\n");
-	print_bpt( n, 0 );
+	prints("after insert:");
+	bpt_print( n, 0 );
 
 	// we might need to split (again)
 	if( n->num_keys == ORDER ) {
-		printf("insert_node(): hit limit, have to split %p\n", n);
-		bpt* result = bpt_split( n ); // propagate new node up
-		printf("insert_node(): split result %p\n", result);
-		return result;
+		print("hit limit, have to split %p", n);
+		bpt_split( n ); // propagate new node up
+		return;
 	}
 
-	printf("insert_node(): did not split\n");
-	return n; // just return current node
+	prints("did not split");
 }
 
-bpt* bpt_split( bpt* n ) {
+void bpt_put( bpt** root, record r ) {
 	
-	print_bpt( n, 0 );
+	print("root: %p, key %lu", *root, r.key );
+	bpt_insert_or_update( *root, r );
+	
+	// tree might have grown, and since it grows upward *root might not point at the
+	// actual root anymore. But since all parent pointers are set we can traverse up
+	// to find the actual root
+	while( (*root)->parent != NULL ) {
+		print("%p is not the root, moving up to %p", *root, (*root)->parent );
+		*root = (*root)->parent;
+	}
+	
+	print( "returning root %p", *root );
+}
+
+
+void bpt_split( bpt* n ) {
+	
+	bpt_print( n, 0 );
 	printf("bpt_split(): %s %p\n", (n->is_leaf ? "leaf" : "node"), n );
 	
 	/* 
@@ -191,7 +206,7 @@ bpt* bpt_split( bpt* n ) {
 	// first step: create sibling and copy the right amount of keys/values/pointers
 	size_t keys_moving_right = n->is_leaf ? ORDER/2 + 1 : ORDER - ORDER/2;
 	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
-	printf("Moving %zu keys right from offset %zu (key = %lu)\n", keys_moving_right, offset, n->keys[offset] );
+	print("Moving %zu keys right from offset %zu (key = %lu)", keys_moving_right, offset, n->keys[offset] );
 
 	bpt* sibling = new_bptree();	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
@@ -214,22 +229,22 @@ bpt* bpt_split( bpt* n ) {
 	// when splitting a node a key and 2 nodes mode up
 	n->num_keys = n->num_keys - keys_moving_right - (n->is_leaf ? 0 : 1);
 
-	printf("Created sibling %p\n", sibling);
-	print_bpt( sibling, 0 );
-	printf("Node left over %p\n", n);
-	print_bpt( n, 0 );
+	print("Created sibling %p", sibling);
+	bpt_print( sibling, 0 );
+	print("Node left over %p", n);
+	bpt_print( n, 0 );
 	
 	// the key that moves up is the split key in the leaf node case, and otherwise
 	// the key we didn't propagate to the sibling node and didn't keep in the node
 	// which is the one we're splitting around... so in both cases this is the same.
 	key_t up_key = n->keys[SPLIT_KEY_INDEX];
-	printf("Key that moves up: %lu\n", up_key);
+	print("Key that moves up: %lu", up_key);
 	// now insert median into our parent, along with sibling
 	// but if parent is NULL, we're at the root and need to make a new one
 	if( n->parent == NULL ) {
 
 		bpt* new_root = new_bptree();
-		printf("No parent, creating new root: %p\n", new_root);
+		print("No parent, creating new root: %p", new_root);
 
 		new_root->keys[0] = up_key; // since left must all be smaller
 		new_root->pointers[0].node_ptr = n;
@@ -240,10 +255,8 @@ bpt* bpt_split( bpt* n ) {
 
 		n->parent = sibling->parent = new_root;
 
-		printf("new root %p\n", new_root);
-		print_bpt( new_root, 0 );
-		
-		return new_root;
+		print("new root %p", new_root);
+		bpt_print( new_root, 0 );
 		
 	} else {
 		printf("Inserting key %lu + sibling node %p into parent %p\n", up_key, sibling, n->parent );
@@ -255,13 +268,10 @@ bpt* bpt_split( bpt* n ) {
 		
 		// now this is fairly doable, but it might lead to having to split the parent
 		// as well
-		printf("Parent node:\n");
-		print_bpt( n->parent, 0 );
-		bpt* result = bpt_insert_node( n->parent, up_key, sibling );
-		printf("bpt_split(): insert_node result %p\n", result);
-		// now her is the problem: we may have split the parent of the node we're inserting into
-		// in which case we need to update something we can't reach from here.
-		return result;
+		prints("Parent node:");
+		bpt_print( n->parent, 0 );
+		bpt_insert_node( n->parent, up_key, sibling );
+
 	}
 	
 }
@@ -272,7 +282,7 @@ bpt* bpt_split( bpt* n ) {
 	Since this is used as an index so there is no use case for dupe keys.
 	We occasionally update and never delete so this seems more useful.
 */
-bpt* bpt_insert_or_update( bpt* root, record r ) {
+void bpt_insert_or_update( bpt* root, record r ) {
 	
 	printf("insert_or_update(): node %p\n", root);
 
@@ -294,7 +304,7 @@ bpt* bpt_insert_or_update( bpt* root, record r ) {
 		if( k < root->num_keys && root->keys[k] == r.key ) {
 //			printf("Overwrite of keys[%d] = %d (value %d to %d)\n", k, r.key, root->pointers[k].value_int, r.value.value_int );
 			root->pointers[k] = r.value;
-			return root; // return the node we received since we didn't split and can't have a new node
+			return;
 		}
 		
 		// now insert at k, but first shift everything after k right
@@ -310,11 +320,11 @@ bpt* bpt_insert_or_update( bpt* root, record r ) {
 		bpt* result = root; // return original unless we split
 		if( root->num_keys == ORDER ) {
 			printf("insert_or_update(): hit limit, have to split %p\n", root);
-			result = bpt_split( root );
+			bpt_split( root );
 		}
 		
 		printf("insert_or_update(): inserted into leaf %p\n", result);
-		return result; // return the new node after splitting
+		return;
 	}
 
 
@@ -324,17 +334,17 @@ bpt* bpt_insert_or_update( bpt* root, record r ) {
 //		printf("Checking %d against key %d\n", r.key, root->keys[i] );
 		if( r.key < root->keys[i] ) {
 //			printf("Must be in left pointer of keys[%d] = %d\n", i, root->keys[i] );
-			bpt* result = bpt_insert_or_update( root->pointers[i].node_ptr, r );
-			printf("insert_or_update(): inserted into child node, result %p\n", result);
-			return result;
+			bpt_insert_or_update( root->pointers[i].node_ptr, r );
+			printf("insert_or_update(): inserted into child node\n");
+			return;
 		}
 	}
 
 //	printf("Wasn't in any left pointers, must be in right then\n");
 	if( r.key >= root->keys[root->num_keys-1] ) {
-		bpt* result = bpt_insert_or_update( root->pointers[root->num_keys].node_ptr, r );
-		printf("insert_or_update(): inserted into child node, result %p\n", result);
-		return result;
+		bpt_insert_or_update( root->pointers[root->num_keys].node_ptr, r );
+		printf("insert_or_update(): inserted into child node\n");
+		return;
 	}
 
 	fprintf( stderr, "BIG FAT FAIL: insert()\n");
@@ -364,11 +374,11 @@ internal node* bpt_find_node( bpt* root, key_t key ) {
 	return current;
 }
 
-record* bpt_find( bpt* root, key_t key ) {
+record* bpt_get( bpt* root, key_t key ) {
 	
 	node* dest_node = bpt_find_node( root, key );
 //	printf("Found correct node:\n");
-//	print_bpt( dest_node, 0 );
+//	bpt_print( dest_node, 0 );
 	
 	if( dest_node == NULL ) {
 		fprintf( stderr, "No node found at all WTF\n");
@@ -394,7 +404,7 @@ record* bpt_find( bpt* root, key_t key ) {
 	
 }
 
-internal void print_bpt_leaf( node* n, int indent ) {
+internal void bpt_print_leaf( node* n, int indent ) {
 	
 	char ind[100] = "                               END";
 	ind[indent*2] = '\0';
@@ -407,13 +417,13 @@ internal void print_bpt_leaf( node* n, int indent ) {
 
 }
 
-void print_bpt( bpt* root, int indent ) {
+void bpt_print( bpt* root, int indent ) {
 
 	char ind[100] = "                               END";
 	ind[indent*2] = '\0';
 	
 	if( root->is_leaf ) {
-		print_bpt_leaf( root, indent );
+		bpt_print_leaf( root, indent );
 		return;
 	}
 	printf("%sN %p keys: %zu (parent %p)\n", ind, root, root->num_keys, root->parent);
@@ -425,20 +435,20 @@ void print_bpt( bpt* root, int indent ) {
 		assert( n != NULL );
 
 		if( n->is_leaf ) {
-			print_bpt_leaf( n, indent+1 );
+			bpt_print_leaf( n, indent+1 );
 		} else {
-			print_bpt( n, indent+1 );			
+			bpt_print( n, indent+1 );			
 		}
 		printf("%sK-[ %lu ]\n", ind, root->keys[i] );
 	}
 	// print the last node
 	n = root->pointers[root->num_keys].node_ptr;
 	assert( n != NULL );
-	print_bpt( n, indent + 1 );
+	bpt_print( n, indent + 1 );
 
 }
 
-unsigned long bpt_count_records( bpt* root ) {
+unsigned long bpt_size( bpt* root ) {
 	
 	unsigned long count = 0;
 	if( root->is_leaf ) {
@@ -446,7 +456,7 @@ unsigned long bpt_count_records( bpt* root ) {
 	}
 	
 	for( size_t i=0; i<=root->num_keys; i++ ) { // 1 more pointer than keys
-		count += bpt_count_records( root->pointers[i].node_ptr );
+		count += bpt_size( root->pointers[i].node_ptr );
 	}
 	
 	return count;

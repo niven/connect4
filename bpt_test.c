@@ -22,21 +22,21 @@ internal void test_store_10() {
 	printf("Test store: %d\n", 10);
 	for( size_t i=0; i<max; i++ ) {
 		key_t k = (key_t)i;
-		store = bpt_insert_or_update( store, (struct record){ .key = k, { .value_int = (int)i } } );
+		bpt_put( &store, (struct record){ .key = k, { .value_int = (int)i } } );
 		printf("### Result after storing %lu records\n", i+1);
-		print_bpt( store, 0 );
-		record* r = bpt_find( store, (key_t)i );
+		bpt_print( store, 0 );
+		record* r = bpt_get( store, (key_t)i );
 		assert( r != NULL );
 		assert( r->key == k );
 		assert( r->value.value_int == (int)i );
-		assert( bpt_count_records( store ) == (i+1) );
+		assert( bpt_size( store ) == (i+1) );
 		printf("### Test OK - store %lu records\n", i+1);
 	}
 
 	// repeat the finding to ensure we didn't remove or lose stuff
 	for( size_t i=0; i<max; i++ ) {
 		key_t k = (key_t)i;
-		record* r = bpt_find( store, k );
+		record* r = bpt_get( store, k );
 		assert( r != NULL );
 		assert( r->key == k );
 		assert( r->value.value_int == (int)i );
@@ -49,9 +49,9 @@ internal void test_overwrite_dupes() {
 	bpt* store = new_bptree();
 	key_t dupes[6] = { 1, 2, 3, 4, 2, 2 };
 	for( int i=0; i<6; i++ ) {		
-		store = bpt_insert_or_update( store, (struct record){ .key = dupes[i], { .value_int = i} } );
-//		print_bpt( store, 0 );
-		record* r = bpt_find( store, dupes[i] );
+		bpt_put( &store, (struct record){ .key = dupes[i], { .value_int = i} } );
+//		bpt_print( store, 0 );
+		record* r = bpt_get( store, dupes[i] );
 		assert( r != NULL );
 		assert( r->key == dupes[i] );
 		assert( r->value.value_int == i );
@@ -65,13 +65,13 @@ internal void test_store_random() {
 	int num_rands = 20;
 	for( int i=0; i<num_rands; i++ ) {
 		key_t num = rand()%1024;
-		store = bpt_insert_or_update( store, (struct record){ .key = num, { .value_int = i} } );
-		record* r = bpt_find( store, num );
+		bpt_put( &store, (struct record){ .key = num, { .value_int = i} } );
+		record* r = bpt_get( store, num );
 		assert( r != NULL );
 		assert( r->key == num );
 	}
 	printf("\nRand filled tree:\n");
-	print_bpt( store, 0 );
+	bpt_print( store, 0 );
 	free_bptree( store );
 	
 }
@@ -85,9 +85,9 @@ internal void test_store_cmdline_seq( char* seq ) {
 	int i = 0;
 	while( element != NULL ) {
 		printf("\n>>>>> Insert %s\n", element );
-		root = bpt_insert_or_update( root, (struct record){ .key = (key_t)atoi(element), { .value_int = i++} } );
+		bpt_put( &root, (struct record){ .key = (key_t)atoi(element), { .value_int = i++} } );
 		printf("<<<<< After insert %s %p\n", element, root );
-		print_bpt( root, 0 );
+		bpt_print( root, 0 );
 		element = strtok( NULL, "," );
 	}
 	

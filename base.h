@@ -17,6 +17,8 @@ typedef unsigned char bool;
 // but this introduces extra " marks around the format string
 // so we dirtily strip those out.
 
+#define prints( string ) print( "%s", string )
+
 #define print( format, ... ) do {\
 char buf[200];\
 int pos=0;\

@@ -212,9 +212,12 @@ void bpt_split( bpt* n ) {
 	*/
 
 	// first step: create sibling and copy the right amount of keys/values/pointers
-	size_t keys_moving_right = n->is_leaf ? ORDER/2 + 1 : ORDER - ORDER/2;
+	// when splitting a !leaf: the middle item goes up (and we don't store that intermediate key)
+	// to in case of an ODD keycount: just floor(order/2) (example: 3 -> 1, 9 -> 4)
+	// in case of an EVEN keycount: the larger half: floor(order/2) (example: 4 -> 2, 10 -> 5)
+	size_t keys_moving_right = n->is_leaf ? ORDER/2 + 1 : ORDER/2;
 	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
-	print("Moving %zu keys right from offset %zu (key = %lu)", keys_moving_right, offset, n->keys[offset] );
+	print("Moving %zu keys (%zu nodes) right from offset %zu (key = %lu)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
 	bpt* sibling = new_bptree();	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
@@ -267,7 +270,7 @@ void bpt_split( bpt* n ) {
 		bpt_print( new_root, 0 );
 		
 	} else {
-		printf("Inserting key %lu + sibling node %p into parent %p\n", up_key, sibling, n->parent );
+		print("inserting key %lu + sibling node %p into parent %p", up_key, sibling, n->parent );
 		// so what we have here is (Node)Key(Node) so we need to insert this into the
 		// parent as a package. Parent also has NkNkNkN and we've just replaced a Node
 		// with a NkN. The parent is actually kkk, NNNN so finding where to insert the key

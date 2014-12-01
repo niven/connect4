@@ -6,8 +6,8 @@
 #include "base.h"
 #include "bplustree.h"
 
-global_variable int creates = 0;
-global_variable int frees = 0;
+global_variable struct bpt_counters counters;
+
 
 internal int binary_search( key_t* keys, size_t num_keys, key_t target_key, size_t* key_index ) {
 	
@@ -58,7 +58,7 @@ bpt* new_bptree() {
 	out->is_leaf = true;
 	
 	//print("created %p", out );
-	creates++;
+	counters.creates++;
 	return out;
 }
 
@@ -71,13 +71,18 @@ void free_bptree( bpt* b ) {
 		}
 	}
 	free( b );
-	frees++;
+	counters.frees++;
 }
 
 void bpt_dump_cf() {
-	printf("Total creates: %d\n", creates);
-	printf("Total frees: %d\n", frees);
+	printf("Total creates: %d\n", counters.creates);
+	printf("Total frees: %d\n", counters.frees);
+	printf("Total splits: %d\n", counters.splits);
+	printf("Total inserts: %d\n", counters.inserts);
+	printf("Total parent_inserts: %d\n", counters.parent_inserts);
+	printf("Total key compares: %d\n", counters.key_compares);
 	
+	assert( counters.creates == counters.frees );
 }
 
 void bpt_insert_node( bpt* n, key_t up_key, bpt* sibling ) {
@@ -133,7 +138,7 @@ void bpt_put( bpt** root, record r ) {
 
 
 void bpt_split( bpt* n ) {
-	
+	counters.splits++;
 	bpt_print( n, 0 );
 	print("%s %p", (n->is_leaf ? "leaf" : "node"), n );
 	
@@ -281,6 +286,7 @@ void bpt_split( bpt* n ) {
 		// as well
 		prints("Parent node:");
 		bpt_print( n->parent, 0 );
+		counters.parent_inserts++;
 		bpt_insert_node( n->parent, up_key, sibling );
 
 	}
@@ -295,6 +301,7 @@ void bpt_split( bpt* n ) {
 */
 void bpt_insert_or_update( bpt* root, record r ) {
 	
+	counters.inserts++;
 	print("node %p", root);
 
 //	printf("Insert %d:%d\n", r.key, r.value.value_int );
@@ -307,6 +314,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		// struct with key/pointer. But anyway.
 		size_t k=0;
 		while( k<root->num_keys && root->keys[k] < r.key ) { // TODO: this is dumb and should binsearch
+			counters.key_compares++;
 			k++;
 		}
 //		printf("Insertion location: keys[%d] = %d (atend = %d)\n", k, root->keys[k], k == root->num_keys );
@@ -340,8 +348,9 @@ void bpt_insert_or_update( bpt* root, record r ) {
 
 
 	// NOT a leaf node, recurse to insert
-
+	// TODO: Should binary search here, this is slow as fuck, especially with large ORDERS
 	for( size_t i=0; i<root->num_keys; i++ ) {
+		counters.key_compares++;
 //		printf("Checking %d against key %d\n", r.key, root->keys[i] );
 		if( r.key < root->keys[i] ) {
 //			printf("Must be in left pointer of keys[%d] = %d\n", i, root->keys[i] );
@@ -431,7 +440,7 @@ internal void bpt_print_leaf( node* n, int indent ) {
 }
 
 void bpt_print( bpt* root, int indent ) {
-
+#ifdef VERBOSE
 	char ind[100] = "                               END";
 	ind[indent*2] = '\0';
 	
@@ -458,7 +467,7 @@ void bpt_print( bpt* root, int indent ) {
 	n = root->pointers[root->num_keys].node_ptr;
 	assert( n != NULL );
 	bpt_print( n, indent + 1 );
-
+#endif
 }
 
 unsigned long bpt_size( bpt* root ) {

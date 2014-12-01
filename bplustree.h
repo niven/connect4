@@ -3,12 +3,22 @@
 
 #include "base.h"
 
-#define ORDER 3
+#define ORDER 1024
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 typedef unsigned long key_t;
 
 #define KEY_SIZE (sizeof(key_t))
+
+struct bpt_counters {
+	uint32_t creates;
+	uint32_t frees;
+	uint32_t inserts;
+	uint32_t parent_inserts;
+	uint32_t splits;
+	uint32_t	key_compares;
+};
+
 
 typedef union pointer {
 	struct node* node_ptr;

@@ -17,7 +17,7 @@ typedef unsigned char bool;
 // so we dirtily strip those out.
 
 
-#ifdef PRINT
+#ifdef VERBOSE
 
 #define prints( string ) print( "%s", string )
 

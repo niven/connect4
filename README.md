@@ -30,7 +30,7 @@ So now I'm implementing a rudimentary thing I call a "database".
 Anyway, source code so far:
 encoding/decoding/writing/loading boards+winlines.
 generating new boards from a move sequence, visualizing boards in amazing 2D ASCII art.
-a shitty B+ Tree implementation that is broken in interesting ways.
+a basic B+ Tree implementation that doesn't do deletes (don't need thenm), and isn't on disk yet.
 
 And todo many things so I though it was time to throw this onto github since it has turned into a medium sized software project (You can tell easily: you've started to worry about multiple files and have implemented a binary search)
 

@@ -1,6 +1,11 @@
+ifeq (${MODE},)
+else
+	MODEFLAG=-D${MODE}
+endif
+
 CC=clang
 DONTCARE_WARNINGS= -Wno-padded
-CFLAGS=-std=c99 -Weverything -pedantic ${DONTCARE_WARNINGS} -O3
+CFLAGS=-std=c99 -g -Weverything -pedantic ${DONTCARE_WARNINGS} -O0 ${MODEFLAG}
 CMD=${CC} ${CFLAGS}
 
 all: clean libs

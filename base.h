@@ -4,7 +4,6 @@
 #define true 1
 #define false 0
 
-
 // alternative names for static to be less confused and to be able to find e.g. global_variable later
 #define internal static
 #define local_persist static
@@ -19,6 +18,8 @@ typedef unsigned char bool;
 
 #define prints( string ) print( "%s", string )
 
+#ifdef PRINT
+
 #define print( format, ... ) do {\
 char buf[200];\
 int pos=0;\
@@ -32,5 +33,11 @@ sprintf(buf, "%s(): " #format, __func__, __VA_ARGS__ ); \
 		buf[pos++] = '\0';\
 	puts(buf);\
 } while (0)
+
+#else
+	
+#define print( format, ... ) // DEBUG OFF
+	
+#endif
 
 #endif

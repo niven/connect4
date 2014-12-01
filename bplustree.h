@@ -3,7 +3,7 @@
 
 #include "base.h"
 
-#define ORDER 4
+#define ORDER 3
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER/2)
 typedef unsigned long key_t;
@@ -39,6 +39,7 @@ typedef node bpt;
 
 bpt* new_bptree( void );
 void free_bptree( bpt* b );
+void bpt_dump_cf( void );
 
 // public API (always takes a root)
 void bpt_put( bpt** root, record r );

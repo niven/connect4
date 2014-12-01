@@ -6,7 +6,8 @@
 #include "base.h"
 #include "bplustree.h"
 
-
+global_variable int creates = 0;
+global_variable int frees = 0;
 
 internal int binary_search( key_t* keys, size_t num_keys, key_t target_key, size_t* key_index ) {
 	
@@ -57,6 +58,7 @@ bpt* new_bptree() {
 	out->is_leaf = true;
 	
 	//print("created %p", out );
+	creates++;
 	return out;
 }
 
@@ -69,6 +71,12 @@ void free_bptree( bpt* b ) {
 		}
 	}
 	free( b );
+	frees++;
+}
+
+void bpt_dump_cf() {
+	printf("Total creates: %d\n", creates);
+	printf("Total frees: %d\n", frees);
 	
 }
 
@@ -127,7 +135,7 @@ void bpt_put( bpt** root, record r ) {
 void bpt_split( bpt* n ) {
 	
 	bpt_print( n, 0 );
-	printf("bpt_split(): %s %p\n", (n->is_leaf ? "leaf" : "node"), n );
+	print("%s %p", (n->is_leaf ? "leaf" : "node"), n );
 	
 	/* 
 	Create a sibling node
@@ -284,7 +292,7 @@ void bpt_split( bpt* n ) {
 */
 void bpt_insert_or_update( bpt* root, record r ) {
 	
-	printf("insert_or_update(): node %p\n", root);
+	print("node %p", root);
 
 //	printf("Insert %d:%d\n", r.key, r.value.value_int );
 
@@ -319,11 +327,11 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		// split if full
 		bpt* result = root; // return original unless we split
 		if( root->num_keys == ORDER ) {
-			printf("insert_or_update(): hit limit, have to split %p\n", root);
+			print("hit limit, have to split %p", root);
 			bpt_split( root );
 		}
 		
-		printf("insert_or_update(): inserted into leaf %p\n", result);
+		print("inserted into leaf %p", result);
 		return;
 	}
 
@@ -335,7 +343,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		if( r.key < root->keys[i] ) {
 //			printf("Must be in left pointer of keys[%d] = %d\n", i, root->keys[i] );
 			bpt_insert_or_update( root->pointers[i].node_ptr, r );
-			printf("insert_or_update(): inserted into child node\n");
+			prints("inserted into child node");
 			return;
 		}
 	}
@@ -343,7 +351,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 //	printf("Wasn't in any left pointers, must be in right then\n");
 	if( r.key >= root->keys[root->num_keys-1] ) {
 		bpt_insert_or_update( root->pointers[root->num_keys].node_ptr, r );
-		printf("insert_or_update(): inserted into child node\n");
+		prints("inserted into child node");
 		return;
 	}
 
@@ -376,9 +384,10 @@ internal node* bpt_find_node( bpt* root, key_t key ) {
 
 record* bpt_get( bpt* root, key_t key ) {
 	
+	print("key %lu", key);
 	node* dest_node = bpt_find_node( root, key );
-//	printf("Found correct node:\n");
-//	bpt_print( dest_node, 0 );
+	print("Found correct node %p", dest_node);
+	//bpt_print( dest_node, 0 );
 	
 	if( dest_node == NULL ) {
 		fprintf( stderr, "No node found at all WTF\n");
@@ -387,10 +396,11 @@ record* bpt_get( bpt* root, key_t key ) {
 	
 	// now we have a leaf that *could* contain our key, but it's sorted
 	size_t key_index;
-//	printf("Index for key we're looking for: %d\n", key_index);
 	if( !binary_search( dest_node->keys, dest_node->num_keys, key, &key_index ) ) {
+		prints("Key not found");
 		return NULL;
 	}
+	print("Index for key we're looking for: %lu", key_index);
 	
 	record* r = (record*)malloc( sizeof(record) );
 	if( r == NULL ) {

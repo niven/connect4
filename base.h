@@ -16,28 +16,31 @@ typedef unsigned char bool;
 // but this introduces extra " marks around the format string
 // so we dirtily strip those out.
 
-#define prints( string ) print( "%s", string )
 
 #ifdef PRINT
 
+#define prints( string ) print( "%s", string )
+
 #define print( format, ... ) do {\
-char buf[200];\
-int pos=0;\
-sprintf(buf, "%s(): " #format, __func__, __VA_ARGS__ ); \
-	for(int i=0; i<200; i++) {\
-		if( buf[i] == '"' ) {\
+char _verbose_buf[200];\
+int _verbose_pos=0;\
+sprintf(_verbose_buf, "%s(): " #format, __func__, __VA_ARGS__ ); \
+	for(int _verbose_i=0; _verbose_i<200; _verbose_i++) {\
+		if( _verbose_buf[_verbose_i] == '"' ) {\
 				continue;\
 		} \
-		buf[pos++] = buf[i];\
+		_verbose_buf[_verbose_pos++] = _verbose_buf[_verbose_i];\
 	}\
-		buf[pos++] = '\0';\
-	puts(buf);\
+		_verbose_buf[_verbose_pos++] = '\0';\
+	puts(_verbose_buf);\
 } while (0)
 
 #else
 	
 #define print( format, ... ) // DEBUG OFF
 	
+#define prints( string ) // DEBUG OFF
+
 #endif
 
 #endif

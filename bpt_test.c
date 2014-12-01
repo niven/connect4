@@ -2,9 +2,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h> 
 
 #include "base.h"
 #include "bplustree.h"
+
+// GCD for only positive ints and not caring about m==n==0 returning 0
+internal size_t gcd(size_t m, size_t n) {
+    if(m == 0 && n == 0)
+        return 0;
+
+    size_t r;
+    while(n) {
+        r = m % n;
+        m = n;
+        n = r;
+    }
+    return m;
+}
 
 internal void test_header( const char* title ) {
 	
@@ -12,6 +27,37 @@ internal void test_header( const char* title ) {
 	row[ strlen(title)+4 ] = '\0';
 	printf("\n%s\n# %s #\n%s\n", row, title, row);
 	
+}
+
+internal void test_store_randomly() {
+
+	test_header( "Store 0..100 in random order");
+	
+	srand( (unsigned int)time(NULL) );
+	const size_t max = 100;
+	// find a relative prime
+	size_t relprime = (size_t)rand() % max;
+	while( gcd(max, relprime) != 1 ) {
+		relprime = (size_t)rand() % max;
+	}
+	printf("Using relative prime %lu %d\n", relprime, rand());
+	size_t current = relprime;
+	bpt* store = new_bptree();
+	size_t count = 0;
+	do {
+		printf("insert %lu\n", current);
+		bpt_put( &store, (struct record){ .key = current, { .value_int = (int)count } });
+		record* r = bpt_get( store, current );
+		assert( r != NULL );
+		assert( r->key == current );
+		assert( r->value.value_int == (int)count );
+		assert( bpt_size( store ) == (count+1) );
+		count++;
+		current = (current + relprime) % max;
+	} while( current != relprime );
+	printf("Randomly insert result:\n");
+	bpt_print( store, 0 );
+	free_bptree( store );
 }
 
 internal void test_store_10() {
@@ -32,16 +78,20 @@ internal void test_store_10() {
 		assert( bpt_size( store ) == (i+1) );
 		printf("### Test OK - store %lu records\n", i+1);
 	}
-
+	printf("Repeat find\n");
 	// repeat the finding to ensure we didn't remove or lose stuff
 	for( size_t i=0; i<max; i++ ) {
 		key_t k = (key_t)i;
+		printf("aRepeat find\n");
 		record* r = bpt_get( store, k );
+		printf("bRepeat find\n");
 		assert( r != NULL );
 		assert( r->key == k );
 		assert( r->value.value_int == (int)i );
 	}
+	printf("Repeat find\n");
 	free_bptree( store );
+	printf("Repeat find\n");
 	
 }
 
@@ -78,30 +128,36 @@ internal void test_store_random() {
 
 internal void test_store_cmdline_seq( char* seq ) {
 	
-	bpt* root = new_bptree();
+	bpt* store = new_bptree();
 	
 	printf("Sequence: %s\n", seq);
 	char* element = strtok( seq, "," );
 	int i = 0;
 	while( element != NULL ) {
 		printf("\n>>>>> Insert %s\n", element );
-		bpt_put( &root, (struct record){ .key = (key_t)atoi(element), { .value_int = i++} } );
-		printf("<<<<< After insert %s %p\n", element, root );
-		bpt_print( root, 0 );
+		key_t key = (key_t)atoi(element);
+		bpt_put( &store, (struct record){ .key = key, { .value_int = i++} } );
+		printf("<<<<< After insert %lu %p\n", key, store );
+		bpt_print( store, 0 );
+		record* r = bpt_get( store, key );
+		assert( r != NULL );
+		assert( r->key == key );
+		
 		element = strtok( NULL, "," );
 	}
 	
-	free_bptree( root );
+	free_bptree( store );
 	
 }
 
 int main(int argc, char** argv) {
 
 	printf("ORDER %d, SPLIT_KEY_INDEX %d\n", ORDER, SPLIT_KEY_INDEX );
-
+	
 	// run cmd line stuff OR all tests
 	if( argc == 2 ){
 		test_store_cmdline_seq( argv[1] );
+		bpt_dump_cf();
 		exit( EXIT_SUCCESS );
 	}
 
@@ -113,6 +169,11 @@ int main(int argc, char** argv) {
 	
 	// insert a bunch of random numbers and find them
 	test_store_random();
+
+	// insert 0..100 in random order
+	test_store_randomly();
+
+	bpt_dump_cf();
 
 	printf("Done\n");
 }

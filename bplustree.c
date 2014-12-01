@@ -364,12 +364,17 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		
 		} // END BSEARCH UPGRADE
 		print("BS result: %lu\n", insert_location);
-
-		while( k<root->num_keys && root->keys[k] < r.key ) { // TODO: this is dumb and should binsearch
+		
+		// do an extra check in verbose mode to make sure we find the right key index
+#ifdef VERBOSE
+		while( k<root->num_keys && root->keys[k] < r.key ) { // This is dumb binsearch (above) is much better
 			counters.key_compares++;
 			k++;
 		}
-		printf("bs key location find %lu, linear %lu\n\n", insert_location, k );
+#else
+		k = insert_location;
+#endif	
+		print("bs key location find %lu, linear %lu\n\n", insert_location, k );
 		assert( insert_location == k );
 //		printf("Insertion location: keys[%d] = %d (atend = %d)\n", k, root->keys[k], k == root->num_keys );
 		// if we're not appending but inserting, ODKU (we can't check on value since we might be at the end

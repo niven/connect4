@@ -369,8 +369,8 @@ void bpt_insert_or_update( bpt* root, record r ) {
 			counters.key_compares++;
 			k++;
 		}
-//		printf("bs key location find %lu, linear %lu\n\n", insert_location, k );
-//		assert( insert_location == k );
+		printf("bs key location find %lu, linear %lu\n\n", insert_location, k );
+		assert( insert_location == k );
 //		printf("Insertion location: keys[%d] = %d (atend = %d)\n", k, root->keys[k], k == root->num_keys );
 		// if we're not appending but inserting, ODKU (we can't check on value since we might be at the end
 		// and the value there could be anything)

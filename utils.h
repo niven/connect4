@@ -3,6 +3,6 @@
 
 void print_bits(unsigned char c);
 
-char* join( int* elements, size_t num, const char* separator );
+char* join( uint64_t* elements, size_t num, const char* separator );
 
 #endif

@@ -16,12 +16,12 @@ void print_bits(unsigned char c) {
 }
 
 
-char* join( int* elements, size_t num, const char* separator ) {
+char* join( uint64_t* elements, size_t num, const char* separator ) {
 	char* buf = malloc( sizeof(char)*256 );
 	char str[100];
 	
 	for( size_t i=0; i<num; i++ ) {
-		sprintf( str, "%d", elements[i] );
+		sprintf( str, "%lu", elements[i] );
 		strcat( buf, str );
 		if( i < num-1 ) {
 			strcat( buf, separator );

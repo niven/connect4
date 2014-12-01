@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "base.h"
+#include "utils.h"
 #include "bplustree.h"
 
 global_variable struct bpt_counters counters;
@@ -81,6 +82,7 @@ void bpt_dump_cf() {
 	printf("Total inserts: %d\n", counters.inserts);
 	printf("Total parent_inserts: %d\n", counters.parent_inserts);
 	printf("Total key compares: %d\n", counters.key_compares);
+	printf("Total BS key compares: %d\n", counters.bs_key_compares);
 	
 	assert( counters.creates == counters.frees );
 }
@@ -307,16 +309,68 @@ void bpt_insert_or_update( bpt* root, record r ) {
 //	printf("Insert %d:%d\n", r.key, r.value.value_int );
 
 	if( root->is_leaf ) {
-
+		size_t k=0;
+		size_t insert_location = 0;
+		/*
+		printf("Insert %lu into leaf:\n", r.key);
+		char* temp = join( root->keys, root->num_keys, ", " );
+		printf("[ %s ]\n", temp);
+		free(temp);
+		*/
 		// now we can't just go ahead and add it at the end, we need to keep
 		// this shit sorted. (and remember to move the pointers as well)
 		// So maybe instead of a keys and pointers array just have a
 		// struct with key/pointer. But anyway.
-		size_t k=0;
+
+		{ // BSEARCH UPGRADE
+
+			// out of range
+			if( r.key < root->keys[0] ) {
+				counters.bs_key_compares++;
+				insert_location = 0;
+			}
+	
+			size_t num_keys = root->num_keys;
+			size_t mid = num_keys / 2;
+			size_t large_half;
+			while( num_keys > 0 ) {
+
+				if( r.key == root->keys[mid] ) {
+					counters.bs_key_compares++;
+					insert_location = mid;
+					break;
+				}
+		
+				num_keys = num_keys/2; // half the range left over
+				large_half = num_keys/2 + (num_keys % 2);// being clever. But this is ceil 
+
+				if( r.key < root->keys[mid] ) {
+					mid -= large_half;
+				} else {
+					mid += large_half;
+				}
+				counters.bs_key_compares++;
+		
+			}
+			print("location according to bs: %lu\n", mid);
+			if( mid == root->num_keys ) {
+				insert_location = root->num_keys;
+			} else if( r.key <= root->keys[mid] ) {
+				insert_location = mid; // displace, shift the rest right
+			} else {
+				insert_location = mid+1;
+			}
+			counters.bs_key_compares++;
+		
+		} // END BSEARCH UPGRADE
+		print("BS result: %lu\n", insert_location);
+
 		while( k<root->num_keys && root->keys[k] < r.key ) { // TODO: this is dumb and should binsearch
 			counters.key_compares++;
 			k++;
 		}
+//		printf("bs key location find %lu, linear %lu\n\n", insert_location, k );
+//		assert( insert_location == k );
 //		printf("Insertion location: keys[%d] = %d (atend = %d)\n", k, root->keys[k], k == root->num_keys );
 		// if we're not appending but inserting, ODKU (we can't check on value since we might be at the end
 		// and the value there could be anything)

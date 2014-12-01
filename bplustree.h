@@ -17,6 +17,7 @@ struct bpt_counters {
 	uint32_t parent_inserts;
 	uint32_t splits;
 	uint32_t	key_compares;
+	uint32_t bs_key_compares;
 };
 
 

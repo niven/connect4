@@ -9,7 +9,7 @@ CFLAGS=-std=c99 -g -Weverything -pedantic ${DONTCARE_WARNINGS} -O0 ${MODEFLAG}
 CMD=${CC} ${CFLAGS}
 
 all: clean libs
-	${CMD} bin/bplustree.o bpt_test.c -o bpt
+	${CMD} bin/utils.o bin/bplustree.o bpt_test.c -o bpt
 	${CMD} bin/utils.o bin/counter.o bin/board63.o bin/board.o bruteforce_connect_four.c -o bfcf
 
 clean:

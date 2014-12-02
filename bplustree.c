@@ -76,6 +76,7 @@ void free_bptree( bpt* b ) {
 }
 
 void bpt_dump_cf() {
+	printf("BPT ORDER: %d\n", ORDER);
 	printf("Total creates: %d\n", counters.creates);
 	printf("Total frees: %d\n", counters.frees);
 	printf("Total splits: %d\n", counters.splits);

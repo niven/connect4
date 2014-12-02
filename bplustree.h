@@ -3,7 +3,7 @@
 
 #include "base.h"
 
-#define ORDER 16
+#define ORDER 512
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 typedef unsigned long key_t;
@@ -19,6 +19,7 @@ struct bpt_counters {
 	uint64_t splits;
 	uint64_t leaf_key_compares;
 	uint64_t node_key_compares;
+	uint64_t any;
 };
 
 

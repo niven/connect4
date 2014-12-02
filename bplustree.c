@@ -111,6 +111,7 @@ void bpt_dump_cf() {
 	printf("Total leaf key compares: %llu\n", counters.leaf_key_compares);
 	printf("Total node key compares: %llu\n", counters.node_key_compares);
 	printf("Key compares (leaf+node) per key insert: %llu\n", (counters.leaf_key_compares + counters.node_key_compares) / counters.key_inserts );
+	printf("Anycounter: %llu\n", counters.any);
 	assert( counters.creates == counters.frees );
 }
 
@@ -155,7 +156,6 @@ void bpt_put( bpt** root, record r ) {
 	
 	counters.key_inserts++;
 	print("root: %p, key %lu", *root, r.key );
-	bpt_print( *root, 0 );
 	bpt_insert_or_update( *root, r );
 	
 	// tree might have grown, and since it grows upward *root might not point at the
@@ -521,8 +521,10 @@ internal node* bpt_find_node( bpt* root, key_t key ) {
 	while( !current->is_leaf ) {
 		found = false;
 		
+		// TODO: Holy poor code quality Batman! More linear searches!
 		for( size_t i=0; i<current->num_keys; i++ ) {
 //			printf("Checking %d against key %d\n", key, current->keys[i] );
+			counters.any++;
 			if( key < current->keys[i] ) {
 				current = current->pointers[i].node_ptr;
 				found = true;

@@ -3,7 +3,7 @@
 
 #include "base.h"
 
-#define ORDER 128
+#define ORDER 16
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 typedef unsigned long key_t;
@@ -11,13 +11,14 @@ typedef unsigned long key_t;
 #define KEY_SIZE (sizeof(key_t))
 
 struct bpt_counters {
-	uint32_t creates;
-	uint32_t frees;
-	uint32_t inserts;
-	uint32_t parent_inserts;
-	uint32_t splits;
-	uint32_t	key_compares;
-	uint32_t bs_key_compares;
+	uint64_t creates;
+	uint64_t frees;
+	uint64_t key_inserts;
+	uint64_t insert_calls;
+	uint64_t parent_inserts;
+	uint64_t splits;
+	uint64_t	key_compares;
+	uint64_t bs_key_compares;
 };
 
 

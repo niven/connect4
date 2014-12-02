@@ -34,7 +34,7 @@ internal void test_store_randomly() {
 	test_header( "Store 0..100 in random order");
 	
 	srand( (unsigned int)time(NULL) );
-	const size_t max = 1 * 1000;// * 1000;
+	const size_t max = 1000;// * 1000;// * 1000;
 	// find a relative prime
 	size_t relprime = (size_t)rand() % max;
 	while( gcd(max, relprime) != 1 ) {
@@ -55,8 +55,12 @@ internal void test_store_randomly() {
 		count++;
 		current = (current + relprime) % max;
 	} while( current != relprime );
-	printf("Randomly insert result:\n");
-	bpt_print( store, 0 );
+
+#ifdef VERBOSE
+		printf("Randomly insert result:\n");
+		bpt_print( store, 0 );
+#endif
+	
 	free_bptree( store );
 }
 

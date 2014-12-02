@@ -77,14 +77,15 @@ void free_bptree( bpt* b ) {
 
 void bpt_dump_cf() {
 	printf("BPT ORDER: %d\n", ORDER);
-	printf("Total creates: %d\n", counters.creates);
-	printf("Total frees: %d\n", counters.frees);
-	printf("Total splits: %d\n", counters.splits);
-	printf("Total inserts: %d\n", counters.inserts);
-	printf("Total parent_inserts: %d\n", counters.parent_inserts);
-	printf("Total key compares: %d\n", counters.key_compares);
-	printf("Total BS key compares: %d\n", counters.bs_key_compares);
-	
+	printf("Total creates: %llu\n", counters.creates);
+	printf("Total frees: %llu\n", counters.frees);
+	printf("Total key inserts: %llu\n", counters.key_inserts);
+	printf("Total splits: %llu\n", counters.splits);
+	printf("Total insert calls: %llu\n", counters.insert_calls);
+	printf("Total parent_inserts: %llu\n", counters.parent_inserts);
+	printf("Total key compares: %llu\n", counters.key_compares);
+	printf("Total BS key compares: %llu\n", counters.bs_key_compares);
+	printf("Key compares per key insert: %llu\n", counters.bs_key_compares / counters.key_inserts );
 	assert( counters.creates == counters.frees );
 }
 
@@ -110,8 +111,10 @@ void bpt_insert_node( bpt* n, key_t up_key, bpt* sibling ) {
 
 	n->num_keys++;
 
+#ifdef VERBOSE
 	prints("after insert:");
 	bpt_print( n, 0 );
+#endif
 
 	// we might need to split (again)
 	if( n->num_keys == ORDER ) {
@@ -125,6 +128,7 @@ void bpt_insert_node( bpt* n, key_t up_key, bpt* sibling ) {
 
 void bpt_put( bpt** root, record r ) {
 	
+	counters.key_inserts++;
 	print("root: %p, key %lu", *root, r.key );
 	bpt_insert_or_update( *root, r );
 	
@@ -142,7 +146,9 @@ void bpt_put( bpt** root, record r ) {
 
 void bpt_split( bpt* n ) {
 	counters.splits++;
+#ifdef VERBOSE	
 	bpt_print( n, 0 );
+#endif
 	print("%s %p", (n->is_leaf ? "leaf" : "node"), n );
 	
 	/* 
@@ -248,10 +254,12 @@ void bpt_split( bpt* n ) {
 	// when splitting a node a key and 2 nodes mode up
 	n->num_keys = n->num_keys - keys_moving_right - (n->is_leaf ? 0 : 1);
 
+#ifdef VERBOSE
 	print("Created sibling %p", sibling);
 	bpt_print( sibling, 0 );
 	print("Node left over %p", n);
 	bpt_print( n, 0 );
+#endif
 	
 	// the key that moves up is the split key in the leaf node case, and otherwise
 	// the key we didn't propagate to the sibling node and didn't keep in the node
@@ -274,9 +282,10 @@ void bpt_split( bpt* n ) {
 
 		n->parent = sibling->parent = new_root;
 
+#ifdef VERBOSE
 		print("new root %p", new_root);
 		bpt_print( new_root, 0 );
-		
+#endif
 	} else {
 		print("inserting key %lu + sibling node %p into parent %p", up_key, sibling, n->parent );
 		// so what we have here is (Node)Key(Node) so we need to insert this into the
@@ -287,8 +296,10 @@ void bpt_split( bpt* n ) {
 		
 		// now this is fairly doable, but it might lead to having to split the parent
 		// as well
+#ifdef VERBOSE
 		prints("Parent node:");
 		bpt_print( n->parent, 0 );
+#endif		
 		counters.parent_inserts++;
 		bpt_insert_node( n->parent, up_key, sibling );
 
@@ -304,7 +315,7 @@ void bpt_split( bpt* n ) {
 */
 void bpt_insert_or_update( bpt* root, record r ) {
 	
-	counters.inserts++;
+	counters.insert_calls++;
 	print("node %p", root);
 
 //	printf("Insert %d:%d\n", r.key, r.value.value_int );
@@ -324,7 +335,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		// struct with key/pointer. But anyway.
 
 		{ // BSEARCH UPGRADE
-
+			// TODO: this happens later on as well, make function
 			// out of range
 			if( r.key < root->keys[0] ) {
 				counters.bs_key_compares++;
@@ -338,7 +349,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 
 				if( r.key == root->keys[mid] ) {
 					counters.bs_key_compares++;
-					insert_location = mid;
+					insert_location = mid; // TODO: this can go
 					break;
 				}
 		
@@ -366,18 +377,26 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		} // END BSEARCH UPGRADE
 		print("insert location from binsearch: %lu", insert_location);
 		
-		// do an extra check in verbose mode to make sure we find the right key index
-#ifdef CHECKS
-		while( k<root->num_keys && root->keys[k] < r.key ) { // This is dumb binsearch (above) is much better
-			counters.key_compares++;
-			k++;
+		// correctness checks:
+		// 1. array has elements, and we should insert at the end, make sure the last element is smaller than the new one
+		if( root->num_keys > 0 && insert_location == root->num_keys ) {
+			assert( r.key > root->keys[root->num_keys-1] );
 		}
-
-		print("bs key location find %lu, linear %lu", insert_location, k );
-		assert( insert_location == k );
-#else
+		// 2. array has no elements
+		if( root->num_keys == 0 ) {
+			assert( insert_location == 0 );
+		}
+		// 3. array has elements, and we should insert at the beginning
+		if( root->num_keys > 0 && insert_location == 0 ) {
+			assert( r.key < root->keys[insert_location] );
+		}
+		// 4. insert somewhere in the middle
+		if( insert_location > 0 && insert_location < root->num_keys ) {
+			assert( r.key <= root->keys[insert_location] ); // insert shifts the rest right, so element right should be equal/larger
+			assert( root->keys[insert_location-1] < r.key ); // element to the left is smaller
+		}
+		
 		k = insert_location;
-#endif	
 //		printf("Insertion location: keys[%d] = %d (atend = %d)\n", k, root->keys[k], k == root->num_keys );
 		// if we're not appending but inserting, ODKU (we can't check on value since we might be at the end
 		// and the value there could be anything)
@@ -408,16 +427,65 @@ void bpt_insert_or_update( bpt* root, record r ) {
 
 	// NOT a leaf node, recurse to insert
 	// TODO: Should binary search here, this is slow as fuck, especially with large ORDERS
+	// No really, this is causing terrible performance
+
+
+	size_t large_half;
+	size_t span = root->num_keys;
+	size_t mid = span / 2;
+	size_t key_index;
+	bool found = false;
+	while( span > 0 ) {
+
+		if( r.key == root->keys[mid] ) {
+			found = true;
+			break;
+		}
+		
+		span = span/2; // half the range left over
+		large_half = span/2 + (span % 2);// being clever. But this is ceil 
+
+		if( r.key < root->keys[mid] ) {
+			mid -= large_half;
+		} else {
+			mid += large_half;
+		}
+		
+	}
+	if( mid == root->num_keys ) {
+		key_index = root->num_keys; // TODO: not sure this can happen
+	} else if( r.key <= root->keys[mid] ) {
+		key_index = mid; // displace, shift the rest right
+	} else {
+		key_index = mid+1;
+	}
+
+#ifdef CHECKS	
+	size_t k = 0;
 	for( size_t i=0; i<root->num_keys; i++ ) {
 		counters.key_compares++;
 //		printf("Checking %d against key %d\n", r.key, root->keys[i] );
 		if( r.key < root->keys[i] ) {
-//			printf("Must be in left pointer of keys[%d] = %d\n", i, root->keys[i] );
-			bpt_insert_or_update( root->pointers[i].node_ptr, r );
-			prints("inserted into child node");
-			return;
+			found = true;
+			k = i;
+			break;
 		}
 	}
+	
+	if( found ) {
+		print("BS Node: %lu - linear %lu", key_index, k );
+		assert( key_index == k );
+	}
+#endif
+
+	// descend a node
+	if( found ) {
+		print("Must be in left pointer of keys[%lu] = %lu", key_index, root->keys[key_index] );
+		bpt_insert_or_update( root->pointers[key_index].node_ptr, r );
+		prints("inserted into child node");
+		return;
+	}
+
 
 //	printf("Wasn't in any left pointers, must be in right then\n");
 	if( r.key >= root->keys[root->num_keys-1] ) {

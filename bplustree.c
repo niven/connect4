@@ -396,13 +396,11 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		root->num_keys++;
 
 		// split if full
-		bpt* result = root; // return original unless we split
 		if( root->num_keys == ORDER ) {
 			print("hit limit, have to split %p", root);
 			bpt_split( root );
 		}
 		
-		print("inserted into leaf %p", result);
 		return;
 	}
 
@@ -500,7 +498,7 @@ internal void bpt_print_leaf( node* n, int indent ) {
 }
 
 void bpt_print( bpt* root, int indent ) {
-#ifdef VERBOSE
+
 	char ind[100] = "                               END";
 	ind[indent*2] = '\0';
 	
@@ -527,7 +525,7 @@ void bpt_print( bpt* root, int indent ) {
 	n = root->pointers[root->num_keys].node_ptr;
 	assert( n != NULL );
 	bpt_print( n, indent + 1 );
-#endif
+
 }
 
 unsigned long bpt_size( bpt* root ) {

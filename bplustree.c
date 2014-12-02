@@ -352,7 +352,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 				counters.bs_key_compares++;
 		
 			}
-			print("location according to bs: %lu\n", mid);
+			print("location according to bs: %lu", mid);
 			if( mid == root->num_keys ) {
 				insert_location = root->num_keys;
 			} else if( r.key <= root->keys[mid] ) {
@@ -363,7 +363,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 			counters.bs_key_compares++;
 		
 		} // END BSEARCH UPGRADE
-		print("BS result: %lu\n", insert_location);
+		print("BS result: %lu", insert_location);
 		
 		// do an extra check in verbose mode to make sure we find the right key index
 #ifdef CHECKS
@@ -371,7 +371,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 			counters.key_compares++;
 			k++;
 		}
-		print("bs key location find %lu, linear %lu\n\n", insert_location, k );
+		print("bs key location find %lu, linear %lu", insert_location, k );
 		assert( insert_location == k );
 #else
 		k = insert_location;

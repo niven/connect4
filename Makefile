@@ -1,6 +1,6 @@
 ifeq (${MODE},)
 else
-	MODEFLAG=-D${MODE} -DCHECK
+	MODEFLAG=-D${MODE} -DCHECKS
 endif
 
 CC=clang

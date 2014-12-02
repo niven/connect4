@@ -84,8 +84,7 @@ void bpt_dump_cf() {
 	printf("Total insert calls: %llu\n", counters.insert_calls);
 	printf("Total parent_inserts: %llu\n", counters.parent_inserts);
 	printf("Total key compares: %llu\n", counters.key_compares);
-	printf("Total BS key compares: %llu\n", counters.bs_key_compares);
-	printf("Key compares per key insert: %llu\n", counters.bs_key_compares / counters.key_inserts );
+	printf("Key compares per key insert: %llu\n", counters.key_compares / counters.key_inserts );
 	assert( counters.creates == counters.frees );
 }
 
@@ -130,6 +129,7 @@ void bpt_put( bpt** root, record r ) {
 	
 	counters.key_inserts++;
 	print("root: %p, key %lu", *root, r.key );
+	bpt_print( *root, 0 );
 	bpt_insert_or_update( *root, r );
 	
 	// tree might have grown, and since it grows upward *root might not point at the
@@ -338,7 +338,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 			// TODO: this happens later on as well, make function
 			// out of range
 			if( r.key < root->keys[0] ) {
-				counters.bs_key_compares++;
+				counters.key_compares++;
 				insert_location = 0;
 			}
 	
@@ -348,7 +348,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 			while( num_keys > 0 ) {
 
 				if( r.key == root->keys[mid] ) {
-					counters.bs_key_compares++;
+					counters.key_compares++;
 					insert_location = mid; // TODO: this can go
 					break;
 				}
@@ -361,7 +361,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 				} else {
 					mid += large_half;
 				}
-				counters.bs_key_compares++;
+				counters.key_compares++;
 		
 			}
 
@@ -372,7 +372,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 			} else {
 				insert_location = mid+1;
 			}
-			counters.bs_key_compares++;
+			counters.key_compares++;
 		
 		} // END BSEARCH UPGRADE
 		print("insert location from binsearch: %lu", insert_location);
@@ -434,17 +434,17 @@ void bpt_insert_or_update( bpt* root, record r ) {
 	size_t span = root->num_keys;
 	size_t mid = span / 2;
 	size_t key_index;
-	bool found = false;
 	while( span > 0 ) {
 
-		if( r.key == root->keys[mid] ) {
-			found = true;
+		counters.key_compares++;
+		if( r.key == root->keys[mid] ) { // TODO: we're inserting, this should not happen?
 			break;
 		}
 		
 		span = span/2; // half the range left over
 		large_half = span/2 + (span % 2);// being clever. But this is ceil 
 
+		counters.key_compares++;
 		if( r.key < root->keys[mid] ) {
 			mid -= large_half;
 		} else {
@@ -452,6 +452,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		}
 		
 	}
+	print("mid %lu", mid);
 	if( mid == root->num_keys ) {
 		key_index = root->num_keys; // TODO: not sure this can happen
 	} else if( r.key <= root->keys[mid] ) {
@@ -460,42 +461,31 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		key_index = mid+1;
 	}
 
-#ifdef CHECKS	
-	size_t k = 0;
-	for( size_t i=0; i<root->num_keys; i++ ) {
-		counters.key_compares++;
-//		printf("Checking %d against key %d\n", r.key, root->keys[i] );
-		if( r.key < root->keys[i] ) {
-			found = true;
-			k = i;
-			break;
-		}
+	print("Descend node - key index %lu", key_index);
+	// correctness checks:
+	// 1. array has elements, and we should insert at the end, make sure the last element is smaller than the new one
+	if( root->num_keys > 0 && key_index == root->num_keys ) {
+		assert( r.key > root->keys[root->num_keys-1] );
 	}
-	
-	if( found ) {
-		print("BS Node: %lu - linear %lu", key_index, k );
-		assert( key_index == k );
+	// 2. array has no elements
+	if( root->num_keys == 0 ) {
+		assert( key_index == 0 );
 	}
-#endif
+	// 3. array has elements, and we should insert at the beginning
+	if( root->num_keys > 0 && key_index == 0 ) {
+		assert( r.key < root->keys[key_index] );
+	}
+	// 4. insert somewhere in the middle
+	if( key_index > 0 && key_index < root->num_keys ) {
+		assert( r.key <= root->keys[key_index] ); // insert shifts the rest right, so element right should be equal/larger
+		assert( root->keys[key_index-1] < r.key ); // element to the left is smaller
+	}
 
 	// descend a node
-	if( found ) {
-		print("Must be in left pointer of keys[%lu] = %lu", key_index, root->keys[key_index] );
-		bpt_insert_or_update( root->pointers[key_index].node_ptr, r );
-		prints("inserted into child node");
-		return;
-	}
+	print("Must be in left pointer of keys[%lu] = %lu", key_index, root->keys[key_index] );
+	bpt_insert_or_update( root->pointers[key_index].node_ptr, r );
+	prints("Inserted into child node");
 
-
-//	printf("Wasn't in any left pointers, must be in right then\n");
-	if( r.key >= root->keys[root->num_keys-1] ) {
-		bpt_insert_or_update( root->pointers[root->num_keys].node_ptr, r );
-		prints("inserted into child node");
-		return;
-	}
-
-	fprintf( stderr, "BIG FAT FAIL: insert()\n");
-	assert( 0 );
 }
 
 internal node* bpt_find_node( bpt* root, key_t key ) {

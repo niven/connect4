@@ -34,7 +34,7 @@ internal void test_store_randomly() {
 	test_header( "Store 0..100 in random order");
 	
 	srand( (unsigned int)time(NULL) );
-	const size_t max = 300 * 1000;
+	const size_t max = 100 * 1000 * 1000;
 	// find a relative prime
 	size_t relprime = (size_t)rand() % max;
 	while( gcd(max, relprime) != 1 ) {
@@ -53,7 +53,8 @@ internal void test_store_randomly() {
 		assert( r != NULL );
 		assert( r->key == current );
 		assert( r->value.value_int == (int)count );
-		assert( bpt_size( store ) == (count+1) );
+		// not doing a size() test here since it's very slow
+//		assert( bpt_size( store ) == (count+1) );
 		count++;
 		current = (current + relprime) % max;
 	} while( current != relprime );

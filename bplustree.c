@@ -23,7 +23,7 @@ global_variable struct bpt_counters counters;
 #define BINSEARCH_INSERT 2
 
 internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target_key, size_t* key_index ) {
-	counters.any++;
+
 	// no data at all
 	if( keys == NULL ) {
 		return BINSEARCH_ERROR;
@@ -532,7 +532,6 @@ internal node* bpt_find_node( bpt* root, key_t key ) {
 		size_t node_index;
 		switch( binary_search( current->keys, current->num_keys, key, &node_index) ) {
 			case BINSEARCH_FOUND:
-				printf("Found at key index %lu (node index %lu)\n", node_index, node_index+1);
 				node_index++; // if we hit the key, the correct node is to the right of that key
 				break; // needless break here
 			case BINSEARCH_INSERT:
@@ -636,7 +635,10 @@ void bpt_print( bpt* root, int indent ) {
 }
 
 // TODO: find out WTF is going on. According to iprofiler this is BY FAR the slowest thing here. WTF?
+// update: it's not slow. doing a size after 300K items at ORDER 512 means around 1K nodes, AKA 1K calls
+// so either keep the size in the root (make it different from the node) or make this not recursive?
 size_t bpt_size( bpt* root ) {
+	counters.any++;
 	
 	size_t count = 0;
 	if( root->is_leaf ) {

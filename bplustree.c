@@ -10,16 +10,29 @@
 global_variable struct bpt_counters counters;
 
 
-internal int binary_search( key_t* keys, size_t num_keys, key_t target_key, size_t* key_index ) {
+/*
+	Search keys for a target_key.
+	returns
+		BINSEARCH_FOUND: target_key is an element of keys, key_index is set to the location
+		BINSEARCH_INSERT: target_key is NOT an element of keys, key_index is set to the index where you would need to insert target_key
+		BINSEARCH_ERROR: keys is NULL, key_index is unchanged
+
+*/
+#define BINSEARCH_ERROR 0
+#define BINSEARCH_FOUND 1
+#define BINSEARCH_INSERT 2
+
+internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target_key, size_t* key_index ) {
 	
 	// no data at all
-	if( keys == NULL || num_keys == 0 ) {
-		return -1;
+	if( keys == NULL ) {
+		return BINSEARCH_ERROR;
 	}
 	
-	// out of range
-	if( target_key < keys[0] || target_key > keys[num_keys-1] ) {
-		return -1;
+	// empty array, or insert location should be initial element
+	if( num_keys == 0 || target_key < keys[0] ) {
+		*key_index = 0;
+		return BINSEARCH_INSERT;
 	}
 	
 	size_t mid = num_keys / 2;
@@ -28,7 +41,7 @@ internal int binary_search( key_t* keys, size_t num_keys, key_t target_key, size
 
 		if( target_key == keys[mid] ) {
 			*key_index = mid;
-			return true;
+			return BINSEARCH_FOUND;
 		}
 		
 		num_keys = num_keys/2; // half the range left over
@@ -41,6 +54,18 @@ internal int binary_search( key_t* keys, size_t num_keys, key_t target_key, size
 		}
 		
 	}
+
+	// target_key is not an element of keys, but we found the closest location
+	if( mid == num_keys ) { // after all other elements
+		*key_index = num_keys;
+	} else if( target_key < keys[mid] ) {
+		*key_index = mid; // displace, shift the rest right
+	} else if( target_key > keys[mid] ) {
+		*key_index = mid+1; // not sure if these two are both possible
+	} else {
+		assert(0); // cannot happen
+	}
+
 
 	return false;
 }
@@ -526,7 +551,7 @@ record* bpt_get( bpt* root, key_t key ) {
 	
 	// now we have a leaf that *could* contain our key, but it's sorted
 	size_t key_index;
-	if( !binary_search( dest_node->keys, dest_node->num_keys, key, &key_index ) ) {
+	if( BINSEARCH_FOUND != binary_search( dest_node->keys, dest_node->num_keys, key, &key_index ) ) {
 		prints("Key not found");
 		return NULL;
 	}

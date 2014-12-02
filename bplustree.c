@@ -66,8 +66,7 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 		assert(0); // cannot happen
 	}
 
-
-	return false;
+	return BINSEARCH_INSERT;
 }
 
 bpt* new_bptree() {

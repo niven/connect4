@@ -113,6 +113,23 @@ internal void test_overwrite_dupes() {
 	free_bptree( store );
 	
 }
+internal void test_search_nonexisting_items() {
+	bpt* store = new_bptree();
+
+	key_t keys[6] = { 1, 3, 5, 7, 9, 11 };
+	for( int i=0; i<6; i++ ) {		
+		bpt_put( &store, (struct record){ .key = keys[i], { .value_int = i} } );
+	}
+
+	key_t missing_keys[6] = { 0, 2, 4, 6, 8, 10 };
+	for( int i=0; i<6; i++ ) {		
+		record* r = bpt_get( store, missing_keys[i] );
+		assert( r == NULL );
+	}
+
+	free_bptree( store );
+	
+}
 
 internal void test_store_random() {
 	bpt* store = new_bptree();
@@ -167,6 +184,9 @@ int main(int argc, char** argv) {
 
 	// test storing 10 ints and finding them
 	test_store_10();
+
+	// test we don't find items that aren't there
+	test_search_nonexisting_items();
 
 	// insert duplicates (should overwrite
 	test_overwrite_dupes();

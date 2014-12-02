@@ -35,17 +35,18 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 		return BINSEARCH_INSERT;
 	}
 	
+	size_t span = num_keys;
 	size_t mid = num_keys / 2;
 	size_t large_half;
-	while( num_keys > 0 ) {
+	while( span > 0 ) {
 
 		if( target_key == keys[mid] ) {
 			*key_index = mid;
 			return BINSEARCH_FOUND;
 		}
 		
-		num_keys = num_keys/2; // half the range left over
-		large_half = num_keys/2 + (num_keys % 2);// being clever. But this is ceil 
+		span = span/2; // half the range left over
+		large_half = span/2 + (span % 2);// being clever. But this is ceil 
 
 		if( target_key < keys[mid] ) {
 			mid -= large_half;

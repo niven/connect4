@@ -83,8 +83,9 @@ void bpt_dump_cf() {
 	printf("Total splits: %llu\n", counters.splits);
 	printf("Total insert calls: %llu\n", counters.insert_calls);
 	printf("Total parent_inserts: %llu\n", counters.parent_inserts);
-	printf("Total key compares: %llu\n", counters.key_compares);
-	printf("Key compares per key insert: %llu\n", counters.key_compares / counters.key_inserts );
+	printf("Total leaf key compares: %llu\n", counters.leaf_key_compares);
+	printf("Total node key compares: %llu\n", counters.node_key_compares);
+	printf("Key compares (leaf+node) per key insert: %llu\n", (counters.leaf_key_compares + counters.node_key_compares) / counters.key_inserts );
 	assert( counters.creates == counters.frees );
 }
 
@@ -338,7 +339,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 			// TODO: this happens later on as well, make function
 			// out of range
 			if( r.key < root->keys[0] ) {
-				counters.key_compares++;
+				counters.leaf_key_compares++;
 				insert_location = 0;
 			}
 	
@@ -347,8 +348,8 @@ void bpt_insert_or_update( bpt* root, record r ) {
 			size_t large_half;
 			while( num_keys > 0 ) {
 
+				counters.leaf_key_compares++;
 				if( r.key == root->keys[mid] ) {
-					counters.key_compares++;
 					insert_location = mid; // TODO: this can go
 					break;
 				}
@@ -356,12 +357,12 @@ void bpt_insert_or_update( bpt* root, record r ) {
 				num_keys = num_keys/2; // half the range left over
 				large_half = num_keys/2 + (num_keys % 2);// being clever. But this is ceil 
 
+				counters.leaf_key_compares++;
 				if( r.key < root->keys[mid] ) {
 					mid -= large_half;
 				} else {
 					mid += large_half;
 				}
-				counters.key_compares++;
 		
 			}
 
@@ -372,7 +373,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 			} else {
 				insert_location = mid+1;
 			}
-			counters.key_compares++;
+			counters.leaf_key_compares++;
 		
 		} // END BSEARCH UPGRADE
 		print("insert location from binsearch: %lu", insert_location);
@@ -436,7 +437,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 	size_t key_index;
 	while( span > 0 ) {
 
-		counters.key_compares++;
+		counters.node_key_compares++;
 		if( r.key == root->keys[mid] ) { // TODO: we're inserting, this should not happen?
 			break;
 		}
@@ -444,7 +445,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		span = span/2; // half the range left over
 		large_half = span/2 + (span % 2);// being clever. But this is ceil 
 
-		counters.key_compares++;
+		counters.node_key_compares++;
 		if( r.key < root->keys[mid] ) {
 			mid -= large_half;
 		} else {

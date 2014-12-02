@@ -245,7 +245,9 @@ internal void update_winlines( board* b, int move_y, int move_x ) {
 //	printf("Square [%d,%d] = %d\n", move_x, move_y, square_index);
 //	printf("num winlines: %d\n", s2w[square_index][0]);
 
-	char* wstr = join( (int*) &s2w[square_index][1], s2w[square_index][0], ", ");
+	char* wstr;
+	JOIN( wstr, unsigned int, "%u", &s2w[square_index][1], &s2w[square_index][0], ", ");
+//	 = join( (uint64_t *) &s2w[square_index][1], s2w[square_index][0], ", ");
 //	printf("Winlines affected: %s\n", wstr);
 	free( wstr );
 	

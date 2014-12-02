@@ -23,7 +23,7 @@ global_variable struct bpt_counters counters;
 #define BINSEARCH_INSERT 2
 
 internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target_key, size_t* key_index ) {
-	
+	counters.any++;
 	// no data at all
 	if( keys == NULL ) {
 		return BINSEARCH_ERROR;
@@ -40,6 +40,7 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 	size_t large_half;
 	while( span > 0 ) {
 
+		counters.key_compares++;
 		if( target_key == keys[mid] ) {
 			*key_index = mid;
 			return BINSEARCH_FOUND;
@@ -48,6 +49,7 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 		span = span/2; // half the range left over
 		large_half = span/2 + (span % 2);// being clever. But this is ceil 
 
+		counters.key_compares++;
 		if( target_key < keys[mid] ) {
 			mid -= large_half;
 		} else {
@@ -57,6 +59,7 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 	}
 
 	// target_key is not an element of keys, but we found the closest location
+	counters.key_compares++;
 	if( mid == num_keys ) { // after all other elements
 		*key_index = num_keys;
 	} else if( target_key < keys[mid] ) {
@@ -105,9 +108,11 @@ void bpt_dump_cf() {
 	printf("Total creates: %llu\n", counters.creates);
 	printf("Total frees: %llu\n", counters.frees);
 	printf("Total key inserts: %llu\n", counters.key_inserts);
+	printf("Total get calls: %llu\n", counters.get_calls);
 	printf("Total splits: %llu\n", counters.splits);
 	printf("Total insert calls: %llu\n", counters.insert_calls);
 	printf("Total parent_inserts: %llu\n", counters.parent_inserts);
+	printf("Total generic key compares: %llu\n", counters.key_compares);
 	printf("Total leaf key compares: %llu\n", counters.leaf_key_compares);
 	printf("Total node key compares: %llu\n", counters.node_key_compares);
 	printf("Key compares (leaf+node) per key insert: %llu\n", (counters.leaf_key_compares + counters.node_key_compares) / counters.key_inserts );
@@ -514,33 +519,48 @@ void bpt_insert_or_update( bpt* root, record r ) {
 
 }
 
+/*
+	Return the leaf node that should have key in it.
+*/
 internal node* bpt_find_node( bpt* root, key_t key ) {
 	
 	node* current = root;
-	int found = false;
+
 	while( !current->is_leaf ) {
-		found = false;
+		print("checking node %p", current);
 		
-		// TODO: Holy poor code quality Batman! More linear searches!
-		for( size_t i=0; i<current->num_keys; i++ ) {
-//			printf("Checking %d against key %d\n", key, current->keys[i] );
-			counters.any++;
-			if( key < current->keys[i] ) {
-				current = current->pointers[i].node_ptr;
-				found = true;
+		size_t node_index;
+		switch( binary_search( current->keys, current->num_keys, key, &node_index) ) {
+			case BINSEARCH_FOUND:
+				printf("Found at key index %lu (node index %lu)\n", node_index, node_index+1);
+				node_index++; // if we hit the key, the correct node is to the right of that key
+				break; // needless break here
+			case BINSEARCH_INSERT:
+				// insert means we determined the target is to the left of this key (which is the correct node) 
 				break;
-			}
+			case BINSEARCH_ERROR:
+			default:
+				fprintf( stderr, "Somehow have a node with a NULL keys array\n");
+				assert(0);
 		}
-		if( !found ) {
-			current = current->pointers[ current->num_keys ].node_ptr;
+
+		// correctness checks
+		if( node_index == 0 ) { // target should be smaller than key 0
+			assert( key < current->keys[node_index] );
+		} else { // target should be equal/bigger than the key to the left of that node 
+			assert( key >= current->keys[node_index-1] );
 		}
+
+		current = current->pointers[node_index].node_ptr;
 	}
 	
+	print("returning node %p", current);
 	return current;
 }
 
 record* bpt_get( bpt* root, key_t key ) {
 	
+	counters.get_calls++;
 	print("key %lu", key);
 	node* dest_node = bpt_find_node( root, key );
 	print("Found correct node %p", dest_node);
@@ -615,9 +635,10 @@ void bpt_print( bpt* root, int indent ) {
 
 }
 
-unsigned long bpt_size( bpt* root ) {
+// TODO: find out WTF is going on. According to iprofiler this is BY FAR the slowest thing here. WTF?
+size_t bpt_size( bpt* root ) {
 	
-	unsigned long count = 0;
+	size_t count = 0;
 	if( root->is_leaf ) {
 		return count + root->num_keys;
 	}

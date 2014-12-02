@@ -14,9 +14,11 @@ struct bpt_counters {
 	uint64_t creates;
 	uint64_t frees;
 	uint64_t key_inserts;
+	uint64_t get_calls;
 	uint64_t insert_calls;
 	uint64_t parent_inserts;
 	uint64_t splits;
+	uint64_t key_compares;
 	uint64_t leaf_key_compares;
 	uint64_t node_key_compares;
 	uint64_t any;
@@ -57,7 +59,7 @@ void bpt_dump_cf( void );
 // public API (always takes a root)
 void bpt_put( bpt** root, record r );
 record* bpt_get( bpt* root, key_t key );
-unsigned long bpt_size( bpt* node );
+size_t bpt_size( bpt* node );
 
 void bpt_print( bpt* root, int indent );
 

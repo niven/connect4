@@ -34,7 +34,7 @@ internal void test_store_randomly() {
 	test_header( "Store 0..100 in random order");
 	
 	srand( (unsigned int)time(NULL) );
-	const size_t max = 1000 * 1000;
+	const size_t max = 300 * 1000;
 	// find a relative prime
 	size_t relprime = (size_t)rand() % max;
 	while( gcd(max, relprime) != 1 ) {
@@ -45,7 +45,9 @@ internal void test_store_randomly() {
 	bpt* store = new_bptree();
 	size_t count = 0;
 	do {
-		printf("insert %lu\n", current);
+		if( (count % (max/100)) == 0 ) {
+			printf("inserted %lu%%\n", (count*100)/max);
+		}
 		bpt_put( &store, (struct record){ .key = current, { .value_int = (int)count } });
 		record* r = bpt_get( store, current );
 		assert( r != NULL );
@@ -86,9 +88,7 @@ internal void test_store_10() {
 	// repeat the finding to ensure we didn't remove or lose stuff
 	for( size_t i=0; i<max; i++ ) {
 		key_t k = (key_t)i;
-		printf("aRepeat find\n");
 		record* r = bpt_get( store, k );
-		printf("bRepeat find\n");
 		assert( r != NULL );
 		assert( r->key == k );
 		assert( r->value.value_int == (int)i );

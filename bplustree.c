@@ -115,7 +115,7 @@ void bpt_dump_cf() {
 	printf("Total generic key compares: %llu\n", counters.key_compares);
 	printf("Total leaf key compares: %llu\n", counters.leaf_key_compares);
 	printf("Total node key compares: %llu\n", counters.node_key_compares);
-	printf("Key compares (leaf+node) per key insert: %llu\n", (counters.leaf_key_compares + counters.node_key_compares) / counters.key_inserts );
+	printf("Key compares (leaf+node) per key insert: %llu\n", counters.key_compares / counters.key_inserts );
 	printf("Anycounter: %llu\n", counters.any);
 	assert( counters.creates == counters.frees );
 }
@@ -350,10 +350,10 @@ void bpt_insert_or_update( bpt* root, record r ) {
 	print("node %p", root);
 
 //	printf("Insert %d:%d\n", r.key, r.value.value_int );
+	size_t k=0;
+	size_t insert_location = 0;
 
 	if( root->is_leaf ) {
-		size_t k=0;
-		size_t insert_location = 0;
 
 		// now we can't just go ahead and add it at the end, we need to keep
 		// this shit sorted. (and remember to move the pointers as well)
@@ -361,12 +361,11 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		// struct with key/pointer. But anyway.
 
 		if( binary_search( root->keys, root->num_keys, r.key, &insert_location) ) {
-			print("insert location: %lu", insert_location);
+			print("Leaf node - insert location: %lu", insert_location);
 		} else {
 			fprintf( stderr, "BS NOT FOUND\n" );
 			assert(0);
 		}
-		print("insert location from binsearch: %lu", insert_location);
 		
 		// correctness checks:
 		// 1. array has elements, and we should insert at the end, make sure the last element is smaller than the new one
@@ -394,7 +393,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		if( k < root->num_keys && root->keys[k] == r.key ) {
 //			printf("Overwrite of keys[%d] = %d (value %d to %d)\n", k, r.key, root->pointers[k].value_int, r.value.value_int );
 			root->pointers[k] = r.value;
-			return;
+			return; // TODO: maybe return something indicating update vs insert?
 		}
 		
 		// now insert at k, but first shift everything after k right
@@ -419,60 +418,35 @@ void bpt_insert_or_update( bpt* root, record r ) {
 
 	// NOT a leaf node, recurse to insert
 
-	size_t large_half;
-	size_t span = root->num_keys;
-	size_t mid = span / 2;
-	size_t key_index;
-	while( span > 0 ) {
-
-		counters.node_key_compares++;
-		if( r.key == root->keys[mid] ) { // TODO: we're inserting, this should not happen?
-			break;
-		}
-		
-		span = span/2; // half the range left over
-		large_half = span/2 + (span % 2);// being clever. But this is ceil 
-
-		counters.node_key_compares++;
-		if( r.key < root->keys[mid] ) {
-			mid -= large_half;
-		} else {
-			mid += large_half;
-		}
-		
-	}
-	print("mid %lu", mid);
-	if( mid == root->num_keys ) {
-		key_index = root->num_keys; // TODO: not sure this can happen
-	} else if( r.key <= root->keys[mid] ) {
-		key_index = mid; // displace, shift the rest right
+	if( binary_search( root->keys, root->num_keys, r.key, &insert_location) ) {
+		print("Descend node - insert location: %lu", insert_location);
 	} else {
-		key_index = mid+1;
+		fprintf( stderr, "BS NOT FOUND\n" );
+		assert(0);
 	}
 
-	print("Descend node - key index %lu", key_index);
 	// correctness checks:
 	// 1. array has elements, and we should insert at the end, make sure the last element is smaller than the new one
-	if( root->num_keys > 0 && key_index == root->num_keys ) {
+	if( root->num_keys > 0 && insert_location == root->num_keys ) {
 		assert( r.key > root->keys[root->num_keys-1] );
 	}
 	// 2. array has no elements
 	if( root->num_keys == 0 ) {
-		assert( key_index == 0 );
+		assert( insert_location == 0 );
 	}
 	// 3. array has elements, and we should insert at the beginning
-	if( root->num_keys > 0 && key_index == 0 ) {
-		assert( r.key < root->keys[key_index] );
+	if( root->num_keys > 0 && insert_location == 0 ) {
+		assert( r.key < root->keys[insert_location] );
 	}
 	// 4. insert somewhere in the middle
-	if( key_index > 0 && key_index < root->num_keys ) {
-		assert( r.key <= root->keys[key_index] ); // insert shifts the rest right, so element right should be equal/larger
-		assert( root->keys[key_index-1] < r.key ); // element to the left is smaller
+	if( insert_location > 0 && insert_location < root->num_keys ) {
+		assert( r.key <= root->keys[insert_location] ); // insert shifts the rest right, so element right should be equal/larger
+		assert( root->keys[insert_location-1] < r.key ); // element to the left is smaller
 	}
 
 	// descend a node
-	print("Must be in left pointer of keys[%lu] = %lu", key_index, root->keys[key_index] );
-	bpt_insert_or_update( root->pointers[key_index].node_ptr, r );
+	print("Must be in left pointer of keys[%lu] = %lu", insert_location, root->keys[insert_location] );
+	bpt_insert_or_update( root->pointers[insert_location].node_ptr, r );
 	prints("Inserted into child node");
 
 }

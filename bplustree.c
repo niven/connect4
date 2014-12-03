@@ -275,6 +275,7 @@ void bpt_split( bpt* n ) {
 	
 	// if the node had subnodes (!is_leaf) then the subnodes copied to the sibling need
 	// their parent pointer updated
+	// TODO: this looks dumb and is probably slow
 	if( !n->is_leaf ) {
 		for(size_t i=0; i < sibling->num_keys+1; i++ ) {
 			sibling->pointers[i].node_ptr->parent = sibling;
@@ -417,7 +418,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 
 
 	// NOT a leaf node, recurse to insert
-
+	// TODO: maybe just find_node()?
 	if( binary_search( root->keys, root->num_keys, r.key, &insert_location) ) {
 		print("Descend node - insert location: %lu", insert_location);
 	} else {
@@ -425,6 +426,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		assert(0);
 	}
 
+	// TODO: move these to the binary_search function?
 	// correctness checks:
 	// 1. array has elements, and we should insert at the end, make sure the last element is smaller than the new one
 	if( root->num_keys > 0 && insert_location == root->num_keys ) {

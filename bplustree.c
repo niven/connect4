@@ -354,58 +354,18 @@ void bpt_insert_or_update( bpt* root, record r ) {
 	if( root->is_leaf ) {
 		size_t k=0;
 		size_t insert_location = 0;
-		/*
-		printf("Insert %lu into leaf:\n", r.key);
-		char* temp = join( root->keys, root->num_keys, ", " );
-		printf("[ %s ]\n", temp);
-		free(temp);
-		*/
+
 		// now we can't just go ahead and add it at the end, we need to keep
 		// this shit sorted. (and remember to move the pointers as well)
 		// So maybe instead of a keys and pointers array just have a
 		// struct with key/pointer. But anyway.
 
-		{ // BSEARCH UPGRADE
-			// TODO: this happens later on as well, make function
-			// out of range
-			if( r.key < root->keys[0] ) {
-				counters.leaf_key_compares++;
-				insert_location = 0;
-			}
-	
-			size_t num_keys = root->num_keys;
-			size_t mid = num_keys / 2;
-			size_t large_half;
-			while( num_keys > 0 ) {
-
-				counters.leaf_key_compares++;
-				if( r.key == root->keys[mid] ) {
-					insert_location = mid; // TODO: this can go
-					break;
-				}
-		
-				num_keys = num_keys/2; // half the range left over
-				large_half = num_keys/2 + (num_keys % 2);// being clever. But this is ceil 
-
-				counters.leaf_key_compares++;
-				if( r.key < root->keys[mid] ) {
-					mid -= large_half;
-				} else {
-					mid += large_half;
-				}
-		
-			}
-
-			if( mid == root->num_keys ) {
-				insert_location = root->num_keys;
-			} else if( r.key <= root->keys[mid] ) {
-				insert_location = mid; // displace, shift the rest right
-			} else {
-				insert_location = mid+1;
-			}
-			counters.leaf_key_compares++;
-		
-		} // END BSEARCH UPGRADE
+		if( binary_search( root->keys, root->num_keys, r.key, &insert_location) ) {
+			print("insert location: %lu", insert_location);
+		} else {
+			fprintf( stderr, "BS NOT FOUND\n" );
+			assert(0);
+		}
 		print("insert location from binsearch: %lu", insert_location);
 		
 		// correctness checks:
@@ -438,6 +398,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		}
 		
 		// now insert at k, but first shift everything after k right
+		// TODO: These don't overlap afaict, why not memcpy? src==dest maybe?
 		memmove( &root->keys[k+1], &root->keys[k], KEY_SIZE*(root->num_keys - k) );
 		memmove( &root->pointers[k+1], &root->pointers[k], sizeof(pointer)*(root->num_keys - k) );
 
@@ -457,9 +418,6 @@ void bpt_insert_or_update( bpt* root, record r ) {
 
 
 	// NOT a leaf node, recurse to insert
-	// TODO: Should binary search here, this is slow as fuck, especially with large ORDERS
-	// No really, this is causing terrible performance
-
 
 	size_t large_half;
 	size_t span = root->num_keys;

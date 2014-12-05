@@ -1,179 +1,20 @@
-Move winline stuff into separate file
-move board63 stuff into sep file
-
-move stuff into github
-
-
-gen boards:
-
-start with empty board:
-./bfcf -f empty -c e
-
-view it:
-./bfcf -f empty -a
-
-gen next moves:
-./bfcf -f empty -n
-
-I guess arg for N? or some way to figure out which boards to progress?
-Put everything in 1 file?
-
-index file for boards:
-lb (long board, board63 treated as long)
-
-index_record: num_boards
-lb0
-lb1
-lb2
-
-etc
-
-Now how to know which boards to gen next moves for?
-we can use the lb LSB maybe?
-
-then we:
-
-board_record: lb + offset in index file
-
-while( (board_record* b = read_next_board_record( index_file )) != NULL ) {
-
-	for( all next moves ) {
-		if( get_board_record( board_after_move ) ) {
-			// do nothing, we already have this one
-		} else {
-			append to file
-		}
-	
-	}
-	
-	update b, set processed bit
-	update b in file
-
-}
-
-But having some kind of Thing we can talk to that takes care of the index would be nice
-then the code doesn't care about finding stuff in it, updating the file, what happens when appending new records etc.
-
-What do I actually need?
-
-option 1: just generate every possible legal board (no more moves after a win, no impossible boards like completely filled with White etc)
-
-option 2: option 1, but eliminate duplicates (requires some way to find prev genned boards)
-This saves tons (I hope) space
-
-option 3: option 2, but also track parents of every board so we can eliminate bad moves (bad move is black can win, or maybe draw)
-so we can eventually prune the whole thing to just leave with 'moves for white that lead to win for white'.
-
-So what to do with moves? Given a board and a parent we can figure out what the move was (since there is only 1 square different)
-
-Let's do option 1 first, but not store everything (since that would be silly, and I'm curious how many possible legal boards exist)
-so:
-10: empty board
-20: gen every nondupe + save + count
-30: delete prev set
-35: if no new boards generated goto 50
-40: goto 20
-50: print count
-
-things to count:
-generation (empty is 0)
-total boards
-total unique boards
-wins for black
-wins for white
-draws (only nonzero in the last generation (even though we can predict those))
-what if white/black runs out of winlines? (lost_cause boards?)
-
-
-how to find if a board is unique?
-
-Good news: you can only produce unique boards in the same generation (unlike many other games)
-Bad news: generation 9 has 39,394,572 boards, so searching for unique is going to be a bitch
-Semi-good news: this is not a crazy crazy amount for things like databases, so maybe we'll be fine.
-
-ok, whenever we write a board, we also write it to the generation_N.index file
-this file holds a long as the board ID, and an offset into the generation_N.c4 file.
-Given that offsets are also longs, that is not a crazy large file.
-Let's have some kind of 16K values in memory (~256K bytes) / on disk as a Block
-
-typedef struct index_entry {
-	unsigned long board_id;
-	unsigned long file_offset;
-} index_entry;
-
-typedef struct index_block {
-	index_entry keys[16 * 1024];
-	unsigned long min_board;
-	unsigned long max_board;
-	int used;
-	int num_unsorted;
-} index_block;
-
-so keys holds sorted boards between min/max.
-When we add an entry, we add it at the end of used and used++, unsorted++
-When unsorted goes above 256 (or something?), we sort the whole thing, set unsorted to 0 and write to file.
-
-Now if our index_block is full and we want to add one, we have to split the block, which is easy:
-make 2 new blocks, copy keys over, set min/max correctly and write to disk.
-Now to figure out where something is, we have to query. so we need a function to find an index_block based on a board ID
-
-// write this to a special file, since it grows, and would be annoying to have to rewrite the index file all the time.
-typedef struct block_header_entry {
-	unsigned long min_board;
-	unsigned long max_board;
-	unsigned long index_block_id; // can calc offset from this
-} block_header_entry;
-
-typedef struct block_header {
-	int num_entries;
-	block_header_entry* entries
-} block_header;
-
-so now finding a board works as follows:
-
-find_board( long target ) {
-
-for( entry : block_header->entries ) {
-	
-	if( entry->min_board <= target && entry->max_board >= target ) {
-	
-		index_block* ib = load_index_block( entry->index_block_id ); // do smart thing here with caching maybe?
-		// double check min/max to avoid bugs
-		
-		binary search for block ID
-	
-	}
-}
-
-return false;
-
-}
-
-
-Hmm. Does this work?
-
-lets imagine the index_block keyspace to be max 8, and we have 256 total IDs
-initial ib: 0-256
-fills up: 2 45 67 68 80 124 150 250
-split
-ib low 0-127: 2 45 67 68
-ib high 128-255: 80 124 150 250
-
-so we have:
-void store( id );
-int find( id ); -1 or offset in db file
+FEATURES
 
 
 
+BUGS
 
 
 
+PERFORMANCE
 
 
 
+TESTING & DEBUGGING
+
+- Find a way to set VERBOSE for different groups of things (like the Board, Database, ...)
 
 
-
-
+FEELGOOD
 
 

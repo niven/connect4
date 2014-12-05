@@ -301,7 +301,7 @@ board* drop( board* src, int x ) {
 	// check if any room left
 	int y_index = -1;
 	for( int y=ROWS-1; y>=0; y-- ) { // seek down along column until we can hit occupied
-			printf("drop() checking [%d,%d]\n", x,y);
+//		print("checking [%d,%d]", x,y);
 		if( src->squares[x][y] == EMPTY ) {
 			y_index = y;
 		} else {
@@ -424,22 +424,14 @@ void write_board_record( board* b, FILE* out ) {
 	
 	free( b63 );
 
-	// no point in writing stuff if the game is done.
-	if( !(b->state & OVER) ) {
+	// write gamestate
+	fwrite( &b->state, sizeof(b->state), 1, out );
 
-		// write gamestate
-		fwrite( &b->state, sizeof(b->state), 1, out );
-	
-		if( b->winlines != NULL ) {
-			elements_written = fwrite( b->winlines, NUM_WINLINE_BYTES, 2, out );
-			if( elements_written != 2 ) {
-				perror("fwrite()");
-				exit( EXIT_FAILURE );
-			}		
-		}	
-		
-	}
-	
+	elements_written = fwrite( b->winlines, NUM_WINLINE_BYTES, 2, out );
+	if( elements_written != 2 ) {
+		perror("fwrite()");
+		exit( EXIT_FAILURE );
+	}		
 	
 }
 

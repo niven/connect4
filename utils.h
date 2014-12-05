@@ -1,6 +1,7 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+void create_empty_file( const char* filename );
 void print_bits(unsigned char c);
 
 #define JOIN( buf, type, type_fmt, elements, size, separator ) { \

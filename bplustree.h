@@ -63,7 +63,8 @@ void free_bptree( bpt* b );
 void bpt_dump_cf( void );
 
 typedef struct database {
-	char* filename;
+	char* index_file;
+	char* table_file;
 	bpt* index;
 	size_t table_row_count;
 } database;
@@ -78,7 +79,7 @@ size_t database_size( database* db );
 
 
 // public API (always takes a root)
-void bpt_put( bpt** root, record r );
+bool bpt_put( bpt** root, record r );
 record* bpt_get( bpt* root, key_t key );
 size_t bpt_size( bpt* node );
 
@@ -86,8 +87,8 @@ void bpt_print( bpt* root, int indent );
 
 // internal stuff (operates on nodes)
 // TODO: declare in .c file
-void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling );
-void bpt_split( bpt* node );
-void bpt_insert_or_update( bpt* node, record r );
+void bpt_insert_node( database* db, bpt* node, key_t up_key, bpt* sibling );
+void bpt_split( database* db, bpt* node );
+bool bpt_insert_or_update( database* db, bpt* node, record r );
 
 #endif

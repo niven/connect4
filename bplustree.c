@@ -12,9 +12,82 @@
 
 global_variable struct bpt_counters counters;
 
+internal void database_store_row( database* db, size_t row_index, board* b );
+internal node* bpt_load_node( size_t data_node_id );
+internal void database_store_node( database* db, node* data );
+
+
+void database_store_row( database* db, size_t row_index, board* b ) {
+
+	print("storing board %p on disk as row %lu", b, row_index );
+
+	/* I'm always confused:
+		‘r+’ Open an existing file for both reading and writing. The initial contents
+		of the file are unchanged and the initial file position is at the beginning
+		of the file.
+	
+		Now in practice it turns out we always append, but I'm not sure ATM
+		TODO(investigate): if we always append, so maybe should use 'a'
+	*/
+	FILE* out = fopen( db->table_file, "r+" );
+	if( out == NULL ) {
+		perror("fopen()");
+		exit( EXIT_FAILURE );
+	}
+
+	// move the file cursor to the initial byte of the row
+	// TODO(compress): define the rowsize somewhere, maybe a better board serialization thing
+	size_t row_data_bytes = sizeof(board63) + sizeof(b->state) + (2 * NUM_WINLINE_BYTES);
+	print("storing %lu bytes at offset %lu", row_data_bytes, row_index );
+	// fseek returns nonzero on failure
+	if( fseek( out, (long) (row_index * row_data_bytes), SEEK_SET ) ) {
+		perror("fseek()");
+		exit( EXIT_FAILURE );
+	}
+	
+	// TODO(feature): fix that function, it stores the board63 as well
+	write_board_record( b, out );
+	
+	fclose( out );
+	
+}
+
+
+void database_store_node( database* db, node* n ) {
+
+	print("writing node %lu (%p) to disk (%s)", n->id, n, db->index_file );
+
+	size_t node_block_bytes = sizeof( node );
+	size_t node_block_offset = n->id * node_block_bytes;
+	
+	// TODO(utils): function to open & seek
+	FILE* out = fopen( db->index_file, "r+" );
+	if( out == NULL ) {
+		perror("fopen()");
+		exit( EXIT_FAILURE );
+	}
+
+	// move the file cursor to the initial byte of the row
+	print("storing %lu bytes at offset %lu", node_block_bytes, node_block_offset );
+	// fseek returns nonzero on failure
+	if( fseek( out, (long) node_block_offset, SEEK_SET ) ) {
+		perror("fseek()");
+		exit( EXIT_FAILURE );
+	}
+	
+	size_t written = fwrite( n, node_block_bytes, 1, out );
+	if( written != 1 ) {
+		perror("frwite()");
+		exit( EXIT_FAILURE );
+	}
+	
+	fclose( out );
+
+}
+
 // stuff that deals with the fact we store things on disk
 
-database* database_create( const char* filename ) {
+database* database_create( const char* name ) {
 	
 	database* db = (database*) malloc( sizeof(database) );
 	if( db == NULL ) {
@@ -25,10 +98,27 @@ database* database_create( const char* filename ) {
 	db->table_row_count = 0;
 	
 	// create a new bpt
+	db->index = new_bptree();
 	
 	// create the index file
+	// TODO(utils): use the str_append stuff for dynstrings probably
+	size_t buf_size = strlen( name ) + strlen( ".c4_index" ) + 1;
+	db->index_file = malloc( buf_size );
+	db->index_file[0] = '\0';
+	strcat( db->index_file, name );
+	strcat( db->index_file, ".c4_index" );
+	create_empty_file( db->index_file );
+	print("created index file %s", db->index_file);
 	
 	// create the table file
+	buf_size = strlen( name ) + strlen( ".c4_table" ) + 1;
+	db->table_file = malloc( buf_size );
+	db->table_file[0] = '\0';
+	strcat( db->table_file, name );
+	strcat( db->table_file, ".c4_table" );
+	create_empty_file( db->table_file );
+	
+	print("created table file %s", db->table_file);
 	
 	return db;
 }
@@ -37,6 +127,9 @@ void database_close( database* db ) {
 	
 	// TODO(fix) don't think we need this when stuff is on disk
 	free_bptree( db->index );
+	
+	free( db->table_file );
+	free( db->index_file );
 	
 	free( db );
 	
@@ -49,14 +142,32 @@ void database_put( database* db, board* b ) {
 	// which we know as we can just keep track of that
 	
 	board63* board_key = encode_board( b );
+	print("key for this board: %lu", board_key->data );
 	
 	record r = { .key = board_key->data, .value.table_row_index = db->table_row_count };
-	bpt_put( &db->index, r );
+
+	// TODO(bug): this should not overwrite, that means wasting space in the table file, also return inserted/dupe
+	counters.key_inserts++;
+
+	bool inserted = bpt_insert_or_update( db, db->index, r );
+	
+	// tree might have grown, and since it grows upward *root might not point at the
+	// actual root anymore. But since all parent pointers are set we can traverse up
+	// to find the actual root
+	while( db->index->parent != NULL ) {
+		print("%p is not the root, moving up to %p", db->index, db->index->parent );
+		db->index = db->index->parent;
+	}
+	
+	print( "root now %p", db->index );
+
+	
+	// now write the data as a "row" to the table file
+	if( inserted ) {
+		database_store_row( db, db->table_row_count, b );
+	}
 	
 }
-
-internal node* bpt_load_node( size_t data_node_id );
-internal void bpt_store_node( node* data );
 
 /*
 	Search keys for a target_key.
@@ -137,44 +248,10 @@ bpt* new_bptree() {
 	//print("created %p", out );
 	counters.creates++;
 	
-	// add this to the data file
-	bpt_store_node( out );
-	
 	return out;
 }
 
-void bpt_store_node( node* data ) {
-	print("storing node %p on disk", data);
-	
 
-	// we should never have gaps
-	
-	// how much data do we need to store?
-	size_t data_block_size = sizeof( node ); // WRONG: should be keys+pointers+parent id+X
-	print("reserving %lu bytes for data block", data_block_size);
-	
-	FILE* out = fopen( data_file, "wb" );
-	if( out == NULL ) {
-		perror("fopen()");
-		exit( EXIT_FAILURE );
-	}
-	
-	// move the file cursor to the beginning of the block
-	if( !fseek( out, (long) (data->id * data_block_size), SEEK_SET ) ) {
-		perror("fseek()");
-		exit( EXIT_FAILURE );
-	}
-	
-	size_t count = 1;
-	size_t written = fwrite( data, data_block_size, count, out ); // WRONG: write stuff individually
-	if( written != count ) {
-		perror("frwrite()");
-		exit( EXIT_FAILURE );
-	}	
-	
-	fclose( out );
-	
-}
 
 void free_bptree( bpt* b ) {
 
@@ -205,7 +282,7 @@ void bpt_dump_cf() {
 	assert( counters.creates == counters.frees );
 }
 
-void bpt_insert_node( bpt* n, key_t up_key, bpt* sibling ) {
+void bpt_insert_node( database* db, bpt* n, key_t up_key, bpt* sibling ) {
 
 	size_t k=0;
 	while( k<n->num_keys && n->keys[k] < up_key ) { // TODO: this is dumb and should binsearch
@@ -235,32 +312,16 @@ void bpt_insert_node( bpt* n, key_t up_key, bpt* sibling ) {
 	// we might need to split (again)
 	if( n->num_keys == ORDER ) {
 		print("hit limit, have to split %p", n);
-		bpt_split( n ); // propagate new node up
+		bpt_split( db, n ); // propagate new node up
 		return;
 	}
 
 	prints("did not split");
 }
 
-void bpt_put( bpt** root, record r ) {
-	
-	counters.key_inserts++;
-	print("root: %p, key %lu", *root, r.key );
-	bpt_insert_or_update( *root, r );
-	
-	// tree might have grown, and since it grows upward *root might not point at the
-	// actual root anymore. But since all parent pointers are set we can traverse up
-	// to find the actual root
-	while( (*root)->parent != NULL ) {
-		print("%p is not the root, moving up to %p", *root, (*root)->parent );
-		*root = (*root)->parent;
-	}
-	
-	print( "returning root %p", *root );
-}
 
 
-void bpt_split( bpt* n ) {
+void bpt_split( database* db, bpt* n ) {
 	counters.splits++;
 #ifdef VERBOSE	
 	bpt_print( n, 0 );
@@ -418,7 +479,7 @@ void bpt_split( bpt* n ) {
 		bpt_print( n->parent, 0 );
 #endif		
 		counters.parent_inserts++;
-		bpt_insert_node( n->parent, up_key, sibling );
+		bpt_insert_node( db, n->parent, up_key, sibling );
 
 	}
 	
@@ -429,8 +490,9 @@ void bpt_split( bpt* n ) {
 	If a key already exists we ODKU (On Duplicate Key Update)
 	Since this is used as an index so there is no use case for dupe keys.
 	We occasionally update and never delete so this seems more useful.
+	But maybe not Update but Ignore instead
 */
-void bpt_insert_or_update( bpt* root, record r ) {
+bool bpt_insert_or_update( database* db, bpt* root, record r ) {
 	
 	counters.insert_calls++;
 	print("node %p", root);
@@ -479,7 +541,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		if( k < root->num_keys && root->keys[k] == r.key ) {
 //			printf("Overwrite of keys[%d] = %d (value %d to %d)\n", k, r.key, root->pointers[k].value_int, r.value.value_int );
 			root->pointers[k] = r.value;
-			return; // TODO: maybe return something indicating update vs insert?
+			return false; // was not inserted but updated (or ignored)
 		}
 		
 		// now insert at k, but first shift everything after k right
@@ -495,10 +557,12 @@ void bpt_insert_or_update( bpt* root, record r ) {
 		// split if full
 		if( root->num_keys == ORDER ) {
 			print("hit limit, have to split %p", root);
-			bpt_split( root );
+			bpt_split( db, root );
+		} else {
+			database_store_node( db, root );
 		}
 		
-		return;
+		return true; // an insert happened
 	}
 
 
@@ -533,7 +597,7 @@ void bpt_insert_or_update( bpt* root, record r ) {
 
 	// descend a node
 	print("Must be in left pointer of keys[%lu] = %lu", insert_location, root->keys[insert_location] );
-	bpt_insert_or_update( root->pointers[insert_location].node_ptr, r );
+	return bpt_insert_or_update( db, root->pointers[insert_location].node_ptr, r );
 	prints("Inserted into child node");
 
 }

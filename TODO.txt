@@ -13,7 +13,7 @@ PERFORMANCE
 TESTING & DEBUGGING
 
 - Find a way to set VERBOSE for different groups of things (like the Board, Database, ...)
-
+- write some utils to read the database (but avoid implementing a database client)
 
 FEELGOOD
 

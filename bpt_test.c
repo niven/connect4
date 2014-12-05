@@ -36,7 +36,7 @@ internal void test_header( const char* title ) {
 	printf("\n%s\n# %s #\n%s\n", row, title, row);
 	
 }
-
+/*
 internal void test_store_randomly() {
 
 	test_header( "Store 0..100 in random order");
@@ -155,7 +155,7 @@ internal void test_store_random() {
 	free_bptree( store );
 	
 }
-
+*/
 internal void test_store_cmdline_seq( char* seq ) {
 	
 	database* db = database_create( "test" );
@@ -163,18 +163,17 @@ internal void test_store_cmdline_seq( char* seq ) {
 	printf("Sequence: %s\n", seq);
 	char* element = strtok( seq, "," );
 
-	map_squares_to_winlines(); // could be static but don't like doing it by hand
+	// TODO(stupid): if you don't call this you get segfaults. maybe board.o can call this itself somehow?
+	map_squares_to_winlines();
 
 	board* current = new_board();
 	
 	while( element != NULL ) {
 		
 		int col_index = atoi(element);
-		printf("\n>>>>> Insert %d\n", col_index );
+		printf("\n>>>>> Insert Board with move in col %d\n", col_index );
 
 		board* next = drop( current, col_index );
-		printf("dropped\n");
-		key_t key = 5;//encode_board( current )->data;
 
 		if( next == NULL ) {
 			fprintf( stderr, "Illegal drop in column %d\n", col_index );
@@ -187,7 +186,7 @@ internal void test_store_cmdline_seq( char* seq ) {
 		free_board( current );
 		current = next;
 
-		printf("<<<<< After insert %lu\n", key );
+		printf("<<<<< After insert\n" );
 		bpt_print( db->index, 0 );
 		
 		element = strtok( NULL, "," );
@@ -208,7 +207,7 @@ int main(int argc, char** argv) {
 		bpt_dump_cf();
 		exit( EXIT_SUCCESS );
 	}
-
+	/*
 	// test storing 10 ints and finding them
 	test_store_10();
 
@@ -223,7 +222,7 @@ int main(int argc, char** argv) {
 
 	// insert 0..100 in random order
 	test_store_randomly();
-
+*/
 	bpt_dump_cf();
 
 	printf("Done\n");

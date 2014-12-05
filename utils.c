@@ -4,6 +4,17 @@
 
 #include "utils.h"
 
+void create_empty_file( const char* filename ) {
+	
+	FILE* out = fopen( filename, "w" );
+	if( out == NULL ) {
+		perror("fopen()");
+		exit( EXIT_FAILURE );
+	}
+	fclose( out );
+
+}
+
 void print_bits(unsigned char c) {
 	char out[11];
 	out[0] = '0';

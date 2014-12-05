@@ -237,7 +237,7 @@ unsigned char current_player( board* b ) {
 internal void update_winlines( board* b, int move_y, int move_x ) {
 	
 	player current = current_player( b );
-//	printf("Updating winlines after move by %s on [%d,%d]\n", current == WHITE ? "White" : "Black", move_x, move_y);
+	printf("Updating winlines after move by %s on [%d,%d]\n", current == WHITE ? "White" : "Black", move_x, move_y);
 //	print_winbits( b->winlines->white );
 //	print_winbits( b->winlines->black );
 	
@@ -301,7 +301,7 @@ board* drop( board* src, int x ) {
 	// check if any room left
 	int y_index = -1;
 	for( int y=ROWS-1; y>=0; y-- ) { // seek down along column until we can hit occupied
-//		printf("drop() checking [%d,%d]\n", x,y);
+			printf("drop() checking [%d,%d]\n", x,y);
 		if( src->squares[x][y] == EMPTY ) {
 			y_index = y;
 		} else {

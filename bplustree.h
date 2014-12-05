@@ -10,6 +10,8 @@ typedef unsigned long key_t;
 
 #define KEY_SIZE (sizeof(key_t))
 
+static const char data_file[] = "boards.c4_data";
+
 struct bpt_counters {
 	uint64_t creates;
 	uint64_t frees;
@@ -24,10 +26,11 @@ struct bpt_counters {
 	uint64_t any;
 };
 
-
+// nodes have pointers to other nodes, or to table rows
+// table rows are just row numbers (and we know the size, thus the offset in the table file)
 typedef union pointer {
 	struct node* node_ptr;
-	int value_int;
+	size_t table_row_index;
 } pointer;
 
 typedef struct record {
@@ -36,6 +39,8 @@ typedef struct record {
 } record;
 
 typedef struct node {
+	
+	size_t id;
 	
 	struct node* parent;
 
@@ -52,9 +57,25 @@ typedef struct node {
 
 typedef node bpt;
 
+// TODO: rename
 bpt* new_bptree( void );
 void free_bptree( bpt* b );
 void bpt_dump_cf( void );
+
+typedef struct database {
+	char* filename;
+	bpt* index;
+	size_t table_row_count;
+} database;
+
+database* database_create( const char* filename );
+database* database_open( const char* filename );
+void database_close( database* db );
+
+void database_put( database* db, board* b );
+board* database_get( database* db, key_t key );
+size_t database_size( database* db );
+
 
 // public API (always takes a root)
 void bpt_put( bpt** root, record r );
@@ -64,6 +85,7 @@ size_t bpt_size( bpt* node );
 void bpt_print( bpt* root, int indent );
 
 // internal stuff (operates on nodes)
+// TODO: declare in .c file
 void bpt_insert_node( bpt* node, key_t up_key, bpt* sibling );
 void bpt_split( bpt* node );
 void bpt_insert_or_update( bpt* node, record r );

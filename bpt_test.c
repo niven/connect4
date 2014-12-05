@@ -4,7 +4,15 @@
 #include <string.h>
 #include <time.h> 
 
+
+// TODO(clarity): fix this mess of includes
 #include "base.h"
+#include "c4types.h"
+
+#include "board.h"
+#include "board63.h"
+
+#include "database.h"
 #include "bplustree.h"
 
 // GCD for only positive ints and not caring about m==n==0 returning 0
@@ -48,11 +56,11 @@ internal void test_store_randomly() {
 		if( (count % (max/100)) == 0 ) {
 			printf("inserted %lu%%\n", (count*100)/max);
 		}
-		bpt_put( &store, (struct record){ .key = current, { .value_int = (int)count } });
+		bpt_put( &store, (struct record){ .key = current, { .table_row_index = count } });
 		record* r = bpt_get( store, current );
 		assert( r != NULL );
 		assert( r->key == current );
-		assert( r->value.value_int == (int)count );
+		assert( r->value.table_row_index == count );
 		// not doing a size() test here since it's very slow
 //		assert( bpt_size( store ) == (count+1) );
 		count++;
@@ -75,13 +83,13 @@ internal void test_store_10() {
 	printf("Test store: %d\n", 10);
 	for( size_t i=0; i<max; i++ ) {
 		key_t k = (key_t)i;
-		bpt_put( &store, (struct record){ .key = k, { .value_int = (int)i } } );
+		bpt_put( &store, (struct record){ .key = k, { .table_row_index = i } } );
 		printf("### Result after storing %lu records\n", i+1);
 		bpt_print( store, 0 );
 		record* r = bpt_get( store, (key_t)i );
 		assert( r != NULL );
 		assert( r->key == k );
-		assert( r->value.value_int == (int)i );
+		assert( r->value.table_row_index == i );
 		assert( bpt_size( store ) == (i+1) );
 		printf("### Test OK - store %lu records\n", i+1);
 	}
@@ -92,7 +100,7 @@ internal void test_store_10() {
 		record* r = bpt_get( store, k );
 		assert( r != NULL );
 		assert( r->key == k );
-		assert( r->value.value_int == (int)i );
+		assert( r->value.table_row_index == i );
 	}
 	printf("Repeat find\n");
 	free_bptree( store );
@@ -103,13 +111,13 @@ internal void test_store_10() {
 internal void test_overwrite_dupes() {
 	bpt* store = new_bptree();
 	key_t dupes[6] = { 1, 2, 3, 4, 2, 2 };
-	for( int i=0; i<6; i++ ) {		
-		bpt_put( &store, (struct record){ .key = dupes[i], { .value_int = i} } );
+	for( size_t i=0; i<6; i++ ) {		
+		bpt_put( &store, (struct record){ .key = dupes[i], { .table_row_index = i} } );
 //		bpt_print( store, 0 );
 		record* r = bpt_get( store, dupes[i] );
 		assert( r != NULL );
 		assert( r->key == dupes[i] );
-		assert( r->value.value_int == i );
+		assert( r->value.table_row_index == i );
 	}
 	free_bptree( store );
 	
@@ -118,8 +126,8 @@ internal void test_search_nonexisting_items() {
 	bpt* store = new_bptree();
 
 	key_t keys[6] = { 1, 3, 5, 7, 9, 11 };
-	for( int i=0; i<6; i++ ) {		
-		bpt_put( &store, (struct record){ .key = keys[i], { .value_int = i} } );
+	for( size_t i=0; i<6; i++ ) {		
+		bpt_put( &store, (struct record){ .key = keys[i], { .table_row_index = i} } );
 	}
 
 	key_t missing_keys[6] = { 0, 2, 4, 6, 8, 10 };
@@ -134,10 +142,10 @@ internal void test_search_nonexisting_items() {
 
 internal void test_store_random() {
 	bpt* store = new_bptree();
-	int num_rands = 20;
-	for( int i=0; i<num_rands; i++ ) {
+	size_t num_rands = 20;
+	for( size_t i=0; i<num_rands; i++ ) {
 		key_t num = rand()%1024;
-		bpt_put( &store, (struct record){ .key = num, { .value_int = i} } );
+		bpt_put( &store, (struct record){ .key = num, { .table_row_index = i} } );
 		record* r = bpt_get( store, num );
 		assert( r != NULL );
 		assert( r->key == num );
@@ -150,26 +158,44 @@ internal void test_store_random() {
 
 internal void test_store_cmdline_seq( char* seq ) {
 	
-	bpt* store = new_bptree();
+	database* db = database_create( "test" );
 	
 	printf("Sequence: %s\n", seq);
 	char* element = strtok( seq, "," );
-	int i = 0;
+
+	map_squares_to_winlines(); // could be static but don't like doing it by hand
+
+	board* current = new_board();
+	
 	while( element != NULL ) {
-		printf("\n>>>>> Insert %s\n", element );
-		key_t key = (key_t)atoi(element);
-		bpt_put( &store, (struct record){ .key = key, { .value_int = i++} } );
-		printf("<<<<< After insert %lu %p\n", key, store );
-		bpt_print( store, 0 );
-		record* r = bpt_get( store, key );
-		assert( r != NULL );
-		assert( r->key == key );
+		
+		int col_index = atoi(element);
+		printf("\n>>>>> Insert %d\n", col_index );
+
+		board* next = drop( current, col_index );
+		printf("dropped\n");
+		key_t key = 5;//encode_board( current )->data;
+
+		if( next == NULL ) {
+			fprintf( stderr, "Illegal drop in column %d\n", col_index );
+			exit( EXIT_FAILURE );
+		}
+		render( next, element, false );
+
+		database_put( db, next );
+
+		free_board( current );
+		current = next;
+
+		printf("<<<<< After insert %lu\n", key );
+		bpt_print( db->index, 0 );
 		
 		element = strtok( NULL, "," );
 	}
 	
-	free_bptree( store );
+	free_board( current );
 	
+	database_close( db );
 }
 
 int main(int argc, char** argv) {

@@ -5,10 +5,58 @@
 
 #include "base.h"
 #include "utils.h"
+#include "c4types.h"
+#include "board63.h"
+#include "board.h"
 #include "bplustree.h"
 
 global_variable struct bpt_counters counters;
 
+// stuff that deals with the fact we store things on disk
+
+database* database_create( const char* filename ) {
+	
+	database* db = (database*) malloc( sizeof(database) );
+	if( db == NULL ) {
+		perror("malloc()");
+		exit( EXIT_FAILURE );
+	}
+	
+	db->table_row_count = 0;
+	
+	// create a new bpt
+	
+	// create the index file
+	
+	// create the table file
+	
+	return db;
+}
+
+void database_close( database* db ) {
+	
+	// TODO(fix) don't think we need this when stuff is on disk
+	free_bptree( db->index );
+	
+	free( db );
+	
+}
+
+void database_put( database* db, board* b ) {
+	
+	// the index knows if we already have this record,
+	// but in order to store it we need to have the offset in the table
+	// which we know as we can just keep track of that
+	
+	board63* board_key = encode_board( b );
+	
+	record r = { .key = board_key->data, .value.table_row_index = db->table_row_count };
+	bpt_put( &db->index, r );
+	
+}
+
+internal node* bpt_load_node( size_t data_node_id );
+internal void bpt_store_node( node* data );
 
 /*
 	Search keys for a target_key.
@@ -88,7 +136,44 @@ bpt* new_bptree() {
 	
 	//print("created %p", out );
 	counters.creates++;
+	
+	// add this to the data file
+	bpt_store_node( out );
+	
 	return out;
+}
+
+void bpt_store_node( node* data ) {
+	print("storing node %p on disk", data);
+	
+
+	// we should never have gaps
+	
+	// how much data do we need to store?
+	size_t data_block_size = sizeof( node ); // WRONG: should be keys+pointers+parent id+X
+	print("reserving %lu bytes for data block", data_block_size);
+	
+	FILE* out = fopen( data_file, "wb" );
+	if( out == NULL ) {
+		perror("fopen()");
+		exit( EXIT_FAILURE );
+	}
+	
+	// move the file cursor to the beginning of the block
+	if( !fseek( out, (long) (data->id * data_block_size), SEEK_SET ) ) {
+		perror("fseek()");
+		exit( EXIT_FAILURE );
+	}
+	
+	size_t count = 1;
+	size_t written = fwrite( data, data_block_size, count, out ); // WRONG: write stuff individually
+	if( written != count ) {
+		perror("frwrite()");
+		exit( EXIT_FAILURE );
+	}	
+	
+	fclose( out );
+	
 }
 
 void free_bptree( bpt* b ) {
@@ -487,8 +572,19 @@ internal node* bpt_find_node( bpt* root, key_t key ) {
 		current = current->pointers[node_index].node_ptr;
 	}
 	
+	// now we have an index to a leaf, which is on disk
+	// TODO: have a cache of these around
+	size_t leaf_node_index = 0;
+	node* leaf_node = bpt_load_node( leaf_node_index );
+	
 	print("returning node %p", current);
 	return current;
+}
+
+node* bpt_load_node( size_t data_node_id ) {
+	print("retrieve data node %lu from %s", data_node_id, data_file);
+	
+	return NULL;
 }
 
 record* bpt_get( bpt* root, key_t key ) {
@@ -574,11 +670,11 @@ void bpt_print( bpt* root, int indent ) {
 size_t bpt_size( bpt* root ) {
 	counters.any++;
 	
-	size_t count = 0;
 	if( root->is_leaf ) {
-		return count + root->num_keys;
+		return root->num_keys;
 	}
 	
+	size_t count = 0;
 	for( size_t i=0; i<=root->num_keys; i++ ) { // 1 more pointer than keys
 		count += bpt_size( root->pointers[i].node_ptr );
 	}

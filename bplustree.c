@@ -13,7 +13,6 @@
 global_variable struct bpt_counters counters;
 
 internal void database_store_row( database* db, size_t row_index, board* b );
-internal node* bpt_load_node( size_t data_node_id );
 internal void database_store_node( database* db, node* data );
 
 
@@ -61,7 +60,7 @@ void database_store_node( database* db, node* n ) {
 	size_t node_block_offset = n->id * node_block_bytes;
 	
 	// TODO(utils): function to open & seek
-	FILE* out = fopen( db->index_file, "r+" );
+	FILE* out = fopen( db->index_filename, "r+" );
 	if( out == NULL ) {
 		perror("fopen()");
 		exit( EXIT_FAILURE );
@@ -104,12 +103,12 @@ database* database_create( const char* name ) {
 	// create the index file
 	// TODO(utils): use the str_append stuff for dynstrings probably
 	size_t buf_size = strlen( name ) + strlen( ".c4_index" ) + 1;
-	db->index_file = malloc( buf_size );
-	db->index_file[0] = '\0';
-	strcat( db->index_file, name );
-	strcat( db->index_file, ".c4_index" );
-	create_empty_file( db->index_file );
-	print("created index file %s", db->index_file);
+	db->index_filename = malloc( buf_size );
+	db->index_filename[0] = '\0';
+	strcat( db->index_filename, name );
+	strcat( db->index_filename, ".c4_index" );
+	create_empty_file( db->index_filename );
+	print("created index file %s", db->index_filename);
 	
 	// create the table file
 	buf_size = strlen( name ) + strlen( ".c4_table" ) + 1;
@@ -334,7 +333,7 @@ void bpt_split( database* db, bpt* n ) {
 #ifdef VERBOSE	
 	bpt_print( n, 0 );
 #endif
-	print("%s %p", (n->is_leaf ? "leaf" : "node"), n );
+	print("%s id:%lu (%p)", (n->is_leaf ? "leaf" : "node"), n->id, n );
 	
 	/* 
 	Create a sibling node
@@ -619,7 +618,7 @@ bool bpt_insert_or_update( database* db, bpt* root, record r ) {
 /*
 	Return the leaf node that should have key in it.
 */
-internal node* bpt_find_node( bpt* root, key_t key ) {
+internal node* bpt_find_node( database* db, bpt* root, key_t key ) {
 	
 	node* current = root;
 
@@ -653,23 +652,23 @@ internal node* bpt_find_node( bpt* root, key_t key ) {
 	// now we have an index to a leaf, which is on disk
 	// TODO: have a cache of these around
 	size_t leaf_node_index = 0;
-	node* leaf_node = bpt_load_node( leaf_node_index );
+	node* leaf_node = bpt_load_node( db->index_file, leaf_node_index );
 	
 	print("returning node %p", current);
 	return current;
 }
 
-node* bpt_load_node( size_t data_node_id ) {
-	print("retrieve data node %lu from %s", data_node_id, data_file);
+node* bpt_load_node( FILE* index_file, size_t node_id ) {
+	print("retrieve node %lu", node_id);
 	
 	return NULL;
 }
 
-record* bpt_get( bpt* root, key_t key ) {
+record* bpt_get( database* db, bpt* root, key_t key ) {
 	
 	counters.get_calls++;
 	print("key %lu", key);
-	node* dest_node = bpt_find_node( root, key );
+	node* dest_node = bpt_find_node( db, root, key );
 	print("Found correct node %p", dest_node);
 	//bpt_print( dest_node, 0 );
 	

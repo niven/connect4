@@ -38,6 +38,7 @@ void print_row( FILE* in, size_t row_index );
 node* get_node( FILE* in, size_t node_id );
 void make_prompt( char* buf, char* db_name, node* cur );
 void print_keys( node* n );
+void open_database( char* name, FILE** table, FILE** index );
 
 command parse_command( char* s, params* p ) {
 	
@@ -178,7 +179,36 @@ void make_prompt( char* buf, char* db_name, node* cur ) {
 	strcat( buf, "> " );
 }
 
-int main(  ) {
+void open_database( char* db_name, FILE** table, FILE** index ) {
+
+	char buf[1024];
+	if( *table != NULL ) {
+		fclose( *table );
+		*table = NULL;
+	}
+	strcpy( buf, db_name);
+	strcat( buf, ".c4_table" );
+	*table = fopen( buf, "r" );					
+	if( *table == NULL ) {
+		perror("fopen()");
+	}
+	printf("opened table %s\n", buf);
+	
+	if( *index != NULL ) {
+		fclose( *index );
+		*index = NULL;
+	}
+	strcpy( buf, db_name );
+	strcat( buf, ".c4_index" );
+	*index = fopen( buf, "r" );
+	if( *index == NULL ) {
+		perror("fopen()");
+	}
+	printf("opened index %s\n", buf);
+	
+}
+
+int main( int argc, char** argv  ) {
 
 	// REPL
 	char buf[1024] = {0};
@@ -192,6 +222,11 @@ int main(  ) {
 	node* current_node = NULL;
 	char prompt[256];
 	char db_name[256] = {0};
+	
+	if( argc == 2 ) {
+		printf("%s\n", argv[1]);
+		open_database( argv[1], &table, &index );
+	}
 	
 	do {
 		make_prompt( prompt, db_name, current_node );
@@ -222,36 +257,12 @@ int main(  ) {
 
 				case OPEN_DB:
 					strcpy( db_name, p.param[0] );
-					if( table != NULL ) {
-						fclose( table );
-						table = NULL;
-					}
 					if( current_node != NULL ) {
 						free( current_node );
 						current_node = NULL;
 					}
-					printf("p0 %s\n", p.param[0]);
-					strcpy( buf, db_name);
-					printf("p0 %s\n", p.param[0]);
-					strcat( buf, ".c4_table" );
-					printf("p0 %s\n", p.param[0]);
-					table = fopen( buf, "r" );					
-					if( table == NULL ) {
-						perror("fopen()");
-					}
-					printf("opened table %s\n", buf);
 					
-					if( index != NULL ) {
-						fclose( index );
-						index = NULL;
-					}
-					strcpy( buf, db_name );
-					strcat( buf, ".c4_index" );
-					index = fopen( buf, "r" );
-					if( index == NULL ) {
-						perror("fopen()");
-					}
-					printf("opened index %s\n", buf);
+					open_database( db_name, &table, &index );
 
 				break;
 				
@@ -274,7 +285,6 @@ int main(  ) {
 						current_node = NULL;
 					}
 					node_id = (size_t)atoi( p.param[0] );
-					printf("Node %lu\n", node_id);
 					current_node = get_node( index, node_id );
 				break;
 				

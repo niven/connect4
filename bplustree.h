@@ -63,12 +63,18 @@ void free_bptree( bpt* b );
 void bpt_dump_cf( void );
 
 typedef struct database {
+
 	char* index_filename;
 	FILE* index_file;
-	char* table_file;
+
+	char* table_filename;
+	FILE* table_file;
+
 	bpt* index;
+
 	size_t node_count;
 	size_t table_row_count;
+
 } database;
 
 database* database_create( const char* filename );
@@ -79,7 +85,7 @@ void database_put( database* db, board* b );
 board* database_get( database* db, key_t key );
 size_t database_size( database* db );
 
-node* bpt_load_node( FILE* index_file, size_t node_id );
+node* load_node_from_file( FILE* index_file, size_t node_id );
 
 
 // public API (always takes a root)

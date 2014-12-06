@@ -28,7 +28,7 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 		Now in practice it turns out we always append, but I'm not sure ATM
 		TODO(investigate): if we always append, so maybe should use 'a'
 	*/
-	FILE* out = fopen( db->table_file, "r+" );
+	FILE* out = fopen( db->table_filename, "r+" );
 	if( out == NULL ) {
 		perror("fopen()");
 		exit( EXIT_FAILURE );
@@ -54,7 +54,7 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 
 void database_store_node( database* db, node* n ) {
 
-	print("writing node %lu (%p) to disk (%s)", n->id, n, db->index_file );
+	print("writing node %lu (%p) to disk (%s)", n->id, n, db->index_filename );
 
 	size_t node_block_bytes = sizeof( node );
 	size_t node_block_offset = n->id * node_block_bytes;
@@ -112,13 +112,12 @@ database* database_create( const char* name ) {
 	
 	// create the table file
 	buf_size = strlen( name ) + strlen( ".c4_table" ) + 1;
-	db->table_file = malloc( buf_size );
-	db->table_file[0] = '\0';
-	strcat( db->table_file, name );
-	strcat( db->table_file, ".c4_table" );
-	create_empty_file( db->table_file );
+	db->table_filename = malloc( buf_size );
+	strcpy( db->table_filename, name );
+	strcat( db->table_filename, ".c4_table" );
+	create_empty_file( db->table_filename );
 	
-	print("created table file %s", db->table_file);
+	print("created table file %s", db->table_filename);
 	
 	// no point in writing the index to disk, it's empty anyway
 	
@@ -130,8 +129,11 @@ void database_close( database* db ) {
 	// TODO(fix) don't think we need this when stuff is on disk
 	free_bptree( db->index );
 	
-	free( db->table_file );
-	free( db->index_file );
+	fclose( db->index_file );
+	fclose( db->table_file );
+	
+	free( db->table_filename );
+	free( db->index_filename );
 	
 	free( db );
 	
@@ -650,18 +652,36 @@ internal node* bpt_find_node( database* db, bpt* root, key_t key ) {
 	}
 	
 	// now we have an index to a leaf, which is on disk
-	// TODO: have a cache of these around
 	size_t leaf_node_index = 0;
-	node* leaf_node = bpt_load_node( db->index_file, leaf_node_index );
+	node* leaf_node = load_node_from_file( db->index_file, leaf_node_index );
+	free( leaf_node );
 	
 	print("returning node %p", current);
 	return current;
 }
 
-node* bpt_load_node( FILE* index_file, size_t node_id ) {
+node* load_node_from_file( FILE* index_file, size_t node_id ) {
 	print("retrieve node %lu", node_id);
+
+	size_t node_block_bytes = sizeof( node );
+	size_t node_block_offset = node_id * node_block_bytes;
+
+	// move the file cursor to the initial byte of the row
+	// fseek returns nonzero on failure
+	if( fseek( index_file, (long) node_block_offset, SEEK_SET ) ) {
+		perror("fseek()");
+		exit( EXIT_FAILURE );
+	}
 	
-	return NULL;
+	node* n = (node*) malloc( sizeof(node) );
+	size_t objects_read = fread( n, node_block_bytes, 1, index_file );
+	if( objects_read != 1 ) {
+		perror("fread()");
+		return NULL; // couldn't read a node
+	}
+	
+	return n;
+
 }
 
 record* bpt_get( database* db, bpt* root, key_t key ) {

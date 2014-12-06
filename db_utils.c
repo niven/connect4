@@ -7,6 +7,7 @@
 #include "c4types.h"
 #include "board.h"
 #include "bplustree.h"
+#include "board63.h"
 
 #define ROW_SIZE_BYTES 27
 
@@ -15,12 +16,11 @@ typedef enum command {
 	ERROR,
 	
 	QUIT,
-	
-	OPEN_TABLE,
-	ROW,
 
-	OPEN_INDEX,
+	OPEN_DB,
+	ROW,
 	NODE,
+	KEYS,
 	
 	UNKNOWN_COMMAND,
 	
@@ -35,8 +35,9 @@ typedef struct params {
 
 command parse_command( char* s, params* p );
 void print_row( FILE* in, size_t row_index );
-void print_index( FILE* in, size_t index_index );
-void make_prompt( char* buf, char* table_file, char* index_file );
+node* get_node( FILE* in, size_t node_id );
+void make_prompt( char* buf, char* db_name, node* cur );
+void print_keys( node* n );
 
 command parse_command( char* s, params* p ) {
 	
@@ -70,6 +71,10 @@ command parse_command( char* s, params* p ) {
 		return QUIT;
 	}
 	
+	if( strcmp( command, "keys") == 0 ) {
+		return KEYS;
+	}
+	
 	if( strcmp( command, "row") == 0 ) {
 
 		if( p->count != 1 ) {
@@ -90,20 +95,11 @@ command parse_command( char* s, params* p ) {
 	
 	if( strcmp( command, "open") == 0 ) {
 
-		if( p->count != 2 ) {
-			strcpy( p->error, "open [table|index] filename");
+		if( p->count != 1 ) {
+			strcpy( p->error, "open [database]");
 			return ERROR;
 		}
-		
-		if( strcmp( p->param[0], "table") == 0 ) {
-			return OPEN_TABLE;
-		}
-		if( strcmp( p->param[0], "index") == 0 ) {
-			return OPEN_INDEX;
-		}
-
-		strcpy( p->error, "open [table|index] filename");
-		return ERROR;
+		return OPEN_DB;
 	}
 	
 	
@@ -130,49 +126,54 @@ void print_row( FILE* in, size_t row_index ) {
 	
 	board* b = read_board_record( in );
 	char buf[200];
-	sprintf( buf, "Row %lu", row_index );
+	sprintf( buf, "Row %lu - key %lu", row_index, encode_board63( b )->data );
 	render( b, buf, false );
 }
 
 
-void print_index( FILE* in, size_t index_index ) {
-
-	
-	off_t filepos = (off_t)index_index * ROW_SIZE_BYTES;
-
-	struct stat s;
-	fstat( fileno(in), &s );
-	if( s.st_size <= filepos ) {
-		printf("No index %lu, file size is %llu\n", index_index, s.st_size );
-		return;
-	}
-
-	if( fseek( in, (long) filepos, SEEK_SET ) ) {
-		perror("fseek()");
-		printf("Most likely no such index: %lu\n", index_index );
-		return;
-	}
+node* get_node( FILE* in, size_t node_id ) {
 
 	// TODO(API): do we want load node to just read, or figure out where to read from what? Maybe opp. for diff granularity
-	node* n = bpt_load_node( in, index_index );
-	printf("Node %lu - keys %lu\n", n->id, n->num_keys );
-	
+	node* n = load_node_from_file( in, node_id );
+	if( n == NULL ) {
+		printf("Could not load node %lu\n", node_id );
+	} else {
+		printf("Node %lu - %lu key(s)%s\n", n->id, n->num_keys, n->is_leaf ? " {leaf}": "" );
+	}
+	return n;
 }
 
+// TODO(fix): make these print node ids
+void print_keys( node* n ) {
+	
+	printf("Node %lu - %lu key(s)%s\n", n->id, n->num_keys, n->is_leaf ? " {leaf}": "" );
+	printf("key                %s\n", n->is_leaf ? "offset in table" : "left node id");
+	for(size_t i=0; i<n->num_keys; i++) {
+		printf("%017lu  %lu\n", n->keys[i], n->pointers[i].table_row_index );
+	}
+	if( !n->is_leaf ) {
+		printf("Right node id      %lu\n", n->pointers[n->num_keys].table_row_index );
+	}
+}
 
-
-void make_prompt( char* buf, char* table_file, char* index_file ) {
+void make_prompt( char* buf, char* db_name, node* cur ) {
 	
 	buf[0] = '\0';
 	strcpy( buf, "c4db");
-	if( table_file[0] != '\0' ) {
-		strcat( buf, " T:" );
-		strcat( buf, table_file);
+	if( db_name[0] != '\0' ) {
+		strcat( buf, " [" );
+		strcat( buf, db_name);
+		strcat( buf, "]" );
 	}
-	if( index_file[0] != '\0' ) {
-		strcat( buf, " I:" );
-		strcat( buf, index_file);
+
+	if( cur != NULL ) {
+		strcat( buf, " [" );
+		char nodeidstr[100];
+		sprintf( nodeidstr, "%lu", cur->id );
+		strcat( buf, nodeidstr );	
+		strcat( buf, "]" );
 	}
+
 	
 	strcat( buf, "> " );
 }
@@ -184,15 +185,16 @@ int main(  ) {
 	bool keep_running = true;
 	params p;
 	FILE* table = NULL;
-	char table_file[100];
 	FILE* index = NULL;
-	char index_file[100];
+
 	size_t current_row = 0;
-	size_t current_idx = 0;
+	size_t node_id = 0;
+	node* current_node = NULL;
 	char prompt[256];
+	char db_name[256] = {0};
 	
 	do {
-		make_prompt( prompt, table_file, index_file );
+		make_prompt( prompt, db_name, current_node );
 		printf( "%s", prompt );
 		
 		if( fgets( buf, 1024, stdin) == NULL ) {
@@ -200,7 +202,7 @@ int main(  ) {
 			keep_running = false;
 		} else {
 			
-			// strip newline form end of buf
+			// strip newline from end of buf
 			buf[ strlen(buf)-1 ] = '\0';
 			command c = parse_command( buf, &p );
 			
@@ -218,30 +220,39 @@ int main(  ) {
 					printf("Bye.\n");
 					exit( EXIT_SUCCESS );
 
-				case OPEN_TABLE:
+				case OPEN_DB:
+					strcpy( db_name, p.param[0] );
 					if( table != NULL ) {
 						fclose( table );
 						table = NULL;
 					}
-					strcpy( table_file, p.param[1]);
-					strcat( table_file, ".c4_table" );
-					table = fopen( table_file, "r" );
+					if( current_node != NULL ) {
+						free( current_node );
+						current_node = NULL;
+					}
+					printf("p0 %s\n", p.param[0]);
+					strcpy( buf, db_name);
+					printf("p0 %s\n", p.param[0]);
+					strcat( buf, ".c4_table" );
+					printf("p0 %s\n", p.param[0]);
+					table = fopen( buf, "r" );					
 					if( table == NULL ) {
 						perror("fopen()");
 					}
-				break;
-				
-				case OPEN_INDEX:
+					printf("opened table %s\n", buf);
+					
 					if( index != NULL ) {
 						fclose( index );
 						index = NULL;
 					}
-					strcpy( index_file, p.param[1]);
-					strcat( index_file, ".c4_index" );
-					index = fopen( index_file, "r" );
+					strcpy( buf, db_name );
+					strcat( buf, ".c4_index" );
+					index = fopen( buf, "r" );
 					if( index == NULL ) {
 						perror("fopen()");
 					}
+					printf("opened index %s\n", buf);
+
 				break;
 				
 				case ROW:
@@ -250,7 +261,6 @@ int main(  ) {
 						break;
 					}
 					current_row = (size_t)atoi( p.param[0] );
-					printf("Row %lu\n", current_row);
 					print_row( table, current_row );
 				break;
 
@@ -259,9 +269,22 @@ int main(  ) {
 						printf("No index open.\n");
 						break;
 					}
-					current_idx = (size_t)atoi( p.param[0] );
-					printf("Node %lu\n", current_idx);
-					print_index( index, current_idx );
+					if( current_node != NULL ) {
+						free( current_node );
+						current_node = NULL;
+					}
+					node_id = (size_t)atoi( p.param[0] );
+					printf("Node %lu\n", node_id);
+					current_node = get_node( index, node_id );
+				break;
+				
+				case KEYS:
+					if( current_node == NULL ) {
+						printf("No node selected, set one with 'node [id]'\n");
+						break;
+					}
+					// print all keys from the current node
+					print_keys( current_node );
 				break;
 				
 				case UNKNOWN_COMMAND:

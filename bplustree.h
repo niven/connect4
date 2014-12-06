@@ -87,7 +87,7 @@ database* database_create( const char* name );
 database* database_open( const char* name );
 void database_close( database* db );
 
-void database_put( database* db, board* b );
+bool database_put( database* db, board* b );
 board* database_get( database* db, key_t key );
 size_t database_size( database* db );
 

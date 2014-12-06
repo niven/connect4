@@ -17,7 +17,7 @@ db: clean libs
 
 
 clean:
-	rm -rf *.c4_table *.c4_index bpt db bfcf *.gc *.o bin/*.o
+	rm -rf bpt db bfcf *.gc *.o bin/*.o
 
 libs: clean
 	${CMD} -c bplustree.c -o bin/bplustree.o

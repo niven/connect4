@@ -91,7 +91,10 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			} else {
 				update_counters( &gc, move_made );
 
-				database_put( to, move_made );
+				bool was_insert = database_put( to, move_made );
+				if( was_insert ) {
+					gc.unique_boards++;
+				}
 				render( move_made, "GEN MOVE", false );
 				free_board( move_made );
 			}
@@ -244,6 +247,13 @@ int main( int argc, char** argv ) {
 
 		free_board( b );
 		database_close( db );
+	}
+	
+	if( gc_flag ) {
+
+		gen_counter* g = read_counter( database_name );
+		print_counter( g );
+
 	}
 
 	free_s2w();

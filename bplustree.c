@@ -106,7 +106,7 @@ void write_database_header( database* db ) {
 		perror("frwite()");
 		exit( EXIT_FAILURE );
 	}
-	
+	prints("done");
 }
 
 void read_database_header( database* db ) {
@@ -208,10 +208,13 @@ database* database_open( const char* name ) {
 void database_close( database* db ) {
 	
 	// TODO(fix) don't think we need this when stuff is on disk
+	print("closing %s and %s", db->table_filename, db->index_filename);
 	
 	write_database_header( db );
-	
-	free_bptree( db->index );
+
+	// now we have to free all nodes we have in memory, which is at least the root node
+	free( db->index );
+	// TODO(bug): keep track of loaded nodes somewhere and release them here
 	
 	free( db->header );
 	
@@ -223,9 +226,10 @@ void database_close( database* db ) {
 	
 	free( db );
 	
+	prints("closed");
 }
 
-void database_put( database* db, board* b ) {
+bool database_put( database* db, board* b ) {
 	
 	// the index knows if we already have this record,
 	// but in order to store it we need to have the offset in the table
@@ -240,7 +244,6 @@ void database_put( database* db, board* b ) {
 	counters.key_inserts++;
 
 	bool inserted = bpt_insert_or_update( db, db->index, r );
-	bpt_print( db->index, 0 );
 
 	// tree might have grown, and since it grows upward *root might not point at the
 	// actual root anymore. But since all parent pointers are set we can traverse up
@@ -259,6 +262,8 @@ void database_put( database* db, board* b ) {
 		database_store_row( db, db->header->table_row_count, b );
 		db->header->table_row_count++;
 	}
+	
+	return inserted;
 	
 }
 
@@ -350,7 +355,7 @@ bpt* new_bptree( size_t node_id ) {
 
 void free_bptree( bpt* b ) {
 
-//	printf("free_bptree: %p\n", b);
+	printf("free_bptree: %p\n", b);
 	if( !b->is_leaf ) {
 		for( size_t i=0; i<=b->num_keys; i++ ) { // Note: <= since pointers is num_keys+1
 			free_bptree( b->pointers[i].node_ptr );
@@ -690,7 +695,7 @@ bool bpt_insert_or_update( database* db, bpt* root, record r ) {
 	}
 	// 3. array has elements, and we should insert at the beginning
 	if( root->num_keys > 0 && insert_location == 0 ) {
-		assert( r.key < root->keys[insert_location] );
+		assert( r.key <= root->keys[insert_location] ); // could be equal!
 	}
 	// 4. insert somewhere in the middle
 	if( insert_location > 0 && insert_location < root->num_keys ) {

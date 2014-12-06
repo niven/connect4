@@ -33,4 +33,14 @@ Gen	Boards
 
 This includes duplicates and was just writing stuff to file. Generation 9 was 995 MB
 
-=== END ===
+=== Generating boards without dupes ===
+
+Gen	Boards
+0		1
+1		7
+2		49
+3		296
+4		1,539
+5		6,261
+6		25,362
+7		84,530

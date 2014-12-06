@@ -15,6 +15,16 @@ global_variable struct bpt_counters counters;
 internal void database_store_row( database* db, size_t row_index, board* b );
 internal void database_store_node( database* db, node* data );
 internal void read_database_header( database* db );
+internal void write_database_header( database* db );
+internal off_t file_offset_from_node( size_t id );
+
+off_t file_offset_from_node( size_t id ) {
+	
+	off_t offset = sizeof(database_header);
+	offset += (id * sizeof(node));
+	return offset;
+	
+}
 
 void database_store_row( database* db, size_t row_index, board* b ) {
 
@@ -55,9 +65,10 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 void database_store_node( database* db, node* n ) {
 
 	print("writing node %lu (%p) to disk (%s)", n->id, n, db->index_filename );
+	
+	off_t offset = file_offset_from_node( n->id );
 
 	size_t node_block_bytes = sizeof( node );
-	size_t node_block_offset = n->id * node_block_bytes;
 	
 	// TODO(utils): function to open & seek
 	FILE* out = fopen( db->index_filename, "r+" );
@@ -67,9 +78,9 @@ void database_store_node( database* db, node* n ) {
 	}
 
 	// move the file cursor to the initial byte of the row
-	print("storing %lu bytes at offset %lu", node_block_bytes, node_block_offset );
+	print("storing %lu bytes at offset %llu", node_block_bytes, offset );
 	// fseek returns nonzero on failure
-	if( fseek( out, (long) node_block_offset, SEEK_SET ) ) {
+	if( fseek( out, offset, SEEK_SET ) ) {
 		perror("fseek()");
 		exit( EXIT_FAILURE );
 	}
@@ -86,9 +97,33 @@ void database_store_node( database* db, node* n ) {
 
 // stuff that deals with the fact we store things on disk
 
-database* database_create( const char* name ) {
+void write_database_header( database* db ) {
+
+	print("%p", db->index_file );
+	fseek( db->index_file, 0, SEEK_SET );
+	size_t objects_written = fwrite( db->header, sizeof(database_header), 1, db->index_file );
+	if( objects_written != 1 ) {
+		perror("frwite()");
+		exit( EXIT_FAILURE );
+	}
 	
-	// TODO(fix): write the header to the file, and make the load nodes things skip it
+}
+
+void read_database_header( database* db ) {
+	
+	database_header* header = (database_header*) malloc( sizeof(database_header) );
+	size_t objects_read = fread( header, sizeof(database_header), 1, db->index_file );
+	if( objects_read != 1 ) {
+		perror("fread()");
+		exit( EXIT_FAILURE );
+	}
+	
+	db->header = header;
+	
+}
+
+
+database* database_create( const char* name ) {
 	
 	database* db = (database*) malloc( sizeof(database) );
 	if( db == NULL ) {
@@ -113,6 +148,7 @@ database* database_create( const char* name ) {
 	strcat( db->index_filename, name );
 	strcat( db->index_filename, ".c4_index" );
 	create_empty_file( db->index_filename );
+	db->index_file = fopen( db->index_filename, "r+" );
 	print("created index file %s", db->index_filename);
 	
 	// create the table file
@@ -121,25 +157,16 @@ database* database_create( const char* name ) {
 	strcpy( db->table_filename, name );
 	strcat( db->table_filename, ".c4_table" );
 	create_empty_file( db->table_filename );
+	db->table_file = fopen( db->table_filename, "r+" );
 	
 	print("created table file %s", db->table_filename);
 	
-	// no point in writing the index to disk, it's empty anyway
+	write_database_header( db );
+	
+	// it's empty, but just in case you call create/close or something	
+	database_store_node( db, db->index );
 	
 	return db;
-}
-
-void read_database_header( database* db ) {
-	
-	database_header* header = (database_header*) malloc( sizeof(database_header) );
-	size_t objects_read = fread( header, sizeof(database_header), 1, db->index_file );
-	if( objects_read != 1 ) {
-		perror("fread()");
-		exit( EXIT_FAILURE );
-	}
-	
-	db->header = header;
-	
 }
 
 database* database_open( const char* name ) {
@@ -182,6 +209,8 @@ void database_close( database* db ) {
 	
 	// TODO(fix) don't think we need this when stuff is on disk
 	
+	write_database_header( db );
+	
 	free_bptree( db->index );
 	
 	free( db->header );
@@ -212,16 +241,17 @@ void database_put( database* db, board* b ) {
 
 	bool inserted = bpt_insert_or_update( db, db->index, r );
 	bpt_print( db->index, 0 );
+
 	// tree might have grown, and since it grows upward *root might not point at the
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root
-	// TODO(BUG): update the root_node_id in the header
 	while( db->index->parent != NULL ) {
 		print("%p is not the root, moving up to %p", db->index, db->index->parent );
 		db->index = db->index->parent;
 	}
+	db->header->root_node_id = db->index->id;
 	
-	print( "root now %p", db->index );
+	print( "root node id: %lu (%p)", db->header->root_node_id, db->index );
 
 	
 	// now write the data as a "row" to the table file
@@ -722,7 +752,7 @@ node* load_node_from_file( FILE* index_file, size_t node_id ) {
 	print("retrieve node %lu", node_id);
 
 	size_t node_block_bytes = sizeof( node );
-	size_t node_block_offset = node_id * node_block_bytes;
+	off_t node_block_offset = file_offset_from_node( node_id );
 
 	// move the file cursor to the initial byte of the row
 	// fseek returns nonzero on failure

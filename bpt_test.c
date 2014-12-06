@@ -12,7 +12,6 @@
 #include "board.h"
 #include "board63.h"
 
-#include "database.h"
 #include "bplustree.h"
 
 // GCD for only positive ints and not caring about m==n==0 returning 0

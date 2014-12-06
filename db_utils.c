@@ -35,7 +35,7 @@ typedef struct params {
 
 command parse_command( char* s, params* p );
 void print_row( FILE* in, size_t row_index );
-node* get_node( FILE* in, size_t node_id );
+node* get_node( database* db, size_t node_id );
 void make_prompt( char* buf, char* db_name, node* cur );
 void print_keys( node* n );
 void open_database( char* name, FILE** table, FILE** index );
@@ -132,10 +132,10 @@ void print_row( FILE* in, size_t row_index ) {
 }
 
 
-node* get_node( FILE* in, size_t node_id ) {
+node* get_node( database* db, size_t node_id ) {
 
 	// TODO(API): do we want load node to just read, or figure out where to read from what? Maybe opp. for diff granularity
-	node* n = load_node_from_file( in, node_id );
+	node* n = load_node_from_file( db->index_file, node_id );
 	if( n == NULL ) {
 		printf("Could not load node %lu\n", node_id );
 	} else {
@@ -179,44 +179,14 @@ void make_prompt( char* buf, char* db_name, node* cur ) {
 	strcat( buf, "> " );
 }
 
-void open_database( char* db_name, FILE** table, FILE** index ) {
-
-	char buf[1024];
-	if( *table != NULL ) {
-		fclose( *table );
-		*table = NULL;
-	}
-	strcpy( buf, db_name);
-	strcat( buf, ".c4_table" );
-	*table = fopen( buf, "r" );					
-	if( *table == NULL ) {
-		perror("fopen()");
-	}
-	printf("opened table %s\n", buf);
-	
-	if( *index != NULL ) {
-		fclose( *index );
-		*index = NULL;
-	}
-	strcpy( buf, db_name );
-	strcat( buf, ".c4_index" );
-	*index = fopen( buf, "r" );
-	if( *index == NULL ) {
-		perror("fopen()");
-	}
-	printf("opened index %s\n", buf);
-	
-}
-
 int main( int argc, char** argv  ) {
 
 	// REPL
 	char buf[1024] = {0};
 	bool keep_running = true;
 	params p;
-	FILE* table = NULL;
-	FILE* index = NULL;
-
+	database* db = NULL;
+	
 	size_t current_row = 0;
 	size_t node_id = 0;
 	node* current_node = NULL;
@@ -224,7 +194,7 @@ int main( int argc, char** argv  ) {
 	char db_name[256] = {0};
 	
 	if( argc == 2 ) {
-		open_database( argv[1], &table, &index );
+		db = database_open( argv[1] );
 	}
 	
 	do {
@@ -260,23 +230,22 @@ int main( int argc, char** argv  ) {
 						free( current_node );
 						current_node = NULL;
 					}
-					
-					open_database( db_name, &table, &index );
+					db = database_open( db_name );
 
 				break;
 				
 				case ROW:
-					if( table == NULL ) {
-						printf("No table open.\n");
+					if( db == NULL ) {
+						printf("No database open.\n");
 						break;
 					}
 					current_row = (size_t)atoi( p.param[0] );
-					print_row( table, current_row );
+					print_row( db->table_file, current_row );
 				break;
 
 				case NODE:
-					if( index == NULL ) {
-						printf("No index open.\n");
+					if( db == NULL ) {
+						printf("No database open.\n");
 						break;
 					}
 					if( current_node != NULL ) {
@@ -284,7 +253,7 @@ int main( int argc, char** argv  ) {
 						current_node = NULL;
 					}
 					node_id = (size_t)atoi( p.param[0] );
-					current_node = get_node( index, node_id );
+					current_node = get_node( db, node_id );
 				break;
 				
 				case KEYS:
@@ -309,11 +278,8 @@ int main( int argc, char** argv  ) {
 		
 	} while( keep_running );
 	
-	if( table != NULL ) {
-		fclose( table );
-	}
-	if( index != NULL ) {
-		fclose( index );
+	if( db != NULL ) {
+		database_close( db );
 	}
 
 	printf("Done.\n");

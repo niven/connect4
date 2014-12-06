@@ -1,20 +1,42 @@
 Because I keep forgetting.
 
+broken I think:
 run.fsh - Does 'the stuff'. Currently this is creating all possible boards so we can get some counts
 
 run_all_boards.fsh - Creates all possible boards and keeps count. (doesn't actually keep all of them on disk)
 
 
-Create a board file from dropping into columns:
-./bfcf -f file -c col0, col1, col2,...
+Create a database which contains a single, empty board
+./bfcf -d empty -c e
 
-Render a board file:
-./bfcf -f file -a
+Open a database and check it out:
+./db [name]
 
-Show generation counter:
-./bfcf -f file -g
-
-Generate next moves based on previous moves file:
-./bfcf -f file -n [generate_option] (current options: 1, just generate any move, even if it leads to loss)
-
- 
+cveenboer@Chriss-MacBook-Pro ~/g/connect4> ./db empty
+opened table empty.c4_table
+opened index empty.c4_index
+c4db> node 0
+Node 0 - 1 key(s) {leaf}
+c4db [0]> keys
+Node 0 - 1 key(s) {leaf}
+key                offset in table
+00000000000000000  0
+c4db [0]> row 0
+Board: Row 0 - key 0
+(player turn: White, State: 1)
+--+---+---+---+---+---+---+---+
+5 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+4 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+3 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+2 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+1 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+0 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+c4db [0]> quit
+Bye.

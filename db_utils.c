@@ -224,7 +224,6 @@ int main( int argc, char** argv  ) {
 	char db_name[256] = {0};
 	
 	if( argc == 2 ) {
-		printf("%s\n", argv[1]);
 		open_database( argv[1], &table, &index );
 	}
 	

@@ -88,6 +88,8 @@ void database_store_node( database* db, node* n ) {
 
 database* database_create( const char* name ) {
 	
+	// TODO(fix): write the header to the file, and make the load nodes things skip it
+	
 	database* db = (database*) malloc( sizeof(database) );
 	if( db == NULL ) {
 		perror("malloc()");
@@ -168,6 +170,9 @@ database* database_open( const char* name ) {
 	
 	// read the root node, node_count and row_count
 	read_database_header( db );
+	print("nodes: %lu, rows: %lu, root node ID: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
+	
+	db->index = load_node_from_file( db->index_file, db->header->root_node_id );
 	
 	return db;
 	
@@ -176,7 +181,10 @@ database* database_open( const char* name ) {
 void database_close( database* db ) {
 	
 	// TODO(fix) don't think we need this when stuff is on disk
+	
 	free_bptree( db->index );
+	
+	free( db->header );
 	
 	fclose( db->index_file );
 	fclose( db->table_file );
@@ -207,6 +215,7 @@ void database_put( database* db, board* b ) {
 	// tree might have grown, and since it grows upward *root might not point at the
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root
+	// TODO(BUG): update the root_node_id in the header
 	while( db->index->parent != NULL ) {
 		print("%p is not the root, moving up to %p", db->index, db->index->parent );
 		db->index = db->index->parent;

@@ -32,7 +32,6 @@ unsigned char is_win_for( board* b, unsigned char player );
 unsigned char is_draw( board* b );
 int is_over( board* b );
 
-board* read_board( const char* filename );
 void write_board( char* filename, board* b );
 
 board* read_board_record( FILE* in );

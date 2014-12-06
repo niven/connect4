@@ -395,22 +395,6 @@ board* read_board_record( FILE* in ) {
 	return b;
 }
 
-
-board* read_board( const char* filename ) {
-
-	FILE* in = fopen( filename, "rb" );
-	if( in == NULL ) {
-		perror("fopen()");
-		exit( EXIT_FAILURE );
-	}
-
-	board* b = read_board_record( in );
-	
-	fclose( in );
-
-	return b;
-}
-
 void write_board_record( board* b, FILE* out ) {
 	
 	board63* b63 = encode_board( b );

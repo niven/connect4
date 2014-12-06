@@ -18,6 +18,9 @@
 #include "counter.h"
 #include "bplustree.h"
 
+// TODO(fail): define from something in board.h or something
+#define ROW_SIZE_BYTES 27
+
 
 internal void update_counters( gen_counter* gc, board* b ) {
 	
@@ -36,47 +39,44 @@ This includes duplicates etc
 
 So this produces around this:
 	
-Gen	Boards
-0	1
-1	7
-2	49
-3	343
-4	2,401
-5	16,807
-6	117,649
-7	823,536
-8	5,673,234
-9	39,394,572
+
 
 Where the generation_9.c4 file is 995 MB
 */
-internal void generate_option_1( const char* filename ) {
+
+internal board* read_board(FILE* in, size_t board_index ) {
+	
+	long filepos = (long)board_index * ROW_SIZE_BYTES;
+	if( fseek( in, filepos, SEEK_SET ) ) {
+		perror("fseek()");
+		printf("Most likely no such board index: %lu\n", board_index );
+		return NULL;
+	}
+	
+	
+	return read_board_record( in );
+	
+}
+
+internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	gen_counter gc = { .total_boards = 0 }; // will init the rest to default, which is 0
 	
-	// open file with N boards (including winlines), open out file
+	// open database_from
 	// read 1 board
 	// drop everywhere we can
-	// write to out file
+	// write to database_to
 	
-	FILE* in = fopen( filename, "rb" );
-	if( in == NULL ) {
-		perror("fopen()");
-		exit( EXIT_FAILURE );
-	}
-	FILE* out = fopen( "next_generation.c4", "wb" );
-	if( out == NULL ) {
-		perror("fopen()");
-		exit( EXIT_FAILURE );
-	}
+	database* from = database_open( database_from );
+	database* to = database_create( database_to );
+	
+	printf("Boards in database: %lu\n", from->header->table_row_count );
 	
 	board* start_board = NULL;
-	size_t boards_read = 0;
-	while( (start_board = read_board_record( in )) != NULL ) {
-		boards_read++;
-//		printf("\nRead board %ld\n", boards_read);
-//		render( start_board, "board_record used as src", false );
-//		printf("Player to make moves: %s\n", current_player( start_board ) == WHITE ? "White" : "Black");
+
+	for( size_t i=0; i<from->header->table_row_count; i++ ) {
+		printf("Reading board %lu\n", i);
+		start_board = read_board( from->table_file, i );
 
 		// no need to go on after the game is over
 		if( start_board->state & OVER ) {
@@ -87,23 +87,24 @@ internal void generate_option_1( const char* filename ) {
 		for(int col=0; col<COLS; col++) {
 			board* move_made = drop( start_board, col );
 			if( move_made == NULL ) {
-//				printf("Can't drop in column %d\n", col);
+				printf("Can't drop in column %d\n", col);
 			} else {
 				update_counters( &gc, move_made );
 
-				write_board_record( move_made, out );
-				//render( move_made, "GEN MOVE", false );
+				database_put( to, move_made );
+				render( move_made, "GEN MOVE", false );
 				free_board( move_made );
 			}
 		}
 
-		free_board( start_board );
+		if( start_board != NULL ) {
+			free_board( start_board );
+		}
 
 	}
-	
-	fclose( in );
-	fclose( out );
-	
+
+	database_close( from );
+	database_close( to );
 	
 	write_counter( &gc, "gencounter.gc" );
 
@@ -113,7 +114,7 @@ internal void generate_option_1( const char* filename ) {
 int main( int argc, char** argv ) {
 
 	char* create_sequence = NULL;
-	char* generate_option = NULL;
+	char* generate = NULL;
 	int ascii_flag = 0;
 	int read_flag = 0;
 	int gc_flag = 0;
@@ -138,8 +139,8 @@ int main( int argc, char** argv ) {
  		  case 'g': // show generation counter
  			 gc_flag = 1;
  		    break;
-		  case 'n': // next moves for filename
- 			 generate_option = optarg;
+		  case 'n': // next moves for database
+ 			 generate = optarg;
  		    break;
   		  case 'r': // read filename
   			 read_flag = 1;
@@ -157,7 +158,7 @@ int main( int argc, char** argv ) {
 		}
 	}
 
-	printf ("database = %s, create_sequence = %s, ascii_flag = %d, read_flag = %d, next_moves = %s, gc_flag = %d\n", database_name, create_sequence, ascii_flag, read_flag, generate_option, gc_flag);
+	printf ("database = %s, create_sequence = %s, ascii_flag = %d, read_flag = %d, generate to = %s, gc_flag = %d\n", database_name, create_sequence, ascii_flag, read_flag, generate, gc_flag);
 
 	for( int index = optind; index < argc; index++ ) {
 		printf("Non-option argument %s\n", argv[index]);
@@ -227,17 +228,9 @@ int main( int argc, char** argv ) {
 		database_close( db );
 	}
 	
-	if( generate_option != NULL ) {
+	if( generate != NULL ) {
 		
-		switch( generate_option[0] ) {
-			case '1':
-				generate_option_1( database_name );
-				break;
-			default:
-				fprintf( stderr, "Unknown generation option: %c\n", generate_option[0] );
-				exit( EXIT_FAILURE );
-		}
-
+		next_gen( database_name, generate );
 	}
 
 	if( ascii_flag ) {

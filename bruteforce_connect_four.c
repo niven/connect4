@@ -128,7 +128,7 @@ int main( int argc, char** argv ) {
  		  case 'c': // create from drop sequence
  			 create_sequence = optarg;
  		    break;
-  		  case 'f': // create from drop sequence
+  		  case 'f':
   			 filename = optarg;
   		    break;
  		  case 'a': // render filename

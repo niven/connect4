@@ -36,6 +36,8 @@ internal void test_header( const char* title ) {
 	printf("\n%s\n# %s #\n%s\n", row, title, row);
 	
 }
+
+// TODO(testing): something with these tests
 /*
 internal void test_store_randomly() {
 

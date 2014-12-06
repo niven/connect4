@@ -126,7 +126,7 @@ void print_row( FILE* in, size_t row_index ) {
 	
 	board* b = read_board_record( in );
 	char buf[200];
-	sprintf( buf, "Row %lu - key %lu", row_index, encode_board63( b )->data );
+	sprintf( buf, "Row %lu - key %lu", row_index, encode_board( b )->data );
 	render( b, buf, false );
 }
 

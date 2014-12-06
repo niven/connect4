@@ -14,7 +14,7 @@ global_variable struct bpt_counters counters;
 
 internal void database_store_row( database* db, size_t row_index, board* b );
 internal void database_store_node( database* db, node* data );
-
+internal void read_database_header( database* db );
 
 void database_store_row( database* db, size_t row_index, board* b ) {
 
@@ -94,11 +94,14 @@ database* database_create( const char* name ) {
 		exit( EXIT_FAILURE );
 	}
 	
-	db->table_row_count = 0;
-	db->node_count = 0;
+	db->header = (database_header*) malloc( sizeof(database_header) );
 	
+	db->header->table_row_count = 0;
+	db->header->node_count = 0;
+
 	// create a new bpt
-	db->index = new_bptree( db->node_count++ ); // initial node ID is 0 when creating a new db
+	db->index = new_bptree( db->header->node_count++ ); // initial node ID is 0 when creating a new db
+	db->header->root_node_id = db->index->id;
 	
 	// create the index file
 	// TODO(utils): use the str_append stuff for dynstrings probably
@@ -122,6 +125,52 @@ database* database_create( const char* name ) {
 	// no point in writing the index to disk, it's empty anyway
 	
 	return db;
+}
+
+void read_database_header( database* db ) {
+	
+	database_header* header = (database_header*) malloc( sizeof(database_header) );
+	size_t objects_read = fread( header, sizeof(database_header), 1, db->index_file );
+	if( objects_read != 1 ) {
+		perror("fread()");
+		exit( EXIT_FAILURE );
+	}
+	
+	db->header = header;
+	
+}
+
+database* database_open( const char* name ) {
+	
+	database* db = (database*) malloc( sizeof(database) );
+	if( db == NULL ) {
+		perror("malloc()");
+		exit( EXIT_FAILURE );
+	}
+	
+	// open the index file
+	// TODO(utils): use the str_append stuff for dynstrings probably
+	size_t buf_size = strlen( name ) + strlen( ".c4_index" ) + 1;
+	db->index_filename = malloc( buf_size );
+	db->index_filename[0] = '\0';
+	strcat( db->index_filename, name );
+	strcat( db->index_filename, ".c4_index" );
+	db->index_file = fopen( db->index_filename, "r+" );
+	print("opened index file %s", db->index_filename);
+	
+	// create the table file
+	buf_size = strlen( name ) + strlen( ".c4_table" ) + 1;
+	db->table_filename = malloc( buf_size );
+	strcpy( db->table_filename, name );
+	strcat( db->table_filename, ".c4_table" );
+	db->table_file = fopen( db->table_filename, "r+" );
+	print("opened table file %s", db->table_filename);
+	
+	// read the root node, node_count and row_count
+	read_database_header( db );
+	
+	return db;
+	
 }
 
 void database_close( database* db ) {
@@ -148,7 +197,7 @@ void database_put( database* db, board* b ) {
 	board63* board_key = encode_board( b );
 	print("key for this board: %lu", board_key->data );
 	
-	record r = { .key = board_key->data, .value.table_row_index = db->table_row_count };
+	record r = { .key = board_key->data, .value.table_row_index = db->header->table_row_count };
 
 	// TODO(bug): this should not overwrite, that means wasting space in the table file, also return inserted/dupe
 	counters.key_inserts++;
@@ -168,8 +217,8 @@ void database_put( database* db, board* b ) {
 	
 	// now write the data as a "row" to the table file
 	if( inserted ) {
-		database_store_row( db, db->table_row_count, b );
-		db->table_row_count++;
+		database_store_row( db, db->header->table_row_count, b );
+		db->header->table_row_count++;
 	}
 	
 }
@@ -419,7 +468,7 @@ void bpt_split( database* db, bpt* n ) {
 	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
 	print("Moving %zu keys (%zu nodes) right from offset %zu (key = %lu)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
-	bpt* sibling = new_bptree( db->node_count++ );	
+	bpt* sibling = new_bptree( db->header->node_count++ );	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
 	memcpy( &sibling->pointers[0], &n->pointers[offset], sizeof(pointer)*(keys_moving_right+1) );
 	
@@ -457,7 +506,7 @@ void bpt_split( database* db, bpt* n ) {
 	// but if parent is NULL, we're at the root and need to make a new one
 	if( n->parent == NULL ) {
 
-		bpt* new_root = new_bptree( db->node_count++ );
+		bpt* new_root = new_bptree( db->header->node_count++ );
 		print("No parent, creating new root: %p", new_root);
 
 		new_root->keys[0] = up_key; // since left must all be smaller

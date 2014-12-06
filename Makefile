@@ -10,7 +10,7 @@ CMD=${CC} ${CFLAGS}
 
 all: clean libs db
 	${CMD} bin/utils.o bin/bplustree.o bin/board63.o bin/board.o bpt_test.c -o bpt
-	${CMD} bin/utils.o bin/counter.o bin/board63.o bin/board.o bruteforce_connect_four.c -o bfcf
+	${CMD} bin/utils.o bin/counter.o bin/board63.o bin/board.o bin/bplustree.o bruteforce_connect_four.c -o bfcf
 
 db: clean libs
 	${CMD} bin/utils.o bin/board.o bin/board63.o bin/bplustree.o db_utils.c -o db

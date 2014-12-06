@@ -62,6 +62,13 @@ bpt* new_bptree( size_t node_id );
 void free_bptree( bpt* b );
 void bpt_dump_cf( void );
 
+
+typedef struct database_header {
+	size_t node_count;
+	size_t table_row_count;
+	size_t root_node_id;
+} database_header;
+
 typedef struct database {
 
 	char* index_filename;
@@ -72,13 +79,12 @@ typedef struct database {
 
 	bpt* index;
 
-	size_t node_count;
-	size_t table_row_count;
+	database_header* header;
 
 } database;
 
-database* database_create( const char* filename );
-database* database_open( const char* filename );
+database* database_create( const char* name );
+database* database_open( const char* name );
 void database_close( database* db );
 
 void database_put( database* db, board* b );

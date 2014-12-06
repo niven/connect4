@@ -16,7 +16,7 @@
 #include "board.h"
 #include "board63.h"
 #include "counter.h"
-
+#include "bplustree.h"
 
 
 internal void update_counters( gen_counter* gc, board* b ) {
@@ -117,22 +117,23 @@ int main( int argc, char** argv ) {
 	int ascii_flag = 0;
 	int read_flag = 0;
 	int gc_flag = 0;
-	char* filename = NULL;
+	char* database_name = NULL;
+	char* key_str = NULL;
 	int c;	
 
 	map_squares_to_winlines(); // could be static but don't like doing it by hand
 
-	while( (c = getopt (argc, argv, "gc:af:rn:") ) != -1 ) {
+	while( (c = getopt (argc, argv, "gc:a:d:rn:") ) != -1 ) {
 
 		switch( c ) {
  		  case 'c': // create from drop sequence
  			 create_sequence = optarg;
  		    break;
-  		  case 'f':
-  			 filename = optarg;
+  		  case 'd':
+  			 database_name = optarg;
   		    break;
- 		  case 'a': // render filename
- 			 ascii_flag = 1;
+ 		  case 'a': // render board from key
+ 			 key_str = optarg;
  		    break;
  		  case 'g': // show generation counter
  			 gc_flag = 1;
@@ -156,7 +157,7 @@ int main( int argc, char** argv ) {
 		}
 	}
 
-	printf ("filename = %s, create_sequence = %s, ascii_flag = %d, read_flag = %d, next_moves = %s, gc_flag = %d\n", filename, create_sequence, ascii_flag, read_flag, generate_option, gc_flag);
+	printf ("database = %s, create_sequence = %s, ascii_flag = %d, read_flag = %d, next_moves = %s, gc_flag = %d\n", database_name, create_sequence, ascii_flag, read_flag, generate_option, gc_flag);
 
 	for( int index = optind; index < argc; index++ ) {
 		printf("Non-option argument %s\n", argv[index]);
@@ -189,17 +190,19 @@ int main( int argc, char** argv ) {
 	
 	*/
 
-	if( filename == NULL ) {
-		fprintf( stderr, "Required filename missing (-f ...)\n");
+	if( database_name == NULL ) {
+		fprintf( stderr, "Required database name missing (-d ...)\n");
 	}
 
 	if( create_sequence != NULL ) {
 
 		board* current = new_board();
-		
+		database* db = database_create( database_name );
+
 		if( create_sequence[0] == 'e' ) {
-			write_board( filename, current );
+			database_put( db, current );
 			free_board( current );
+			database_close( db );
 			exit( EXIT_SUCCESS );
 		}
 		 
@@ -212,6 +215,7 @@ int main( int argc, char** argv ) {
 				fprintf( stderr, "Illegal drop in column %d\n", col_index );
 				abort();
 			}
+			database_put( db, next );
 			render( next, create_sequence, false );
 			//print_winlines( next->winlines );
 
@@ -219,16 +223,15 @@ int main( int argc, char** argv ) {
 			current = next;
 		}
 		
-		write_board( filename, current );
 		free_board( next );
-
+		database_close( db );
 	}
 	
 	if( generate_option != NULL ) {
 		
 		switch( generate_option[0] ) {
 			case '1':
-				generate_option_1( filename );
+				generate_option_1( database_name );
 				break;
 			default:
 				fprintf( stderr, "Unknown generation option: %c\n", generate_option[0] );
@@ -239,19 +242,18 @@ int main( int argc, char** argv ) {
 
 	if( ascii_flag ) {
 
-		board* b = read_board( filename );
-		render( b, filename, true );
+		database* db = database_open( database_name );
+		key_t key = (key_t)atoi( key_str );
+		board* b = NULL;//database_get( db, key );
+		char buf[256];
+		sprintf( buf, "%s - %lu", database_name, key );
+		render( b, buf, true );
 
 		free_board( b );
+		database_close( db );
 	}
 
 	free_s2w();
-	
-	if( gc_flag ) {
-		gen_counter* gc = read_counter( filename );
-		print_counter( gc );
-		free( gc );
-	}
 	
 	printf("Done\n");
 	

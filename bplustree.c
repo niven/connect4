@@ -96,9 +96,10 @@ database* database_create( const char* name ) {
 	}
 	
 	db->table_row_count = 0;
+	db->node_count = 0;
 	
 	// create a new bpt
-	db->index = new_bptree();
+	db->index = new_bptree( db->node_count++ ); // initial node ID is 0 when creating a new db
 	
 	// create the index file
 	// TODO(utils): use the str_append stuff for dynstrings probably
@@ -119,6 +120,8 @@ database* database_create( const char* name ) {
 	create_empty_file( db->table_file );
 	
 	print("created table file %s", db->table_file);
+	
+	// no point in writing the index to disk, it's empty anyway
 	
 	return db;
 }
@@ -150,7 +153,7 @@ void database_put( database* db, board* b ) {
 	counters.key_inserts++;
 
 	bool inserted = bpt_insert_or_update( db, db->index, r );
-	
+	bpt_print( db->index, 0 );
 	// tree might have grown, and since it grows upward *root might not point at the
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root
@@ -165,6 +168,7 @@ void database_put( database* db, board* b ) {
 	// now write the data as a "row" to the table file
 	if( inserted ) {
 		database_store_row( db, db->table_row_count, b );
+		db->table_row_count++;
 	}
 	
 }
@@ -232,7 +236,7 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 	return BINSEARCH_INSERT;
 }
 
-bpt* new_bptree() {
+bpt* new_bptree( size_t node_id ) {
 	
 	bpt* out = (bpt*)malloc( sizeof(bpt) );
 	if( out == NULL ) {
@@ -240,12 +244,14 @@ bpt* new_bptree() {
 		exit( EXIT_FAILURE );
 	}
 	
+	out->id = node_id;
+	
 	out->parent = NULL;
 	
 	out->num_keys = 0;
 	out->is_leaf = true;
 	
-	//print("created %p", out );
+	print("created node ID: %lu (%p)", out->id, out );
 	counters.creates++;
 	
 	return out;
@@ -314,9 +320,11 @@ void bpt_insert_node( database* db, bpt* n, key_t up_key, bpt* sibling ) {
 		print("hit limit, have to split %p", n);
 		bpt_split( db, n ); // propagate new node up
 		return;
+	} else {
+		prints("did not split");
+		database_store_node( db, n );
 	}
 
-	prints("did not split");
 }
 
 
@@ -410,7 +418,7 @@ void bpt_split( database* db, bpt* n ) {
 	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
 	print("Moving %zu keys (%zu nodes) right from offset %zu (key = %lu)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
-	bpt* sibling = new_bptree();	
+	bpt* sibling = new_bptree( db->node_count++ );	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
 	memcpy( &sibling->pointers[0], &n->pointers[offset], sizeof(pointer)*(keys_moving_right+1) );
 	
@@ -448,7 +456,7 @@ void bpt_split( database* db, bpt* n ) {
 	// but if parent is NULL, we're at the root and need to make a new one
 	if( n->parent == NULL ) {
 
-		bpt* new_root = new_bptree();
+		bpt* new_root = new_bptree( db->node_count++ );
 		print("No parent, creating new root: %p", new_root);
 
 		new_root->keys[0] = up_key; // since left must all be smaller
@@ -457,6 +465,8 @@ void bpt_split( database* db, bpt* n ) {
 
 		new_root->is_leaf = false;
 		new_root->num_keys = 1;
+
+		database_store_node( db, new_root );
 
 		n->parent = sibling->parent = new_root;
 
@@ -483,6 +493,10 @@ void bpt_split( database* db, bpt* n ) {
 
 	}
 	
+	prints("writing changes to disk");
+	database_store_node( db, n );
+	database_store_node( db, sibling );
+	
 }
 
 /*
@@ -495,7 +509,7 @@ void bpt_split( database* db, bpt* n ) {
 bool bpt_insert_or_update( database* db, bpt* root, record r ) {
 	
 	counters.insert_calls++;
-	print("node %p", root);
+	print("node %lu - %p", root->id, root);
 
 //	printf("Insert %d:%d\n", r.key, r.value.value_int );
 	size_t k=0;
@@ -556,7 +570,7 @@ bool bpt_insert_or_update( database* db, bpt* root, record r ) {
 
 		// split if full
 		if( root->num_keys == ORDER ) {
-			print("hit limit, have to split %p", root);
+			print("hit limit, have to split ID: %lu (%p)", root->id, root);
 			bpt_split( db, root );
 		} else {
 			database_store_node( db, root );
@@ -693,7 +707,7 @@ internal void bpt_print_leaf( node* n, int indent ) {
 	for( size_t i=0; i<n->num_keys; i++ ) {
 		printf("%lu ", n->keys[i] );
 	}
-	printf("] - %p (parent %p)\n", n, n->parent);
+	printf("] - ID:%lu (%p) (parent %p)\n", n->id, n, n->parent);
 
 }
 
@@ -706,7 +720,7 @@ void bpt_print( bpt* root, int indent ) {
 		bpt_print_leaf( root, indent );
 		return;
 	}
-	printf("%sN %p keys: %zu (parent %p)\n", ind, root, root->num_keys, root->parent);
+	printf("%sN ID:%lu (%p) keys: %zu (parent %p)\n", ind, root->id, root, root->num_keys, root->parent);
 		
 	// print every key/node
 	node* n;

@@ -237,7 +237,7 @@ unsigned char current_player( board* b ) {
 internal void update_winlines( board* b, int move_y, int move_x ) {
 	
 	player current = current_player( b );
-	printf("Updating winlines after move by %s on [%d,%d]\n", current == WHITE ? "White" : "Black", move_x, move_y);
+//	print("Updating winlines after move by %s on [%d,%d]", current == WHITE ? "White" : "Black", move_x, move_y);
 //	print_winbits( b->winlines->white );
 //	print_winbits( b->winlines->black );
 	

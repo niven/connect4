@@ -3,7 +3,7 @@
 
 #include "base.h"
 
-#define ORDER 1024
+#define ORDER 4
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 typedef unsigned long key_t;
@@ -58,7 +58,7 @@ typedef struct node {
 typedef node bpt;
 
 // TODO: rename
-bpt* new_bptree( void );
+bpt* new_bptree( size_t node_id );
 void free_bptree( bpt* b );
 void bpt_dump_cf( void );
 
@@ -66,6 +66,7 @@ typedef struct database {
 	char* index_file;
 	char* table_file;
 	bpt* index;
+	size_t node_count;
 	size_t table_row_count;
 } database;
 

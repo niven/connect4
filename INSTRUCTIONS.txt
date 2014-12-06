@@ -40,3 +40,36 @@ Board: Row 0 - key 0
   | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
 c4db [0]> quit
 Bye.
+
+
+Create a database with all boards from empty up to the entire sequence:
+./bfcf -d test -c 34524623
+
+cveenboer@Chriss-MacBook-Pro ~/g/connect4> ./db test
+opened table test.c4_table
+opened index test.c4_index
+c4db> node 8
+Node 8 - 3 key(s) {leaf}
+c4db [8]> keys
+Node 8 - 3 key(s) {leaf}
+key                offset in table
+00013211403354304  5
+00022007496376512  6
+00022028971212992  7
+c4db [8]> row 7
+Board: Row 7 - key 22028971212992
+(player turn: White, State: 1)
+--+---+---+---+---+---+---+---+
+5 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+4 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+3 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+2 |   |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+1 |   |   | O | X | O |   |   |
+--+---+---+---+---+---+---+---+
+0 |   |   | X | O | X | O | X |
+--+---+---+---+---+---+---+---+
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 |

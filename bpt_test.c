@@ -9,24 +9,12 @@
 #include "base.h"
 #include "c4types.h"
 
+#include "utils.h"
 #include "board.h"
 #include "board63.h"
 
 #include "bplustree.h"
 
-// GCD for only positive ints and not caring about m==n==0 returning 0
-internal size_t gcd(size_t m, size_t n) {
-    if(m == 0 && n == 0)
-        return 0;
-
-    size_t r;
-    while(n) {
-        r = m % n;
-        m = n;
-        n = r;
-    }
-    return m;
-}
 
 internal void test_header( const char* title ) {
 	

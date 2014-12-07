@@ -4,6 +4,20 @@
 
 #include "utils.h"
 
+// GCD for only positive ints and not caring about m==n==0 returning 0
+size_t gcd(size_t m, size_t n) {
+    if(m == 0 && n == 0)
+        return 0;
+
+    size_t r;
+    while(n) {
+        r = m % n;
+        m = n;
+        n = r;
+    }
+    return m;
+}
+
 FILE* open_and_seek( const char* filename, const char* mode, off_t offset ) {
 	
 	FILE* f = fopen( filename, mode );

@@ -8,6 +8,9 @@ void create_empty_file( const char* filename );
 void print_bits(unsigned char c);
 
 
+// GCD for only positive ints and not caring about m==n==0 returning 0
+size_t gcd(size_t m, size_t n);
+
 #define JOIN( buf, type, type_fmt, elements, size, separator ) { \
 buf = malloc( 256 ); \
 char str[100]; \

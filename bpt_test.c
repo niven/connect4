@@ -109,20 +109,6 @@ internal void test_store_10() {
 	
 }
 
-internal void test_overwrite_dupes() {
-	bpt* store = new_bptree();
-	key_t dupes[6] = { 1, 2, 3, 4, 2, 2 };
-	for( size_t i=0; i<6; i++ ) {		
-		bpt_put( &store, (struct record){ .key = dupes[i], { .table_row_index = i} } );
-//		bpt_print( store, 0 );
-		record* r = bpt_get( store, dupes[i] );
-		assert( r != NULL );
-		assert( r->key == dupes[i] );
-		assert( r->value.table_row_index == i );
-	}
-	free_bptree( store );
-	
-}
 internal void test_search_nonexisting_items() {
 	bpt* store = new_bptree();
 
@@ -157,15 +143,44 @@ internal void test_store_random() {
 	
 }
 */
+
+internal void test_dupes() {
+
+	database* db = database_create( "dupes" );
+
+	board* current = new_board();
+
+	int drops[] = {3, 4, 1, 2, 5, 1, 4, 6, 3, 4};
+	bool was_insert;
+	for(int i=0; i<10; i++) {
+		board* next = drop( current, drops[i] );
+		render( next, "Board", false );
+		was_insert = database_put( db, next );
+		assert( was_insert );
+		free_board( next );
+
+		next = drop( current, drops[i] );
+		render( next, "Dupe board", false );
+		was_insert = database_put( db, next );
+		assert( !was_insert );
+		
+		free_board( current );
+		current = next;
+	}
+	
+	free_board( current );
+	
+	database_close( db );
+	
+}
+
+
 internal void test_store_cmdline_seq( char* seq ) {
 	
 	database* db = database_create( "test" );
 	
 	printf("Sequence: %s\n", seq);
 	char* element = strtok( seq, "," );
-
-	// TODO(stupid): if you don't call this you get segfaults. maybe board.o can call this itself somehow?
-	map_squares_to_winlines();
 
 	board* current = new_board();
 	
@@ -200,6 +215,9 @@ internal void test_store_cmdline_seq( char* seq ) {
 
 int main(int argc, char** argv) {
 
+	// TODO(stupid): if you don't call this you get segfaults. maybe board.o can call this itself somehow?
+	map_squares_to_winlines();
+
 	printf("ORDER %d, SPLIT_KEY_INDEX %d\n", ORDER, SPLIT_KEY_INDEX );
 	
 	// run cmd line stuff OR all tests
@@ -208,6 +226,9 @@ int main(int argc, char** argv) {
 		bpt_dump_cf();
 		exit( EXIT_SUCCESS );
 	}
+	
+	test_dupes();
+	
 	/*
 	// test storing 10 ints and finding them
 	test_store_10();
@@ -215,9 +236,6 @@ int main(int argc, char** argv) {
 	// test we don't find items that aren't there
 	test_search_nonexisting_items();
 
-	// insert duplicates (should overwrite
-	test_overwrite_dupes();
-	
 	// insert a bunch of random numbers and find them
 	test_store_random();
 

@@ -35,8 +35,8 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 		of the file are unchanged and the initial file position is at the beginning
 		of the file.
 	
-		Now in practice it turns out we always append, but I'm not sure ATM
-		TODO(investigate): if we always append, so maybe should use 'a'
+		Currently we always append, in later stages we will probably end up deleting rows,
+		so we can't use 'a'.
 	*/
 	FILE* out = fopen( db->table_filename, "r+" );
 	if( out == NULL ) {

@@ -59,7 +59,6 @@ void database_store_node( database* db, node* n ) {
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );
 	
-	// TODO(utils): function to open & seek
 	FILE* out = open_and_seek( db->index_filename, "r+", offset );
 	
 	print("storing %lu bytes at offset %llu", node_block_bytes, offset );

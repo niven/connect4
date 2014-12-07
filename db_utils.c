@@ -9,8 +9,6 @@
 #include "bplustree.h"
 #include "board63.h"
 
-#define ROW_SIZE_BYTES 27
-
 typedef enum command {
 
 	ERROR,
@@ -109,7 +107,7 @@ command parse_command( char* s, params* p ) {
 
 void print_row( FILE* in, size_t row_index ) {
 	
-	off_t filepos = (off_t)row_index * ROW_SIZE_BYTES;
+	off_t filepos = (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
 
 	struct stat s;
 	fstat( fileno(in), &s );

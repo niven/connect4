@@ -45,11 +45,9 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 	}
 
 	// move the file cursor to the initial byte of the row
-	// TODO(compress): define the rowsize somewhere, maybe a better board serialization thing
-	size_t row_data_bytes = sizeof(board63) + sizeof(b->state) + (2 * NUM_WINLINE_BYTES);
-	print("storing %lu bytes at offset %lu", row_data_bytes, row_index );
+	print("storing %lu bytes at offset %lu", BOARD_SERIALIZATION_NUM_BYTES, row_index );
 	// fseek returns nonzero on failure
-	if( fseek( out, (long) (row_index * row_data_bytes), SEEK_SET ) ) {
+	if( fseek( out, (long) (row_index * BOARD_SERIALIZATION_NUM_BYTES), SEEK_SET ) ) {
 		perror("fseek()");
 		exit( EXIT_FAILURE );
 	}

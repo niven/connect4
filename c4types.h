@@ -69,6 +69,8 @@ typedef struct board {
 	wins* winlines;
 } board;
 
+// Size of a serialized board: the key/board + gamestate (1 char) + winlines WHITE + winlines BLACK
+#define BOARD_SERIALIZATION_NUM_BYTES (sizeof(board63) + sizeof(char) + 2*NUM_WINLINE_BYTES)
 
 #define WINLINE_HOZ(y) 	{ {0,1,2,3}, {y,y,y,y} }, \
 								{ {1,2,3,4}, {y,y,y,y} }, \

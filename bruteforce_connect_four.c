@@ -85,6 +85,10 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 
 		// try and make a move in every column
 		for(int col=0; col<COLS; col++) {
+			// ONLY MAKE X DROPS IN COL 0
+			if( current_player(start_board) == BLACK && col > 0) {
+				continue;
+			}
 			board* move_made = drop( start_board, col );
 			if( move_made == NULL ) {
 				printf("Can't drop in column %d\n", col);
@@ -94,8 +98,11 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 				bool was_insert = database_put( to, move_made );
 				if( was_insert ) {
 					gc.unique_boards++;
+					render( move_made, "Unique board", false );
+				} else {
+					render( move_made, "Dupe board", false );
 				}
-				render( move_made, "GEN MOVE", false );
+
 				free_board( move_made );
 			}
 		}

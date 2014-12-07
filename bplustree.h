@@ -3,7 +3,7 @@
 
 #include "base.h"
 
-#define ORDER 4
+#define ORDER 16
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 typedef unsigned long key_t;

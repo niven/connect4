@@ -377,7 +377,9 @@ void bpt_dump_cf() {
 	printf("Total generic key compares: %llu\n", counters.key_compares);
 	printf("Total leaf key compares: %llu\n", counters.leaf_key_compares);
 	printf("Total node key compares: %llu\n", counters.node_key_compares);
-	printf("Key compares (leaf+node) per key insert: %llu\n", counters.key_compares / counters.key_inserts );
+	if( counters.key_inserts > 0 ) {
+		printf("Key compares (leaf+node) per key insert: %llu\n", counters.key_compares / counters.key_inserts );
+	}
 	printf("Anycounter: %llu\n", counters.any);
 	assert( counters.creates == counters.frees );
 }
@@ -634,7 +636,7 @@ bool bpt_insert_or_update( database* db, bpt* root, record r ) {
 		}
 		// 3. array has elements, and we should insert at the beginning
 		if( root->num_keys > 0 && insert_location == 0 ) {
-			assert( r.key < root->keys[insert_location] );
+			assert( r.key <= root->keys[insert_location] ); // could be equal!
 		}
 		// 4. insert somewhere in the middle
 		if( insert_location > 0 && insert_location < root->num_keys ) {

@@ -44,3 +44,22 @@ Gen	Boards
 5		6,261
 6		25,362
 7		84,530
+
+Now something is wrong, read about it in unique_boards_bug.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

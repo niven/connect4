@@ -166,6 +166,8 @@ internal void test_dupes() {
 		
 		free_board( current );
 		current = next;
+		
+		bpt_print( db->index, 0 );
 	}
 	
 	free_board( current );

@@ -715,7 +715,7 @@ internal node* bpt_find_node( database* db, bpt* root, key_t key ) {
 		current = current->pointers[node_index].node_ptr;
 	}
 	
-	// now we have an index to a leaf, which is on disk
+	// now we have an index to a node, which is on disk
 	size_t leaf_node_index = 0;
 	node* leaf_node = load_node_from_file( db->index_file, leaf_node_index );
 	free( leaf_node );

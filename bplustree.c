@@ -126,7 +126,8 @@ database* database_create( const char* name ) {
 	db->header->node_count = 0;
 
 	// create a new bpt
-	db->index = new_bptree( db->header->node_count++ ); // initial node ID is 0 when creating a new db
+	db->index = new_bptree( 1 ); // initial node ID is 1 when creating a new db
+	db->header->node_count++; // there is 1 node and its ID is 1
 	db->header->root_node_id = db->index->id;
 	
 	database_set_filenames( db, name );
@@ -217,9 +218,9 @@ bool database_put( database* db, board* b ) {
 	// tree might have grown, and since it grows upward *root might not point at the
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root
-	while( db->index->parent != NULL ) {
-		print("%p is not the root, moving up to %p", db->index, db->index->parent );
-		db->index = db->index->parent;
+	while( db->index->parent_node_id != 0 ) {
+		print("%lu is not the root, moving up to node %lu", db->index->id, db->index->parent_node_id );
+		db->index = load_node_from_file( db->index_file, db->index->parent_node_id );
 	}
 	db->header->root_node_id = db->index->id;
 	
@@ -309,7 +310,7 @@ bpt* new_bptree( size_t node_id ) {
 	
 	out->id = node_id;
 	
-	out->parent = NULL;
+	out->parent_node_id = 0;
 	
 	out->num_keys = 0;
 	out->is_leaf = true;
@@ -318,20 +319,6 @@ bpt* new_bptree( size_t node_id ) {
 	counters.creates++;
 	
 	return out;
-}
-
-
-
-void free_bptree( bpt* b ) {
-
-	printf("free_bptree: %p\n", b);
-	if( !b->is_leaf ) {
-		for( size_t i=0; i<=b->num_keys; i++ ) { // Note: <= since pointers is num_keys+1
-			free_bptree( b->pointers[i].node_ptr );
-		}
-	}
-	free( b );
-	counters.frees++;
 }
 
 void bpt_dump_cf() {
@@ -353,10 +340,10 @@ void bpt_dump_cf() {
 	assert( counters.creates == counters.frees );
 }
 
-void bpt_insert_node( database* db, bpt* n, key_t up_key, bpt* sibling ) {
+void bpt_insert_node( database* db, bpt* n, key_t up_key, size_t node_to_insert_id ) {
 
 	size_t k=0;
-	while( k<n->num_keys && n->keys[k] < up_key ) { // TODO: this is dumb and should binsearch
+	while( k<n->num_keys && n->keys[k] < up_key ) { // TODO(performance): use binsearch
 		k++;
 	}
 	print("insert key %lu at position %zu, node at position %zu", up_key, k, k+1);
@@ -371,13 +358,13 @@ void bpt_insert_node( database* db, bpt* n, key_t up_key, bpt* sibling ) {
 	// move pointers over (given that sibling is the right part of the split node,
 	// move 1 more than the keys)
 	memmove( &n->pointers[k+2], &n->pointers[k+1], sizeof(pointer)*elements_moving_right );
-	n->pointers[k+1].node_ptr = sibling;
+	n->pointers[k+1].child_node_id = node_to_insert_id;
 
 	n->num_keys++;
 
 #ifdef VERBOSE
 	prints("after insert:");
-	bpt_print( n, 0 );
+	bpt_print( db, n, 0 );
 #endif
 
 	// we might need to split (again)
@@ -397,7 +384,7 @@ void bpt_insert_node( database* db, bpt* n, key_t up_key, bpt* sibling ) {
 void bpt_split( database* db, bpt* n ) {
 	counters.splits++;
 #ifdef VERBOSE	
-	bpt_print( n, 0 );
+	bpt_print( db, n, 0 );
 #endif
 	print("%s id:%lu (%p)", (n->is_leaf ? "leaf" : "node"), n->id, n );
 	
@@ -488,16 +475,18 @@ void bpt_split( database* db, bpt* n ) {
 	memcpy( &sibling->pointers[0], &n->pointers[offset], sizeof(pointer)*(keys_moving_right+1) );
 	
 	// housekeeping
-	sibling->parent = n->parent;
+	sibling->parent_node_id = n->parent_node_id;
 	sibling->num_keys = keys_moving_right;
 	sibling->is_leaf = n->is_leaf; // if n was NOT a leaf, then sibling can't be either.
 	
 	// if the node had subnodes (!is_leaf) then the subnodes copied to the sibling need
 	// their parent pointer updated
-	// TODO: this looks dumb and is probably slow
+	// TODO(performance): keep the subnodes around so update parent pointer doesn't hit the disk
 	if( !n->is_leaf ) {
 		for(size_t i=0; i < sibling->num_keys+1; i++ ) {
-			sibling->pointers[i].node_ptr->parent = sibling;
+			node* s = load_node_from_file( db->index_file, sibling->pointers[i].child_node_id );
+			s->parent_node_id = sibling->id;
+			database_store_node( db, s );
 		}
 	}
 	
@@ -507,9 +496,9 @@ void bpt_split( database* db, bpt* n ) {
 
 #ifdef VERBOSE
 	print("Created sibling %p", sibling);
-	bpt_print( sibling, 0 );
+	bpt_print( db, sibling, 0 );
 	print("Node left over %p", n);
-	bpt_print( n, 0 );
+	bpt_print( db, n, 0 );
 #endif
 	
 	// the key that moves up is the split key in the leaf node case, and otherwise
@@ -519,28 +508,28 @@ void bpt_split( database* db, bpt* n ) {
 	print("Key that moves up: %lu", up_key);
 	// now insert median into our parent, along with sibling
 	// but if parent is NULL, we're at the root and need to make a new one
-	if( n->parent == NULL ) {
+	if( n->parent_node_id == 0 ) {
 
 		bpt* new_root = new_bptree( db->header->node_count++ );
 		print("No parent, creating new root: %p", new_root);
 
 		new_root->keys[0] = up_key; // since left must all be smaller
-		new_root->pointers[0].node_ptr = n;
-		new_root->pointers[1].node_ptr = sibling;
+		new_root->pointers[0].child_node_id = n->id;
+		new_root->pointers[1].child_node_id = sibling->id;
 
 		new_root->is_leaf = false;
 		new_root->num_keys = 1;
 
 		database_store_node( db, new_root );
 
-		n->parent = sibling->parent = new_root;
+		n->parent_node_id = sibling->parent_node_id = new_root->id;
 
 #ifdef VERBOSE
 		print("new root %p", new_root);
-		bpt_print( new_root, 0 );
+		bpt_print( db, new_root, 0 );
 #endif
 	} else {
-		print("inserting key %lu + sibling node %p into parent %p", up_key, sibling, n->parent );
+		print("inserting key %lu + sibling node %lu into parent %lu", up_key, sibling->id, n->parent_node_id );
 		// so what we have here is (Node)Key(Node) so we need to insert this into the
 		// parent as a package. Parent also has NkNkNkN and we've just replaced a Node
 		// with a NkN. The parent is actually kkk, NNNN so finding where to insert the key
@@ -551,11 +540,15 @@ void bpt_split( database* db, bpt* n ) {
 		// as well
 #ifdef VERBOSE
 		prints("Parent node:");
-		bpt_print( n->parent, 0 );
+		node* temp = load_node_from_file( db->index_file, n->parent_node_id );
+		bpt_print( db, temp, 0 );
+		free( temp );
 #endif		
 		counters.parent_inserts++;
-		bpt_insert_node( db, n->parent, up_key, sibling );
-
+		// TODO(performance): node cache
+		node* parent = load_node_from_file( db->index_file, n->parent_node_id );
+		bpt_insert_node( db, parent, up_key, sibling->id );
+		free( parent );
 	}
 	
 	prints("writing changes to disk");
@@ -676,9 +669,12 @@ bool bpt_insert_or_update( database* db, bpt* root, record r ) {
 
 	// descend a node
 	print("Must be in left pointer of keys[%lu] = %lu", insert_location, root->keys[insert_location] );
-	return bpt_insert_or_update( db, root->pointers[insert_location].node_ptr, r );
+	// TODO(performance): node cache
+	node* target = load_node_from_file( db->index_file, root->pointers[insert_location].child_node_id );
+	bool was_insert = bpt_insert_or_update( db, target, r );
+	free( target );
 	prints("Inserted into child node");
-
+	return was_insert;
 }
 
 /*
@@ -712,13 +708,10 @@ internal node* bpt_find_node( database* db, bpt* root, key_t key ) {
 			assert( key >= current->keys[node_index-1] );
 		}
 
-		current = current->pointers[node_index].node_ptr;
+		size_t next_node_id = current->pointers[node_index].child_node_id;
+		free( current );
+		current = load_node_from_file( db->index_file, next_node_id );
 	}
-	
-	// now we have an index to a node, which is on disk
-	size_t leaf_node_index = 0;
-	node* leaf_node = load_node_from_file( db->index_file, leaf_node_index );
-	free( leaf_node );
 	
 	print("returning node %p", current);
 	return current;
@@ -726,6 +719,8 @@ internal node* bpt_find_node( database* db, bpt* root, key_t key ) {
 
 node* load_node_from_file( FILE* index_file, size_t node_id ) {
 	print("retrieve node %lu", node_id);
+
+	// TODO(performance): node ids start at 1, but we should store node 1 at filepos 0
 
 	size_t node_block_bytes = sizeof( node );
 	off_t node_block_offset = file_offset_from_node( node_id );
@@ -748,6 +743,27 @@ node* load_node_from_file( FILE* index_file, size_t node_id ) {
 
 }
 
+board* load_row_from_file( FILE* in, off_t offset ) {
+
+	if( fseek( in, (long) offset, SEEK_SET ) ) {
+		perror("fseek()");
+		return NULL;
+	}
+	
+	return read_board_record( in );
+}
+
+board* database_get( database* db, key_t key ) {
+	
+	record* r = bpt_get( db, db->index, key );
+	
+	if( r == NULL ) {
+		return NULL;
+	}
+	
+	return load_row_from_file( db->index_file, (off_t)r->value.table_row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES );
+}
+
 record* bpt_get( database* db, bpt* root, key_t key ) {
 	
 	counters.get_calls++;
@@ -767,7 +783,7 @@ record* bpt_get( database* db, bpt* root, key_t key ) {
 		prints("Key not found");
 		return NULL;
 	}
-	print("Index for key we're looking for: %lu", key_index);
+	print("Key index: %lu", key_index);
 	
 	record* r = (record*)malloc( sizeof(record) );
 	if( r == NULL ) {
@@ -776,7 +792,7 @@ record* bpt_get( database* db, bpt* root, key_t key ) {
 	}
 	r->key = key;
 	r->value = dest_node->pointers[key_index]; 
-	
+	print("returning record { key = %lu, value.table_row_index = %lu / value.child_node_id = %lu }", r->key, r->value.table_row_index, r->value.child_node_id);
 	return r;
 	
 }
@@ -790,54 +806,57 @@ internal void bpt_print_leaf( node* n, int indent ) {
 	for( size_t i=0; i<n->num_keys; i++ ) {
 		printf("%lu ", n->keys[i] );
 	}
-	printf("] - ID:%lu (%p) (parent %p)\n", n->id, n, n->parent);
+	printf("] - ID:%lu (%p) (parent id %lu)\n", n->id, n, n->parent_node_id);
 
 }
 
-void bpt_print( bpt* root, int indent ) {
+void bpt_print( database* db, node* start, int indent ) {
 
 	char ind[100] = "                               END";
 	ind[indent*2] = '\0';
 	
-	if( root->is_leaf ) {
-		bpt_print_leaf( root, indent );
+	if( start->is_leaf ) {
+		bpt_print_leaf( start, indent );
 		return;
 	}
-	printf("%sN ID:%lu (%p) keys: %zu (parent %p)\n", ind, root->id, root, root->num_keys, root->parent);
+	printf("%sN ID:%lu (%p) keys: %zu (parent id %lu)\n", ind, start->id, start, start->num_keys, start->parent_node_id);
 		
 	// print every key/node
 	node* n;
-	for( size_t i=0; i<root->num_keys; i++ ) {
-		n = root->pointers[i].node_ptr;
+	for( size_t i=0; i<start->num_keys; i++ ) {
+		n = load_node_from_file( db->index_file, start->pointers[i].child_node_id  );
 		assert( n != NULL );
 
 		if( n->is_leaf ) {
 			bpt_print_leaf( n, indent+1 );
 		} else {
-			bpt_print( n, indent+1 );			
+			bpt_print( db, n, indent+1 );			
 		}
-		printf("%sK-[ %lu ]\n", ind, root->keys[i] );
+		printf("%sK-[ %lu ]\n", ind, start->keys[i] );
+		free( n );
 	}
 	// print the last node
-	n = root->pointers[root->num_keys].node_ptr;
+	n = load_node_from_file( db->index_file, start->pointers[start->num_keys].child_node_id  ); 
 	assert( n != NULL );
-	bpt_print( n, indent + 1 );
-
+	bpt_print( db, n, indent + 1 );
+	free( n );
 }
 
 // TODO: find out WTF is going on. According to iprofiler this is BY FAR the slowest thing here. WTF?
 // update: it's not slow. doing a size after 300K items at ORDER 512 means around 1K nodes, AKA 1K calls
 // so either keep the size in the root (make it different from the node) or make this not recursive?
-size_t bpt_size( bpt* root ) {
+size_t bpt_size( database* db, bpt* start ) {
 	counters.any++;
 	
-	if( root->is_leaf ) {
-		return root->num_keys;
+	if( start->is_leaf ) {
+		return start->num_keys;
 	}
 	
 	size_t count = 0;
-	for( size_t i=0; i<=root->num_keys; i++ ) { // 1 more pointer than keys
-		count += bpt_size( root->pointers[i].node_ptr );
+	for( size_t i=0; i<=start->num_keys; i++ ) { // 1 more pointer than keys
+		node* child = load_node_from_file( db->index_file, start->pointers[i].child_node_id );
+		count += bpt_size( db, child );
+		free( child );
 	}
 	
 	return count;

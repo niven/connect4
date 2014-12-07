@@ -3,7 +3,7 @@
 
 #include "base.h"
 
-#define ORDER 16
+#define ORDER 3
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 typedef unsigned long key_t;
@@ -26,8 +26,9 @@ struct bpt_counters {
 
 // nodes have pointers to other nodes, or to table rows
 // table rows are just row numbers (and we know the size, thus the offset in the table file)
+// both are the same, but this makes the code much more clear
 typedef union pointer {
-	struct node* node_ptr;
+	size_t child_node_id;
 	size_t table_row_index;
 } pointer;
 
@@ -36,11 +37,12 @@ typedef struct record {
 	pointer value;
 } record;
 
+// node_id 0 is reserved to indicate NULL/empty/no parent
 typedef struct node {
 	
 	size_t id;
 	
-	struct node* parent;
+	size_t parent_node_id;
 
 	size_t num_keys; // number of entries
 
@@ -91,18 +93,18 @@ board* database_get( database* db, key_t key );
 size_t database_size( database* db );
 
 node* load_node_from_file( FILE* index_file, size_t node_id );
-
+board* load_row_from_file( FILE* in, off_t offset );
 
 // public API (always takes a root)
 bool bpt_put( bpt** root, record r );
-record* bpt_get(  database* db, bpt* root, key_t key );
-size_t bpt_size( bpt* node );
+record* bpt_get( database* db, bpt* root, key_t key );
+size_t bpt_size( database* db, bpt* node );
 
-void bpt_print( bpt* root, int indent );
+void bpt_print( database* db, bpt* start, int indent );
 
 // internal stuff (operates on nodes)
 // TODO: declare in .c file
-void bpt_insert_node( database* db, bpt* node, key_t up_key, bpt* sibling );
+void bpt_insert_node( database* db, bpt* node, key_t up_key, size_t node_to_insert_id );
 void bpt_split( database* db, bpt* node );
 bool bpt_insert_or_update( database* db, bpt* node, record r );
 

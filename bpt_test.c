@@ -50,10 +50,10 @@ internal void test_dupes() {
 		free_board( current );
 		current = next;
 		
-		bpt_print( db->index, 0 );
+		bpt_print( db, db->index, 0 );
 	}
 	
-	assert( bpt_size( db->index ) == COUNT );
+	assert( bpt_size( db, db->index ) == COUNT );
 	assert( db->header->table_row_count == COUNT );
 	
 	free_board( current );
@@ -65,7 +65,7 @@ internal void test_dupes() {
 
 internal void test_store_cmdline_seq( char* seq ) {
 	
-	database* db = database_create( "test" );
+	database* db = database_create( "test_store_cmdline_seq" );
 	
 	printf("Sequence: %s\n", seq);
 	char* element = strtok( seq, "," );
@@ -86,12 +86,19 @@ internal void test_store_cmdline_seq( char* seq ) {
 		render( next, element, false );
 
 		database_put( db, next );
-
+		key_t key = encode_board( next )->data;
+		printf("Inserted key: %lu\n", key);
+		board* retrieved = database_get( db, key );
+		assert( retrieved != NULL );
+		render( retrieved, "result from db_get", false);
+		assert( encode_board( retrieved )->data == key );
+		
+		
 		free_board( current );
 		current = next;
 
 		printf("<<<<< After insert\n" );
-		bpt_print( db->index, 0 );
+		bpt_print( db, db->index, 0 );
 		
 		element = strtok( NULL, "," );
 	}

@@ -67,12 +67,13 @@ typedef struct database_header {
 	size_t root_node_id;
 } database_header;
 
+#define DATABASE_FILENAME_SIZE 256
 typedef struct database {
 
-	char* index_filename;
+	char index_filename[DATABASE_FILENAME_SIZE];
 	FILE* index_file;
 
-	char* table_filename;
+	char table_filename[DATABASE_FILENAME_SIZE];
 	FILE* table_file;
 
 	bpt* index;

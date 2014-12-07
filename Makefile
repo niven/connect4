@@ -4,7 +4,7 @@ else
 endif
 
 CC=clang
-DONTCARE_WARNINGS= -Wno-padded
+DONTCARE_WARNINGS= -Wno-padded -Wno-format-nonliteral
 CFLAGS=-std=c99 -g -Weverything -pedantic ${DONTCARE_WARNINGS} -O0 ${MODEFLAG}
 CMD=${CC} ${CFLAGS}
 

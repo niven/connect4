@@ -17,6 +17,7 @@ internal void database_store_node( database* db, node* data );
 internal void read_database_header( database* db );
 internal void write_database_header( database* db );
 internal off_t file_offset_from_node( size_t id );
+internal void database_set_filenames( database* db, const char* name );
 
 off_t file_offset_from_node( size_t id ) {
 	
@@ -100,6 +101,16 @@ void read_database_header( database* db ) {
 	
 }
 
+void database_set_filenames( database* db, const char* name ) {
+
+	int written = snprintf( db->index_filename, DATABASE_FILENAME_SIZE, "%s%s", name, ".c4_index" );
+	assert( written < DATABASE_FILENAME_SIZE );
+
+	written = snprintf( db->table_filename, DATABASE_FILENAME_SIZE, "%s%s", name, ".c4_table" );
+	assert( written < DATABASE_FILENAME_SIZE );
+	
+}
+
 
 database* database_create( const char* name ) {
 	
@@ -118,22 +129,14 @@ database* database_create( const char* name ) {
 	db->index = new_bptree( db->header->node_count++ ); // initial node ID is 0 when creating a new db
 	db->header->root_node_id = db->index->id;
 	
+	database_set_filenames( db, name );
+
 	// create the index file
-	// TODO(utils): use the str_append stuff for dynstrings probably
-	size_t buf_size = strlen( name ) + strlen( ".c4_index" ) + 1;
-	db->index_filename = malloc( buf_size );
-	db->index_filename[0] = '\0';
-	strcat( db->index_filename, name );
-	strcat( db->index_filename, ".c4_index" );
 	create_empty_file( db->index_filename );
 	db->index_file = fopen( db->index_filename, "r+" );
 	print("created index file %s", db->index_filename);
 	
 	// create the table file
-	buf_size = strlen( name ) + strlen( ".c4_table" ) + 1;
-	db->table_filename = malloc( buf_size );
-	strcpy( db->table_filename, name );
-	strcat( db->table_filename, ".c4_table" );
 	create_empty_file( db->table_filename );
 	db->table_file = fopen( db->table_filename, "r+" );
 	
@@ -155,21 +158,13 @@ database* database_open( const char* name ) {
 		exit( EXIT_FAILURE );
 	}
 	
+	database_set_filenames( db, name );
+
 	// open the index file
-	// TODO(utils): use the str_append stuff for dynstrings probably
-	size_t buf_size = strlen( name ) + strlen( ".c4_index" ) + 1;
-	db->index_filename = malloc( buf_size );
-	db->index_filename[0] = '\0';
-	strcat( db->index_filename, name );
-	strcat( db->index_filename, ".c4_index" );
 	db->index_file = fopen( db->index_filename, "r+" );
 	print("opened index file %s", db->index_filename);
 	
-	// create the table file
-	buf_size = strlen( name ) + strlen( ".c4_table" ) + 1;
-	db->table_filename = malloc( buf_size );
-	strcpy( db->table_filename, name );
-	strcat( db->table_filename, ".c4_table" );
+	// open the table file
 	db->table_file = fopen( db->table_filename, "r+" );
 	print("opened table file %s", db->table_filename);
 	
@@ -198,9 +193,6 @@ void database_close( database* db ) {
 	
 	fclose( db->index_file );
 	fclose( db->table_file );
-	
-	free( db->table_filename );
-	free( db->index_filename );
 	
 	free( db );
 	

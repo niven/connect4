@@ -117,19 +117,6 @@ int main(int argc, char** argv) {
 	
 	test_dupes();
 	
-	/*
-	// test storing 10 ints and finding them
-	test_store_10();
-
-	// test we don't find items that aren't there
-	test_search_nonexisting_items();
-
-	// insert a bunch of random numbers and find them
-	test_store_random();
-
-	// insert 0..100 in random order
-	test_store_randomly();
-*/
 	bpt_dump_cf();
 
 	printf("Done\n");

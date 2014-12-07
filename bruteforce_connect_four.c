@@ -29,18 +29,6 @@ internal void update_counters( gen_counter* gc, board* b ) {
 	// unique boards?
 }
 
-
-/*
-Generate all possible boards reading boards from file1, generating all possibles into file2
-This includes duplicates etc
-
-So this produces around this:
-	
-
-
-Where the generation_9.c4 file is 995 MB
-*/
-
 internal board* read_board(FILE* in, size_t board_index ) {
 	
 	off_t filepos = (off_t)board_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
@@ -49,7 +37,6 @@ internal board* read_board(FILE* in, size_t board_index ) {
 		printf("Most likely no such board index: %lu\n", board_index );
 		return NULL;
 	}
-	
 	
 	return read_board_record( in );
 	
@@ -170,33 +157,6 @@ int main( int argc, char** argv ) {
 	for( int index = optind; index < argc; index++ ) {
 		printf("Non-option argument %s\n", argv[index]);
 	}
-	
-	/*
-	Anyway, on to autogen
-	I think board->enumerate possible moves->N boards in a stream
-	then for every new board repeat.
-	this does mean of course storing each board twice :(
-	
-	OTOH, as we know that white can always win, we can discard any move by white that ends in either black winning or draws.
-	So if we go depth first we can prune rather large parts of the tree
-	
-	(and since no state we can create a nice REST API to always win ;)
-	
-	We can also prune every move that leads to opponent-win
-	
-	Maybe just create a hierarhy of directories, which have names encoding the board states.
-	
-	or files could encode the branches and have contents
-	
-	For debugging and firguring out what is going on: encode board state, read encoded board and render in ascii
-	
-	What is better is keeping every board as 88 bits/11 bytes and then storing them sorted on disk in 1 big
-	file (aka a "database"). Since many different move sequences can lead to identical board states we save a lot of stuff.
-	
-	Whenever we hit a blackwin or draw we need to backpropagate to find and eliminate all white moves that lead to this point.
-	this means we need the move sequence as well. Maybe? lemme think.
-	
-	*/
 
 	if( database_name == NULL ) {
 		fprintf( stderr, "Required database name missing (-d ...)\n");

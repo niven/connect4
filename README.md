@@ -34,4 +34,21 @@ a basic B+ Tree implementation that doesn't do deletes (don't need thenm), and i
 
 And todo many things so I though it was time to throw this onto github since it has turned into a medium sized software project (You can tell easily: you've started to worry about multiple files and have implemented a binary search)
 
+# Overview
+
+the main program takes a board, generates new boards (with associated data)
+and then stores the boards in the database.
+
+The database can be queried to see if a board is alrewady there, and it's on disk and stuff so we can use
+a database of boards to generate the next generation of boards and eventually end up with a DAG that has all possible
+board states in it, which is a pretty good result.
+
+Since there is a database of board states for every generation we can run things independantly. This makes testing and tweaking easier.
+
+When we actually have these databases we can also do a pruning step to arrive at (yet another) database of moves that play the perfect game. If there are mutliple branches in boardspace that lead to a win for white (which we'll assume is there since the game is solved) we can prune the branch with the largest amount of moves. All cool.
+
+Now let's discuss the database.
+Here we store a board. The way this happens is to create a unique key from the board state (encode as a board63) and store that in our on-disk binary+ tree. The associated data we store in another file.
+
+The bpt is nice and balanced and makes searches easy (and fast, since we do billions of these this is important). The data is stored in a table file where we keep winlines around etc.
 

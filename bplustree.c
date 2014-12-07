@@ -180,7 +180,6 @@ database* database_open( const char* name ) {
 
 void database_close( database* db ) {
 	
-	// TODO(fix) don't think we need this when stuff is on disk
 	print("closing %s and %s", db->table_filename, db->index_filename);
 	
 	write_database_header( db );

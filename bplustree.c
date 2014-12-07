@@ -52,7 +52,6 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 		exit( EXIT_FAILURE );
 	}
 	
-	// TODO(feature): fix that function, it stores the board63 as well
 	write_board_record( b, out );
 	
 	fclose( out );

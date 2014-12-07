@@ -10,8 +10,6 @@ typedef unsigned long key_t;
 
 #define KEY_SIZE (sizeof(key_t))
 
-static const char data_file[] = "boards.c4_data";
-
 struct bpt_counters {
 	uint64_t creates;
 	uint64_t frees;

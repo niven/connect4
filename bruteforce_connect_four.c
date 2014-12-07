@@ -18,9 +18,6 @@
 #include "counter.h"
 #include "bplustree.h"
 
-// TODO(fail): define from something in board.h or something
-#define ROW_SIZE_BYTES 27
-
 
 internal void update_counters( gen_counter* gc, board* b ) {
 	
@@ -46,7 +43,7 @@ Where the generation_9.c4 file is 995 MB
 
 internal board* read_board(FILE* in, size_t board_index ) {
 	
-	long filepos = (long)board_index * ROW_SIZE_BYTES;
+	off_t filepos = (off_t)board_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
 	if( fseek( in, filepos, SEEK_SET ) ) {
 		perror("fseek()");
 		printf("Most likely no such board index: %lu\n", board_index );

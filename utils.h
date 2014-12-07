@@ -1,6 +1,7 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+FILE* open_and_seek( const char* filename, const char* mode, off_t offset );
 void create_empty_file( const char* filename );
 void print_bits(unsigned char c);
 

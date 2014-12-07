@@ -38,19 +38,11 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 		Currently we always append, in later stages we will probably end up deleting rows,
 		so we can't use 'a'.
 	*/
-	FILE* out = fopen( db->table_filename, "r+" );
-	if( out == NULL ) {
-		perror("fopen()");
-		exit( EXIT_FAILURE );
-	}
+	off_t offset = (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
+	FILE* out = open_and_seek( db->table_filename, "r+", offset );
 
 	// move the file cursor to the initial byte of the row
-	print("storing %lu bytes at offset %lu", BOARD_SERIALIZATION_NUM_BYTES, row_index );
-	// fseek returns nonzero on failure
-	if( fseek( out, (long) (row_index * BOARD_SERIALIZATION_NUM_BYTES), SEEK_SET ) ) {
-		perror("fseek()");
-		exit( EXIT_FAILURE );
-	}
+	print("storing %lu bytes at offset %llu", BOARD_SERIALIZATION_NUM_BYTES, offset );
 	
 	write_board_record( b, out );
 	
@@ -59,28 +51,18 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 }
 
 
+
 void database_store_node( database* db, node* n ) {
 
 	print("writing node %lu (%p) to disk (%s)", n->id, n, db->index_filename );
 	
 	off_t offset = file_offset_from_node( n->id );
-
 	size_t node_block_bytes = sizeof( node );
 	
 	// TODO(utils): function to open & seek
-	FILE* out = fopen( db->index_filename, "r+" );
-	if( out == NULL ) {
-		perror("fopen()");
-		exit( EXIT_FAILURE );
-	}
-
-	// move the file cursor to the initial byte of the row
+	FILE* out = open_and_seek( db->index_filename, "r+", offset );
+	
 	print("storing %lu bytes at offset %llu", node_block_bytes, offset );
-	// fseek returns nonzero on failure
-	if( fseek( out, offset, SEEK_SET ) ) {
-		perror("fseek()");
-		exit( EXIT_FAILURE );
-	}
 	
 	size_t written = fwrite( n, node_block_bytes, 1, out );
 	if( written != 1 ) {

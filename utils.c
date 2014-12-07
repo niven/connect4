@@ -4,6 +4,23 @@
 
 #include "utils.h"
 
+FILE* open_and_seek( const char* filename, const char* mode, off_t offset ) {
+	
+	FILE* f = fopen( filename, mode );
+	if( f == NULL ) {
+		perror("fopen()");
+		return NULL;
+	}
+
+	// fseek returns nonzero on failure
+	if( fseek( f, offset, SEEK_SET ) ) {
+		perror("fseek()");
+		return NULL;
+	}
+	
+	return f;
+}
+
 void create_empty_file( const char* filename ) {
 	
 	FILE* out = fopen( filename, "w" );

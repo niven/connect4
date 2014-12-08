@@ -219,10 +219,10 @@ bool database_put( database* db, board* b ) {
 	// but in order to store it we need to have the offset in the table
 	// which we know as we can just keep track of that
 	
-	board63* board_key = encode_board( b );
-	print("key for this board: %lu", board_key->data );
+	board63 board_key = encode_board( b );
+	print("key for this board: %lu", board_key );
 	
-	record r = { .key = board_key->data, .value.table_row_index = db->header->table_row_count };
+	record r = { .key = board_key, .value.table_row_index = db->header->table_row_count };
 
 	// TODO(bug): this should not overwrite, that means wasting space in the table file, also return inserted/dupe
 	counters.key_inserts++;

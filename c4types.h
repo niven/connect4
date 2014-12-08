@@ -32,9 +32,7 @@ typedef unsigned char player;
 // we use this for storing on disk to save space, but to operate it's nicer to have a normal board
 // so we convert at read/write time
 // TODO(stupid): just typedef? why a struct here at all?
-typedef struct board63 {
-	unsigned long data;
-} board63;
+typedef unsigned long board63;
 
 
 // bit fields for winlineIDs for White/Black

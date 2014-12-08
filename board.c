@@ -373,7 +373,7 @@ board* read_board_record( FILE* in ) {
 //	printf("Read board63\n");
 //	print_board63( &b63 );
 
-	board* b = decode_board63( &b63 );
+	board* b = decode_board63( b63 );
 
 	// read winlines if this is not an end-state-board (win/draw)
 	if( (b->state & OVER) == 0 ) { // ongoing
@@ -397,17 +397,15 @@ board* read_board_record( FILE* in ) {
 
 void write_board_record( board* b, FILE* out ) {
 	
-	board63* b63 = encode_board( b );
+	board63 b63 = encode_board( b );
 //	printf("Write board63\n");
 //	print_board63( b63 );
-	size_t elements_written = fwrite( b63, sizeof(board63), 1, out );
+	size_t elements_written = fwrite( &b63, sizeof(board63), 1, out );
 	if( elements_written != 1 ) {
 		perror("fwrite()");
 		exit( EXIT_FAILURE );
 	}
 	
-	free( b63 );
-
 	// write gamestate
 	fwrite( &b->state, sizeof(b->state), 1, out );
 

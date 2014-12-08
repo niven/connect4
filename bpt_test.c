@@ -86,12 +86,12 @@ internal void test_store_cmdline_seq( char* seq ) {
 		render( next, element, false );
 
 		database_put( db, next );
-		key_t key = encode_board( next )->data;
+		key_t key = encode_board( next );
 		printf("Inserted key: %lu\n", key);
 		board* retrieved = database_get( db, key );
 		assert( retrieved != NULL );
 		render( retrieved, "result from db_get", false);
-		assert( encode_board( retrieved )->data == key );
+		assert( encode_board( retrieved ) == key );
 		
 		
 		free_board( current );

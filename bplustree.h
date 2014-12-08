@@ -6,7 +6,10 @@
 #define ORDER 3
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
+
 typedef unsigned long key_t;
+
+//#define KEY_SIZE_EQUALS_ENCODED_BOARD_SIZE (1/sizeof(key_t)=sizeof(board63))
 
 #define KEY_SIZE (sizeof(key_t))
 

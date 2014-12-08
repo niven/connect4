@@ -7,14 +7,14 @@
 
 
 // print "0b" + (63 bits as fillcount 3 + ':' + 6 bits values + '\n') + 'endstate marker' + NUL
-void print_board63( board63* b ) {
+void print_board63( board63 b ) {
 
-	printf("board63 as long %ld\n", b->data);
+	printf("board63 as long %ld\n", b );
 
 	// as binary string
 	printf("0b");
 	for(int i=63; i>=0; i--) {
-		printf("%c", (b->data >> i) & 1 ? '1' : '0' );
+		printf("%c", (b >> i) & 1 ? '1' : '0' );
 	}
 	printf("\ncnt 0=w 1=b");
 	
@@ -30,24 +30,18 @@ void print_board63( board63* b ) {
 			out[offset+i] = ':';
 			offset++;
 		}
-		out[offset+i] = ((b->data >> (63-i)) & 1) ? '1' : '0'; // there are 63 bits, but the last one is unused out of 64
+		out[offset+i] = ((b >> (63-i)) & 1) ? '1' : '0'; // there are 63 bits, but the last one is unused out of 64
 	}
 	
 	out[offset+63+0] = '\n';	
-	out[offset+63+1] = '0' + (b->data & 0x1);
+	out[offset+63+1] = '0' + (b & 0x1);
 	out[offset+63+2] = '\0';
 	printf("%s\n", out);
 }
 
-board63* encode_board( board* src ) {
+board63 encode_board( board* src ) {
 	
-	board63* dest = (board63*)malloc( sizeof(board63) );
-	if( dest == NULL ) {
-		perror("malloc()");
-		exit( EXIT_FAILURE );
-	}
-	
-	dest->data = 0;
+	board63 dest = 0;
 	
 	// encode every column as fillcount + 6 bits
 	// MSB(3) = fillcount of col0 etc for easy binary reading of humans
@@ -63,28 +57,28 @@ board63* encode_board( board* src ) {
 			}
 		}
 		// write encoded fillcount + pieces
-		dest->data <<= 9; // make space first
+		dest <<= 9; // make space first
 //		printf("writing a fillcount of %d\n", row );
 		unsigned long temp = row;
 		temp <<= 6; // create space for 6 bits of pieces
 		temp |= pieces; // now 3 bits fillcount followed by up to 6 bits of pieces, lowest y first
-		dest->data |= temp;
+		dest |= temp;
 		// reset
 		pieces = 0;
 		
 		
 	}
 	
-	dest->data <<= 1; // last bit is state
+	dest <<= 1; // last bit is state
 	
 	if( src->state & OVER ) {
-		dest->data |= 1; // set the gameover bit, indicating no state or winlines follow.
+		dest |= 1; // set the gameover bit, indicating no state or winlines follow.
 	}
 	
 	return dest;
 }
 
-board* decode_board63( board63* src ) {
+board* decode_board63( board63 src ) {
 	
 	board* dest = (board*)malloc( sizeof(board) );
 	if( dest == NULL ) {
@@ -97,15 +91,15 @@ board* decode_board63( board63* src ) {
 //	printf("Decode board %p\n", dest);
 	memset( dest->squares, EMPTY, ROWS*COLS );
 
-	if( src->data & 1 ) {
+	if( src & 1 ) {
 		dest->state |= OVER;
 	}
-	src->data >>= 1; // skip it
+	src >>= 1; // skip it
 	
 	// fill it backwards
 	int total_pieces = 0;
 	for( int datacol=COLS-1; datacol>=0; datacol-- ) {
-		int data = (src->data >> (9*datacol)) & 0x01ff; // Nth col and mask the 9 bits we need
+		int data = (src >> (9*datacol)) & 0x01ff; // Nth col and mask the 9 bits we need
 		int fillcount = (data>>6) & 0x7; // LSB(3)
 		total_pieces += fillcount;
 		int pieces = data & 0x3f; // LSB(6)

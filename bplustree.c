@@ -133,7 +133,7 @@ database* database_create( const char* name ) {
 	db->header = (database_header*) malloc( sizeof(database_header) );
 	
 	db->header->table_row_count = 0;
-	db->header->node_count = 0;
+	db->header->node_count = 1; // always have an initial node
 
 	// create a new bpt
 	node* first_node = new_bptree( 1 ); // initial node ID is 1 when creating a new db
@@ -525,7 +525,7 @@ void bpt_split( database* db, node* n ) {
 	if( n->parent_node_id == 0 ) {
 
 		node* new_root = new_bptree( db->header->node_count++ );
-		print("No parent, creating new root: %p", new_root);
+		print("No parent, created new root: %p", new_root);
 
 		new_root->keys[0] = up_key; // since left must all be smaller
 		new_root->pointers[0].child_node_id = n->id;
@@ -537,11 +537,8 @@ void bpt_split( database* db, node* n ) {
 		database_store_node( db, new_root );
 
 		n->parent_node_id = sibling->parent_node_id = new_root->id;
+		free_node( new_root );
 
-#ifdef VERBOSE
-		print("new root %p", new_root);
-		bpt_print( db, new_root, 0 );
-#endif
 	} else {
 		print("inserting key %lu + sibling node %lu into parent %lu", up_key, sibling->id, n->parent_node_id );
 		// so what we have here is (Node)Key(Node) so we need to insert this into the
@@ -556,13 +553,13 @@ void bpt_split( database* db, node* n ) {
 		prints("Parent node:");
 		node* temp = load_node_from_file( db->index_file, n->parent_node_id );
 		bpt_print( db, temp, 0 );
-		free( temp );
+		free_node( temp );
 #endif		
 		counters.parent_inserts++;
 		// TODO(performance): node cache
 		node* parent = load_node_from_file( db->index_file, n->parent_node_id );
 		bpt_insert_node( db, parent, up_key, sibling->id );
-		free( parent );
+		free_node( parent );
 	}
 	
 	prints("writing changes to disk");

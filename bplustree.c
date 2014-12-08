@@ -19,6 +19,7 @@ internal void write_database_header( database* db );
 internal off_t file_offset_from_node( size_t id );
 internal off_t file_offset_from_row( size_t row_index );
 internal void database_set_filenames( database* db, const char* name );
+internal void free_node( node* n );
 
 // the initial node is 1 (0 is reserved)
 off_t file_offset_from_node( size_t id ) {
@@ -63,7 +64,7 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 
 void database_store_node( database* db, node* n ) {
 
-	print("writing node %lu (%p) to disk (%s)", n->id, n, db->index_filename );
+	print("writing node %lu to %s", n->id, db->index_filename );
 	
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );
@@ -197,13 +198,17 @@ void database_close( database* db ) {
 	// now we have to free all nodes we have in memory, which is at least the root node
 	free( db->index );
 	// TODO(bug): keep track of loaded nodes somewhere and release them here
+
 	
 	free( db->header );
+
 	
 	fclose( db->index_file );
 	fclose( db->table_file );
+
 	
 	free( db );
+
 	
 	prints("closed");
 }
@@ -309,9 +314,15 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 	return BINSEARCH_INSERT;
 }
 
-bpt* new_bptree( size_t node_id ) {
+void free_node( node* n ) {
+	assert( n != NULL );
+	free( n );
+	counters.frees++;
+}
+
+node* new_bptree( size_t node_id ) {
 	
-	bpt* out = (bpt*)malloc( sizeof(bpt) );
+	node* out = (node*)malloc( sizeof(node) );
 	if( out == NULL ) {
 		perror("malloc()");
 		exit( EXIT_FAILURE );
@@ -349,7 +360,7 @@ void bpt_dump_cf() {
 	assert( counters.creates == counters.frees );
 }
 
-void bpt_insert_node( database* db, bpt* n, key_t up_key, size_t node_to_insert_id ) {
+void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id ) {
 
 	size_t k=0;
 	while( k<n->num_keys && n->keys[k] < up_key ) { // TODO(performance): use binsearch
@@ -390,7 +401,7 @@ void bpt_insert_node( database* db, bpt* n, key_t up_key, size_t node_to_insert_
 
 
 
-void bpt_split( database* db, bpt* n ) {
+void bpt_split( database* db, node* n ) {
 	counters.splits++;
 #ifdef VERBOSE	
 	bpt_print( db, n, 0 );
@@ -479,7 +490,7 @@ void bpt_split( database* db, bpt* n ) {
 	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
 	print("Moving %zu keys (%zu nodes) right from offset %zu (key = %lu)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
-	bpt* sibling = new_bptree( db->header->node_count++ );	
+	node* sibling = new_bptree( db->header->node_count++ );	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
 	memcpy( &sibling->pointers[0], &n->pointers[offset], sizeof(pointer)*(keys_moving_right+1) );
 	
@@ -519,7 +530,7 @@ void bpt_split( database* db, bpt* n ) {
 	// but if parent is NULL, we're at the root and need to make a new one
 	if( n->parent_node_id == 0 ) {
 
-		bpt* new_root = new_bptree( db->header->node_count++ );
+		node* new_root = new_bptree( db->header->node_count++ );
 		print("No parent, creating new root: %p", new_root);
 
 		new_root->keys[0] = up_key; // since left must all be smaller
@@ -573,7 +584,7 @@ void bpt_split( database* db, bpt* n ) {
 	We occasionally update and never delete so this seems more useful.
 	But maybe not Update but Ignore instead
 */
-bool bpt_insert_or_update( database* db, bpt* root, record r ) {
+bool bpt_insert_or_update( database* db, node* root, record r ) {
 	
 	counters.insert_calls++;
 	print("node %lu - %p", root->id, root);
@@ -681,7 +692,7 @@ bool bpt_insert_or_update( database* db, bpt* root, record r ) {
 	// TODO(performance): node cache
 	node* target = load_node_from_file( db->index_file, root->pointers[insert_location].child_node_id );
 	bool was_insert = bpt_insert_or_update( db, target, r );
-	free( target );
+	free_node( target );
 	prints("Inserted into child node");
 	return was_insert;
 }
@@ -689,12 +700,12 @@ bool bpt_insert_or_update( database* db, bpt* root, record r ) {
 /*
 	Return the leaf node that should have key in it.
 */
-internal node* bpt_find_node( database* db, bpt* root, key_t key ) {
+internal node* bpt_find_node( database* db, node* root, key_t key ) {
 	
 	node* current = root;
 
 	while( !current->is_leaf ) {
-		print("checking node %p", current);
+		print("checking node %lu", current->id);
 		
 		size_t node_index;
 		switch( binary_search( current->keys, current->num_keys, key, &node_index) ) {
@@ -718,11 +729,13 @@ internal node* bpt_find_node( database* db, bpt* root, key_t key ) {
 		}
 
 		size_t next_node_id = current->pointers[node_index].child_node_id;
-		free( current );
+		print("Moving to child node %lu", next_node_id);
+		// TODO(bug): avoid free-ing the root node here
+		free_node( current );
 		current = load_node_from_file( db->index_file, next_node_id );
 	}
 	
-	print("returning node %p", current);
+	print("returning node %lu", current->id);
 	return current;
 }
 
@@ -747,6 +760,7 @@ node* load_node_from_file( FILE* index_file, size_t node_id ) {
 		perror("fread()");
 		return NULL; // couldn't read a node
 	}
+	counters.creates++;
 	
 	return n;
 
@@ -776,12 +790,12 @@ board* database_get( database* db, key_t key ) {
 	return load_row_from_file( db->table_file, offset );
 }
 
-record* bpt_get( database* db, bpt* root, key_t key ) {
+record* bpt_get( database* db, node* root, key_t key ) {
 	
 	counters.get_calls++;
 	print("key %lu", key);
 	node* dest_node = bpt_find_node( db, root, key );
-	print("Found correct node %p", dest_node);
+	print("Found correct node %lu", dest_node->id);
 	//bpt_print( dest_node, 0 );
 	
 	if( dest_node == NULL ) {
@@ -845,17 +859,18 @@ void bpt_print( database* db, node* start, int indent ) {
 			bpt_print( db, n, indent+1 );			
 		}
 		printf("%sK-[ %lu ]\n", ind, start->keys[i] );
-		free( n );
+		free_node( n );
+		
 	}
 	// print the last node
 	n = load_node_from_file( db->index_file, start->pointers[start->num_keys].child_node_id  ); 
 	assert( n != NULL );
 	bpt_print( db, n, indent + 1 );
-	free( n );
+	free_node( n );
 }
 
 // NOTE(performance): this could be very slow, but I'm not sure that will ever be relevant
-size_t bpt_size( database* db, bpt* start ) {
+size_t bpt_size( database* db, node* start ) {
 	counters.any++;
 	
 	if( start->is_leaf ) {
@@ -866,7 +881,7 @@ size_t bpt_size( database* db, bpt* start ) {
 	for( size_t i=0; i<=start->num_keys; i++ ) { // 1 more pointer than keys
 		node* child = load_node_from_file( db->index_file, start->pointers[i].child_node_id );
 		count += bpt_size( db, child );
-		free( child );
+		free_node( child );		
 	}
 	
 	return count;

@@ -842,9 +842,7 @@ void bpt_print( database* db, node* start, int indent ) {
 	free( n );
 }
 
-// TODO: find out WTF is going on. According to iprofiler this is BY FAR the slowest thing here. WTF?
-// update: it's not slow. doing a size after 300K items at ORDER 512 means around 1K nodes, AKA 1K calls
-// so either keep the size in the root (make it different from the node) or make this not recursive?
+// NOTE(performance): this could be very slow, but I'm not sure that will ever be relevant
 size_t bpt_size( database* db, bpt* start ) {
 	counters.any++;
 	

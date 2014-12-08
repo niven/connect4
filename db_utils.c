@@ -132,6 +132,11 @@ void print_row( FILE* in, size_t row_index ) {
 
 node* get_node( database* db, size_t node_id ) {
 
+	if( node_id == 0 ) {
+		printf("Node 0 is reserved, node IDs start at 1\n");
+		return NULL;
+	}
+
 	// TODO(API): do we want load node to just read, or figure out where to read from what? Maybe opp. for diff granularity
 	node* n = load_node_from_file( db->index_file, node_id );
 	if( n == NULL ) {

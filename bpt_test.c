@@ -43,6 +43,7 @@ internal void test_dupes() {
 		free_board( next );
 
 		next = drop( current, drops[i] );
+		printf(">>>>>> Checking of dupe board is not inserted\n");
 		render( next, "Dupe board", false );
 		was_insert = database_put( db, next );
 		assert( !was_insert );
@@ -92,7 +93,7 @@ internal void test_store_cmdline_seq( char* seq ) {
 
 		database_put( db, next );
 		key_t key = encode_board( next );
-		printf("Inserted key: %lu\n", key);
+		printf(">>>>>>>> inserted key: %lx\n", key);
 		board* retrieved = database_get( db, key );
 		assert( retrieved != NULL );
 		render( retrieved, "result from db_get", false);

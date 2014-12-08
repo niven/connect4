@@ -38,7 +38,7 @@ off_t file_offset_from_row( size_t row_index ) {
 
 void database_store_row( database* db, size_t row_index, board* b ) {
 
-	print("storing board %p on disk as row %lu", b, row_index );
+	print("storing board 0x%lx on disk as row %lu", encode_board(b), row_index );
 
 	/* I'm always confused:
 		‘r+’ Open an existing file for both reading and writing. The initial contents
@@ -133,11 +133,10 @@ database* database_create( const char* name ) {
 	db->header = (database_header*) malloc( sizeof(database_header) );
 	
 	db->header->table_row_count = 0;
-	db->header->node_count = 1; // always have an initial node
+	db->header->node_count = 0;
 
 	// create a new bpt
-	node* first_node = new_bptree( 1 ); // initial node ID is 1 when creating a new db
-	db->header->node_count++; // there is 1 node and its ID is 1
+	node* first_node = new_bptree( ++db->header->node_count ); // get the next node id, and update count
 	db->header->root_node_id = first_node->id;
 	
 	database_set_filenames( db, name );
@@ -211,13 +210,14 @@ bool database_put( database* db, board* b ) {
 	// which we know as we can just keep track of that
 	
 	board63 board_key = encode_board( b );
-	print("key for this board: %lu", board_key );
+	print("key for this board: 0x%lx", board_key );
 	
 	record r = { .key = board_key, .value.table_row_index = db->header->table_row_count };
 
 	// TODO(bug): this should not overwrite, that means wasting space in the table file, also return inserted/dupe
 	counters.key_inserts++;
 
+	print("loading root node ID %lx", db->header->root_node_id );
 	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
 	bool inserted = bpt_insert_or_update( db, root_node, r );
 
@@ -482,9 +482,9 @@ void bpt_split( database* db, node* n ) {
 	// in case of an EVEN keycount: the larger half: floor(order/2) (example: 4 -> 2, 10 -> 5)
 	size_t keys_moving_right = n->is_leaf ? ORDER/2 + 1 : ORDER/2;
 	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
-	print("moving %zu keys (%zu nodes) right from offset %zu (key = %lu)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
+	print("moving %zu keys (%zu nodes) right from offset %zu (key = 0x%lx)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
-	node* sibling = new_bptree( db->header->node_count++ );	
+	node* sibling = new_bptree( ++db->header->node_count );	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
 	memcpy( &sibling->pointers[0], &n->pointers[offset], sizeof(pointer)*(keys_moving_right+1) );
 	
@@ -524,8 +524,8 @@ void bpt_split( database* db, node* n ) {
 	// but if parent is NULL, we're at the root and need to make a new one
 	if( n->parent_node_id == 0 ) {
 
-		node* new_root = new_bptree( db->header->node_count++ );
-		print("no parent, created new root: ID %lu (%p)", new_root->id, new_root);
+		print("no parent, creating new root: ID %lu", db->header->node_count + 1 );
+		node* new_root = new_bptree( ++db->header->node_count );
 
 		new_root->keys[0] = up_key; // since left must all be smaller
 		new_root->pointers[0].child_node_id = n->id;
@@ -772,6 +772,7 @@ board* load_row_from_file( FILE* in, off_t offset ) {
 
 board* database_get( database* db, key_t key ) {
 	
+	print("loading root node ID %lu", db->header->root_node_id );
 	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
 	record* r = bpt_get( db, root_node, key );
 	free_node( root_node );
@@ -789,7 +790,7 @@ board* database_get( database* db, key_t key ) {
 record* bpt_get( database* db, node* root, key_t key ) {
 	
 	counters.get_calls++;
-	print("key %lu", key);
+	print("key 0x%lx", key);
 	node* dest_node = bpt_find_node( db, root, key );
 	print("Found correct node %lu", dest_node->id);
 	//bpt_print( dest_node, 0 );
@@ -814,7 +815,7 @@ record* bpt_get( database* db, node* root, key_t key ) {
 	}
 	r->key = key;
 	r->value = dest_node->pointers[key_index]; 
-	print("returning record { key = %lu, value.table_row_index = %lu / value.child_node_id = %lu }", r->key, r->value.table_row_index, r->value.child_node_id);
+	print("returning record { key = 0x%lx, value.table_row_index = %lu / value.child_node_id = %lu }", r->key, r->value.table_row_index, r->value.child_node_id);
 	return r;
 	
 }
@@ -826,7 +827,7 @@ internal void bpt_print_leaf( node* n, int indent ) {
 	
 	printf("%sL(%lu)-[ ", ind, n->id);
 	for( size_t i=0; i<n->num_keys; i++ ) {
-		printf("%lx ", n->keys[i] );
+		printf("0x%lx ", n->keys[i] );
 	}
 	printf("] - (%p) (parent id %lu)\n", n, n->parent_node_id);
 

@@ -153,7 +153,7 @@ void print_keys( node* n ) {
 	printf("Node %lu - %lu key(s)%s\n", n->id, n->num_keys, n->is_leaf ? " {leaf}": "" );
 	printf("key                %s\n", n->is_leaf ? "offset in table" : "left node id");
 	for(size_t i=0; i<n->num_keys; i++) {
-		printf("%017lu  %lu\n", n->keys[i], n->pointers[i].table_row_index );
+		printf("%017lx  %lu\n", n->keys[i], n->pointers[i].table_row_index );
 	}
 	if( !n->is_leaf ) {
 		printf("Right node id      %lu\n", n->pointers[n->num_keys].table_row_index );

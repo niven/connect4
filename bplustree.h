@@ -4,6 +4,7 @@
 #include "base.h"
 #include "c4types.h"
 
+// TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 #define ORDER 3
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)

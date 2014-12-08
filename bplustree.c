@@ -123,7 +123,8 @@ void database_set_filenames( database* db, const char* name ) {
 
 
 database* database_create( const char* name ) {
-	
+
+
 	database* db = (database*) malloc( sizeof(database) );
 	if( db == NULL ) {
 		perror("malloc()");
@@ -158,11 +159,12 @@ database* database_create( const char* name ) {
 	database_store_node( db, first_node );
 	free_node( first_node );
 	
-	
+
 	return db;
 }
 
 database* database_open( const char* name ) {
+
 	
 	database* db = (database*) malloc( sizeof(database) );
 	if( db == NULL ) {
@@ -183,6 +185,7 @@ database* database_open( const char* name ) {
 	// read the root node, node_count and row_count
 	read_database_header( db );
 	print("nodes: %lu, rows: %lu, root node ID: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
+
 	
 	return db;	
 }
@@ -314,14 +317,19 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 }
 
 void free_node( node* n ) {
-	print("ID %lu", n->id );
+
+	counters.frees++;
+	print("ID %lu (cr: %llu/ld: %llu/fr: %llu)", n->id, counters.creates, counters.loads, counters.frees );
+
 	assert( n != NULL );
 	assert( n->id != 0 );
+
+	assert( counters.frees <= counters.loads + counters.creates );
 
 	n->id = 0;
 	free( n );
 
-	counters.frees++;
+	
 }
 
 node* new_bptree( size_t node_id ) {
@@ -339,9 +347,9 @@ node* new_bptree( size_t node_id ) {
 	out->num_keys = 0;
 	out->is_leaf = true;
 	
-	print("created node ID: %lu (%p)", out->id, out );
 	counters.creates++;
 	
+	print("created node ID: %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", out->id, out, counters.creates, counters.loads, counters.frees  );
 	return out;
 }
 
@@ -645,6 +653,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 		if( k < root->num_keys && root->keys[k] == r.key ) {
 //			printf("Overwrite of keys[%d] = %d (value %d to %d)\n", k, r.key, root->pointers[k].value_int, r.value.value_int );
 			root->pointers[k] = r.value;
+			
 			return false; // was not inserted but updated (or ignored)
 		}
 		
@@ -711,6 +720,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	bool was_insert = bpt_insert_or_update( db, target, r );
 	free_node( target );
 	print("inserted into child node (was_insert: %s)", ( was_insert ? "true" : "false") );
+	
 	return was_insert;
 }
 
@@ -722,8 +732,9 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 	assert( root->id != 0 );
 	
 	node* current = root;
-
+	
 	while( !current->is_leaf ) {
+
 		print("checking node %lu", current->id);
 		
 		size_t node_index;
@@ -749,8 +760,10 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 
 		size_t next_node_id = current->pointers[node_index].child_node_id;
 		print("Moving to child node %lu", next_node_id);
-		// TODO(bug): avoid free-ing the root node here
-		free_node( current );
+		// TODO(elegance): must be a way to do this more elegant and without the if
+		if( current != root ) {
+			free_node( current );
+		}
 		current = load_node_from_file( db->index_file, next_node_id );
 	}
 	
@@ -759,7 +772,6 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 }
 
 node* load_node_from_file( FILE* index_file, size_t node_id ) {
-
 
 	print("retrieve node %lu", node_id);
 
@@ -779,10 +791,13 @@ node* load_node_from_file( FILE* index_file, size_t node_id ) {
 	size_t objects_read = fread( n, node_block_bytes, 1, index_file );
 	if( objects_read != 1 ) {
 		perror("fread()");
+		free( n );
 		return NULL; // couldn't read a node
 	}
+
 	counters.loads++;
 
+	print("retrieval success (cr: %llu/ld: %llu/fr: %llu)", counters.creates, counters.loads, counters.frees );
 	return n;
 }
 
@@ -849,6 +864,7 @@ record* bpt_get( database* db, node* root, key_t key ) {
 	print("returning record { key = 0x%lx, value.table_row_index = %lu / value.child_node_id = %lu }", r->key, r->value.table_row_index, r->value.child_node_id);
 
 	if( dest_node->id != root->id ) {
+		print("dest id %lu root id %lu", dest_node->id, root->id);
 		free_node( dest_node );
 	}
 	return r;
@@ -864,7 +880,7 @@ internal void bpt_print_leaf( node* n, int indent ) {
 	for( size_t i=0; i<n->num_keys; i++ ) {
 		printf("0x%lx ", n->keys[i] );
 	}
-	printf("] - (%p) (parent id %lu)\n", n, n->parent_node_id);
+	printf("] - (%p) (#keys: %lu, parent id %lu)\n", n, n->num_keys, n->parent_node_id);
 
 }
 

@@ -826,7 +826,7 @@ internal void bpt_print_leaf( node* n, int indent ) {
 	
 	printf("%sL(%lu)-[ ", ind, n->id);
 	for( size_t i=0; i<n->num_keys; i++ ) {
-		printf("%lu ", n->keys[i] );
+		printf("%lx ", n->keys[i] );
 	}
 	printf("] - (%p) (parent id %lu)\n", n, n->parent_node_id);
 

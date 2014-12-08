@@ -828,6 +828,10 @@ record* bpt_get( database* db, node* root, key_t key ) {
 	r->key = key;
 	r->value = dest_node->pointers[key_index]; 
 	print("returning record { key = 0x%lx, value.table_row_index = %lu / value.child_node_id = %lu }", r->key, r->value.table_row_index, r->value.child_node_id);
+
+	if( dest_node->id != root->id ) {
+		free_node( dest_node );
+	}
 	return r;
 	
 }

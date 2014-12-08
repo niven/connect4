@@ -400,7 +400,7 @@ void bpt_split( database* db, node* n ) {
 #ifdef VERBOSE	
 	bpt_print( db, n, 0 );
 #endif
-	print("%s id:%lu (%p)", (n->is_leaf ? "leaf" : "node"), n->id, n );
+	print("ID %lu {%s} (%p)", n->id, (n->is_leaf ? "leaf" : "node"), n );
 	
 	/* 
 	Create a sibling node
@@ -482,7 +482,7 @@ void bpt_split( database* db, node* n ) {
 	// in case of an EVEN keycount: the larger half: floor(order/2) (example: 4 -> 2, 10 -> 5)
 	size_t keys_moving_right = n->is_leaf ? ORDER/2 + 1 : ORDER/2;
 	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
-	print("Moving %zu keys (%zu nodes) right from offset %zu (key = %lu)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
+	print("moving %zu keys (%zu nodes) right from offset %zu (key = %lu)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
 	node* sibling = new_bptree( db->header->node_count++ );	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
@@ -509,9 +509,9 @@ void bpt_split( database* db, node* n ) {
 	n->num_keys = n->num_keys - keys_moving_right - (n->is_leaf ? 0 : 1);
 
 #ifdef VERBOSE
-	print("Created sibling %p", sibling);
+	print("created sibling ID %lu (%p)", sibling->id, sibling);
 	bpt_print( db, sibling, 0 );
-	print("Node left over %p", n);
+	print("node left over ID %lu (%p)", n->id, n);
 	bpt_print( db, n, 0 );
 #endif
 	
@@ -519,13 +519,13 @@ void bpt_split( database* db, node* n ) {
 	// the key we didn't propagate to the sibling node and didn't keep in the node
 	// which is the one we're splitting around... so in both cases this is the same.
 	key_t up_key = n->keys[SPLIT_KEY_INDEX];
-	print("Key that moves up: %lu", up_key);
+	print("key that moves up: %lu", up_key);
 	// now insert median into our parent, along with sibling
 	// but if parent is NULL, we're at the root and need to make a new one
 	if( n->parent_node_id == 0 ) {
 
 		node* new_root = new_bptree( db->header->node_count++ );
-		print("No parent, created new root: %p", new_root);
+		print("no parent, created new root: ID %lu (%p)", new_root->id, new_root);
 
 		new_root->keys[0] = up_key; // since left must all be smaller
 		new_root->pointers[0].child_node_id = n->id;
@@ -535,12 +535,15 @@ void bpt_split( database* db, node* n ) {
 		new_root->num_keys = 1;
 
 		database_store_node( db, new_root );
+		free_node( new_root );
 
 		n->parent_node_id = sibling->parent_node_id = new_root->id;
-		free_node( new_root );
+		database_store_node( db, sibling );
 
 	} else {
 		print("inserting key %lu + sibling node %lu into parent %lu", up_key, sibling->id, n->parent_node_id );
+
+		database_store_node( db, sibling ); // store it first, in case bpt_insert_node needs to load us
 		// so what we have here is (Node)Key(Node) so we need to insert this into the
 		// parent as a package. Parent also has NkNkNkN and we've just replaced a Node
 		// with a NkN. The parent is actually kkk, NNNN so finding where to insert the key
@@ -550,7 +553,7 @@ void bpt_split( database* db, node* n ) {
 		// now this is fairly doable, but it might lead to having to split the parent
 		// as well
 #ifdef VERBOSE
-		prints("Parent node:");
+		print("parent node ID %lu", n->parent_node_id);
 		node* temp = load_node_from_file( db->index_file, n->parent_node_id );
 		bpt_print( db, temp, 0 );
 		free_node( temp );
@@ -564,8 +567,8 @@ void bpt_split( database* db, node* n ) {
 	
 	prints("writing changes to disk");
 	database_store_node( db, n );
-	database_store_node( db, sibling );
 	free_node( sibling );
+	
 }
 
 /*
@@ -821,11 +824,11 @@ internal void bpt_print_leaf( node* n, int indent ) {
 	char ind[100] = "                               END";
 	ind[indent*2] = '\0';
 	
-	printf("%sL-[ ", ind);
+	printf("%sL(%lu)-[ ", ind, n->id);
 	for( size_t i=0; i<n->num_keys; i++ ) {
 		printf("%lu ", n->keys[i] );
 	}
-	printf("] - ID:%lu (%p) (parent id %lu)\n", n->id, n, n->parent_node_id);
+	printf("] - (%p) (parent id %lu)\n", n, n->parent_node_id);
 
 }
 

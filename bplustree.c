@@ -17,14 +17,22 @@ internal void database_store_node( database* db, node* data );
 internal void read_database_header( database* db );
 internal void write_database_header( database* db );
 internal off_t file_offset_from_node( size_t id );
+internal off_t file_offset_from_row( size_t row_index );
 internal void database_set_filenames( database* db, const char* name );
 
+// the initial node is 1 (0 is reserved)
 off_t file_offset_from_node( size_t id ) {
 	
+	assert( id != 0 );
 	off_t offset = sizeof(database_header);
-	offset += (id * sizeof(node));
+	offset += ((id-1) * sizeof(node));
 	return offset;
 	
+}
+
+off_t file_offset_from_row( size_t row_index ) {
+	
+	return (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
 }
 
 void database_store_row( database* db, size_t row_index, board* b ) {
@@ -39,7 +47,7 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 		Currently we always append, in later stages we will probably end up deleting rows,
 		so we can't use 'a'.
 	*/
-	off_t offset = (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
+	off_t offset = file_offset_from_row( row_index );
 	FILE* out = open_and_seek( db->table_filename, "r+", offset );
 
 	// move the file cursor to the initial byte of the row
@@ -59,7 +67,8 @@ void database_store_node( database* db, node* n ) {
 	
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );
-	
+
+	// TODO: just fseek since we keep the files open
 	FILE* out = open_and_seek( db->index_filename, "r+", offset );
 	
 	print("storing %lu bytes at offset %llu", node_block_bytes, offset );
@@ -78,14 +87,14 @@ void database_store_node( database* db, node* n ) {
 
 void write_database_header( database* db ) {
 
-	print("%p", db->index_file );
+	print("nodes: %lu - rows: %lu - root node id: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
 	fseek( db->index_file, 0, SEEK_SET );
 	size_t objects_written = fwrite( db->header, sizeof(database_header), 1, db->index_file );
 	if( objects_written != 1 ) {
 		perror("frwite()");
 		exit( EXIT_FAILURE );
 	}
-	prints("done");
+	
 }
 
 void read_database_header( database* db ) {
@@ -761,7 +770,10 @@ board* database_get( database* db, key_t key ) {
 		return NULL;
 	}
 	
-	return load_row_from_file( db->index_file, (off_t)r->value.table_row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES );
+	off_t offset = file_offset_from_row( r->value.table_row_index );
+	print("Row offset: %llu", offset);
+
+	return load_row_from_file( db->table_file, offset );
 }
 
 record* bpt_get( database* db, bpt* root, key_t key ) {

@@ -1,9 +1,7 @@
 #ifndef __C4TYPES_H__
 #define __C4TYPES_H__
 
-#define false 0
-#define true 1
-
+#include "base.h"
 
 #define NUM_BOARD_BYTES 11
 
@@ -33,8 +31,13 @@ typedef unsigned char player;
 // so we convert at read/write time
 // TODO(stupid): just typedef? why a struct here at all?
 typedef unsigned long board63;
+#define ENCODED_BOARD_SIZE (sizeof(board63))
 
+typedef unsigned long key_t;
+#define KEY_SIZE (sizeof(key_t))
 
+// TODO(correctness): find a way to compile time check ENCODED_BOARD_SIZE == KEY_SIZE just in case
+	
 // bit fields for winlineIDs for White/Black
 // winlineID 0 is byte 0, LSB 0
 // winlineID 69 is byte 8 (69/8=8) LSB 5 (69%8=5)

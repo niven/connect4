@@ -64,7 +64,7 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 
 void database_store_node( database* db, node* n ) {
 
-	print("writing node %lu to %s", n->id, db->index_filename );
+	print("writing node %lu (parent %lu) to %s", n->id, n->parent_node_id, db->index_filename );
 	
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );
@@ -220,14 +220,20 @@ bool database_put( database* db, board* b ) {
 	print("loading root node ID %lx", db->header->root_node_id );
 	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
 	bool inserted = bpt_insert_or_update( db, root_node, r );
-
+	free_node( root_node );
+	
+	// BUG HERE
 	// tree might have grown, and since it grows upward *root might not point at the
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root
+	prints("finding possible new root after insert");
+	root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+	print("Current root node %lu (parent %lu)", root_node->id, root_node->parent_node_id );
 	while( root_node->parent_node_id != 0 ) {
 		print("%lu is not the root, moving up to node %lu", root_node->id, root_node->parent_node_id );
+		node* up = load_node_from_file( db->index_file, root_node->parent_node_id );
 		free_node( root_node );
-		root_node = load_node_from_file( db->index_file, root_node->parent_node_id );
+		root_node = up;
 	}
 	db->header->root_node_id = root_node->id;
 	
@@ -360,7 +366,7 @@ void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert
 	while( k<n->num_keys && n->keys[k] < up_key ) { // TODO(performance): use binsearch
 		k++;
 	}
-	print("insert key %lu at position %zu, node at position %zu", up_key, k, k+1);
+	print("insert key 0x%lx at position %zu, node at position %zu", up_key, k, k+1);
 	// move keys over (could be 0 if at end)
 	size_t elements_moving_right = n->num_keys - k;
 //	printf("Moving %zu elements\n", elements_moving_right);
@@ -383,7 +389,7 @@ void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert
 
 	// we might need to split (again)
 	if( n->num_keys == ORDER ) {
-		print("hit limit, have to split %p", n);
+		print("hit limit, have to split node %lu (%p)", n->id, n);
 		bpt_split( db, n ); // propagate new node up
 		return;
 	} else {
@@ -519,7 +525,7 @@ void bpt_split( database* db, node* n ) {
 	// the key we didn't propagate to the sibling node and didn't keep in the node
 	// which is the one we're splitting around... so in both cases this is the same.
 	key_t up_key = n->keys[SPLIT_KEY_INDEX];
-	print("key that moves up: %lu", up_key);
+	print("key that moves up: 0x%lx", up_key);
 	// now insert median into our parent, along with sibling
 	// but if parent is NULL, we're at the root and need to make a new one
 	if( n->parent_node_id == 0 ) {
@@ -541,7 +547,7 @@ void bpt_split( database* db, node* n ) {
 		database_store_node( db, sibling );
 
 	} else {
-		print("inserting key %lu + sibling node %lu into parent %lu", up_key, sibling->id, n->parent_node_id );
+		print("inserting key 0x%lx + sibling node %lu into parent %lu", up_key, sibling->id, n->parent_node_id );
 
 		database_store_node( db, sibling ); // store it first, in case bpt_insert_node needs to load us
 		// so what we have here is (Node)Key(Node) so we need to insert this into the
@@ -567,6 +573,7 @@ void bpt_split( database* db, node* n ) {
 	
 	prints("writing changes to disk");
 	database_store_node( db, n );
+	print(">>>>>>>>>>>>>>>>>> split node parent ID: %lu", n->parent_node_id );
 	free_node( sibling );
 	
 }
@@ -640,7 +647,8 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 
 		root->num_keys++;
 
-		// split if full
+		// split if full 
+		// TODO(bug?): figure out when to save the root node, or maybe not at all?
 		if( root->num_keys == ORDER ) {
 			print("hit limit, have to split ID: %lu (%p)", root->id, root);
 			bpt_split( db, root );
@@ -682,12 +690,16 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	}
 
 	// descend a node
-	print("Must be in left pointer of keys[%lu] = %lu", insert_location, root->keys[insert_location] );
+	if( insert_location < root->num_keys ) {
+		print("Must be in left pointer of keys[%lu] = 0x%lx", insert_location, root->keys[insert_location] );
+	} else {
+		print("Must be in right pointer of keys[%lu] = 0x%lx", insert_location-1, root->keys[insert_location-1] );
+	}
 	// TODO(performance): node cache
 	node* target = load_node_from_file( db->index_file, root->pointers[insert_location].child_node_id );
 	bool was_insert = bpt_insert_or_update( db, target, r );
 	free_node( target );
-	prints("Inserted into child node");
+	print("inserted into child node (was_insert: %s)", ( was_insert ? "true" : "false") );
 	return was_insert;
 }
 
@@ -842,7 +854,7 @@ void bpt_print( database* db, node* start, int indent ) {
 		bpt_print_leaf( start, indent );
 		return;
 	}
-	printf("%sN ID:%lu (%p) keys: %zu (parent id %lu)\n", ind, start->id, start, start->num_keys, start->parent_node_id);
+	printf("%sN(%lu) (%p) keys: %zu (parent id %lu)\n", ind, start->id, start, start->num_keys, start->parent_node_id);
 		
 	// print every key/node
 	node* n;
@@ -855,7 +867,7 @@ void bpt_print( database* db, node* start, int indent ) {
 		} else {
 			bpt_print( db, n, indent+1 );			
 		}
-		printf("%sK-[ %lu ]\n", ind, start->keys[i] );
+		printf("%sK-[ 0x%lx ]\n", ind, start->keys[i] );
 		free_node( n );
 		
 	}

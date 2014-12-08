@@ -315,6 +315,7 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 }
 
 void free_node( node* n ) {
+	print("ID %lu", n->id );
 	assert( n != NULL );
 	free( n );
 	counters.frees++;
@@ -574,7 +575,7 @@ void bpt_split( database* db, node* n ) {
 	prints("writing changes to disk");
 	database_store_node( db, n );
 	database_store_node( db, sibling );
-	
+	free_node( sibling );
 }
 
 /*

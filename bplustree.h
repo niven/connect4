@@ -76,6 +76,7 @@ typedef struct database {
 	char table_filename[DATABASE_FILENAME_SIZE];
 	FILE* table_file;
 
+	// TODO(consistency): just keep the root node ID
 	node* index;
 
 	database_header* header;

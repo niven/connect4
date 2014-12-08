@@ -316,7 +316,11 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 void free_node( node* n ) {
 	print("ID %lu", n->id );
 	assert( n != NULL );
+	assert( n->id != 0 );
+
+	n->id = 0;
 	free( n );
+
 	counters.frees++;
 }
 
@@ -344,6 +348,7 @@ node* new_bptree( size_t node_id ) {
 void bpt_dump_cf() {
 	printf("BPT ORDER: %d\n", ORDER);
 	printf("Total creates: %llu\n", counters.creates);
+	printf("Total loads: %llu\n", counters.loads);
 	printf("Total frees: %llu\n", counters.frees);
 	printf("Total key inserts: %llu\n", counters.key_inserts);
 	printf("Total get calls: %llu\n", counters.get_calls);
@@ -357,10 +362,12 @@ void bpt_dump_cf() {
 		printf("Key compares (leaf+node) per key insert: %llu\n", counters.key_compares / counters.key_inserts );
 	}
 	printf("Anycounter: %llu\n", counters.any);
-	assert( counters.creates == counters.frees );
+	assert( (counters.creates + counters.loads) == counters.frees );
 }
 
 void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id ) {
+
+	assert( n->id != 0 );
 
 	size_t k=0;
 	while( k<n->num_keys && n->keys[k] < up_key ) { // TODO(performance): use binsearch
@@ -540,10 +547,12 @@ void bpt_split( database* db, node* n ) {
 		new_root->is_leaf = false;
 		new_root->num_keys = 1;
 
+		n->parent_node_id = sibling->parent_node_id = new_root->id;
+
 		database_store_node( db, new_root );
 		free_node( new_root );
 
-		n->parent_node_id = sibling->parent_node_id = new_root->id;
+		print("n->p %lu s->p %lu", n->parent_node_id, sibling->parent_node_id);
 		database_store_node( db, sibling );
 
 	} else {
@@ -573,7 +582,7 @@ void bpt_split( database* db, node* n ) {
 	
 	prints("writing changes to disk");
 	database_store_node( db, n );
-	print(">>>>>>>>>>>>>>>>>> split node parent ID: %lu", n->parent_node_id );
+
 	free_node( sibling );
 	
 }
@@ -586,6 +595,8 @@ void bpt_split( database* db, node* n ) {
 	But maybe not Update but Ignore instead
 */
 bool bpt_insert_or_update( database* db, node* root, record r ) {
+
+	assert( root->id != 0 );
 	
 	counters.insert_calls++;
 	print("node %lu - %p", root->id, root);
@@ -708,6 +719,8 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 */
 internal node* bpt_find_node( database* db, node* root, key_t key ) {
 	
+	assert( root->id != 0 );
+	
 	node* current = root;
 
 	while( !current->is_leaf ) {
@@ -746,6 +759,8 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 }
 
 node* load_node_from_file( FILE* index_file, size_t node_id ) {
+
+
 	print("retrieve node %lu", node_id);
 
 	// TODO(performance): node ids start at 1, but we should store node 1 at filepos 0
@@ -766,10 +781,9 @@ node* load_node_from_file( FILE* index_file, size_t node_id ) {
 		perror("fread()");
 		return NULL; // couldn't read a node
 	}
-	counters.creates++;
-	
-	return n;
+	counters.loads++;
 
+	return n;
 }
 
 board* load_row_from_file( FILE* in, off_t offset ) {
@@ -800,6 +814,8 @@ board* database_get( database* db, key_t key ) {
 }
 
 record* bpt_get( database* db, node* root, key_t key ) {
+
+	assert( root->id != 0 );
 	
 	counters.get_calls++;
 	print("key 0x%lx", key);
@@ -816,6 +832,9 @@ record* bpt_get( database* db, node* root, key_t key ) {
 	size_t key_index;
 	if( BINSEARCH_FOUND != binary_search( dest_node->keys, dest_node->num_keys, key, &key_index ) ) {
 		prints("Key not found");
+		if( dest_node->id != root->id ) {
+			free_node( dest_node );
+		}
 		return NULL;
 	}
 	print("Key index: %lu", key_index);

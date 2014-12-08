@@ -56,10 +56,9 @@ typedef struct node {
 
 // TODO: rename
 node* new_bptree( size_t node_id );
-void free_bptree( node* b );
 void bpt_dump_cf( void );
 
-
+// TODO(convenience): maybe just put these directly in struct database
 typedef struct database_header {
 	size_t node_count;
 	size_t table_row_count;
@@ -74,9 +73,6 @@ typedef struct database {
 
 	char table_filename[DATABASE_FILENAME_SIZE];
 	FILE* table_file;
-
-	// TODO(consistency): just keep the root node ID
-	node* index;
 
 	database_header* header;
 
@@ -99,6 +95,8 @@ record* bpt_get( database* db, node* n, key_t key );
 size_t bpt_size( database* db, node* n );
 
 void bpt_print( database* db, node* start, int indent );
+
+void free_node( node* n );
 
 // internal stuff (operates on nodes)
 // TODO: declare in .c file

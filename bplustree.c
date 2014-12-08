@@ -19,7 +19,7 @@ internal void write_database_header( database* db );
 internal off_t file_offset_from_node( size_t id );
 internal off_t file_offset_from_row( size_t row_index );
 internal void database_set_filenames( database* db, const char* name );
-internal void free_node( node* n );
+
 
 // the initial node is 1 (0 is reserved)
 off_t file_offset_from_node( size_t id ) {
@@ -136,9 +136,9 @@ database* database_create( const char* name ) {
 	db->header->node_count = 0;
 
 	// create a new bpt
-	db->index = new_bptree( 1 ); // initial node ID is 1 when creating a new db
+	node* first_node = new_bptree( 1 ); // initial node ID is 1 when creating a new db
 	db->header->node_count++; // there is 1 node and its ID is 1
-	db->header->root_node_id = db->index->id;
+	db->header->root_node_id = first_node->id;
 	
 	database_set_filenames( db, name );
 
@@ -154,9 +154,11 @@ database* database_create( const char* name ) {
 	print("created table file %s", db->table_filename);
 	
 	write_database_header( db );
-	
+
 	// it's empty, but just in case you call create/close or something	
-	database_store_node( db, db->index );
+	database_store_node( db, first_node );
+	free_node( first_node );
+	
 	
 	return db;
 }
@@ -183,10 +185,7 @@ database* database_open( const char* name ) {
 	read_database_header( db );
 	print("nodes: %lu, rows: %lu, root node ID: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
 	
-	db->index = load_node_from_file( db->index_file, db->header->root_node_id );
-	
-	return db;
-	
+	return db;	
 }
 
 void database_close( database* db ) {
@@ -195,20 +194,12 @@ void database_close( database* db ) {
 	
 	write_database_header( db );
 
-	// now we have to free all nodes we have in memory, which is at least the root node
-	free( db->index );
-	// TODO(bug): keep track of loaded nodes somewhere and release them here
-
-	
 	free( db->header );
-
 	
 	fclose( db->index_file );
 	fclose( db->table_file );
 
-	
 	free( db );
-
 	
 	prints("closed");
 }
@@ -227,19 +218,21 @@ bool database_put( database* db, board* b ) {
 	// TODO(bug): this should not overwrite, that means wasting space in the table file, also return inserted/dupe
 	counters.key_inserts++;
 
-	bool inserted = bpt_insert_or_update( db, db->index, r );
+	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+	bool inserted = bpt_insert_or_update( db, root_node, r );
 
 	// tree might have grown, and since it grows upward *root might not point at the
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root
-	while( db->index->parent_node_id != 0 ) {
-		print("%lu is not the root, moving up to node %lu", db->index->id, db->index->parent_node_id );
-		db->index = load_node_from_file( db->index_file, db->index->parent_node_id );
+	while( root_node->parent_node_id != 0 ) {
+		print("%lu is not the root, moving up to node %lu", root_node->id, root_node->parent_node_id );
+		free_node( root_node );
+		root_node = load_node_from_file( db->index_file, root_node->parent_node_id );
 	}
-	db->header->root_node_id = db->index->id;
+	db->header->root_node_id = root_node->id;
 	
-	print( "root node id: %lu (%p)", db->header->root_node_id, db->index );
-
+	print( "after insert: root node id: %lu (%p)", db->header->root_node_id, root_node );
+	free_node( root_node );
 	
 	// now write the data as a "row" to the table file
 	if( inserted ) {
@@ -779,7 +772,9 @@ board* load_row_from_file( FILE* in, off_t offset ) {
 
 board* database_get( database* db, key_t key ) {
 	
-	record* r = bpt_get( db, db->index, key );
+	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+	record* r = bpt_get( db, root_node, key );
+	free_node( root_node );
 	
 	if( r == NULL ) {
 		return NULL;

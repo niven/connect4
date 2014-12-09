@@ -33,7 +33,7 @@ internal void test_dupes() {
 	board* current = new_board();
 
 	size_t COUNT = 10;
-	int drops[10] = {3, 4, 1,  2, 5, 1,  4, 6, 3,  4};
+	int drops[10] = {3, 4, 1, 2, 5, 1,  4, 6, 3,  4};
 	bool was_insert;
 	for(size_t i=0; i<COUNT; i++) {
 		board* next = drop( current, drops[i] );

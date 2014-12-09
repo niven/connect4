@@ -29,12 +29,12 @@ typedef unsigned char player;
 // having winlines follow.
 // we use this for storing on disk to save space, but to operate it's nicer to have a normal board
 // so we convert at read/write time
-// TODO(stupid): just typedef? why a struct here at all?
-typedef unsigned long board63;
-#define ENCODED_BOARD_SIZE (sizeof(board63))
 
-typedef unsigned long key_t;
+typedef unsigned long board63;
+typedef board63 key_t;
+
 #define KEY_SIZE (sizeof(key_t))
+#define ENCODED_BOARD_SIZE (sizeof(board63))
 
 // TODO(correctness): find a way to compile time check ENCODED_BOARD_SIZE == KEY_SIZE just in case
 	

@@ -314,6 +314,26 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 		assert(0); // cannot happen
 	}
 
+
+	// correctness checks:
+	// 1. array has elements, and we should insert at the end, make sure the last element is smaller than the new one
+	if( num_keys > 0 && *key_index == num_keys ) {
+		assert( target_key > keys[num_keys-1] );
+	}
+	// 2. array has no elements (we already check this above, but left for completeness)
+	if( num_keys == 0 ) {
+		assert( *key_index == 0 );
+	}
+	// 3. array has elements, and we should insert at the beginning
+	if( num_keys > 0 && *key_index == 0 ) {
+		assert( target_key < keys[0] ); // MUST be smaller, otherwise it would have been found if equal
+	}
+	// 4. insert somewhere in the middle
+	if( *key_index > 0 && *key_index < num_keys ) {
+		assert( target_key < keys[*key_index] ); // insert shifts the rest right, MUST be smaller otherwise it would have been found
+		assert( keys[*key_index-1] < target_key ); // element to the left is smaller
+	}
+
 	return BINSEARCH_INSERT;
 }
 
@@ -628,25 +648,6 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 			assert(0);
 		}
 		
-		// correctness checks:
-		// 1. array has elements, and we should insert at the end, make sure the last element is smaller than the new one
-		if( root->num_keys > 0 && insert_location == root->num_keys ) {
-			assert( r.key > root->keys[root->num_keys-1] );
-		}
-		// 2. array has no elements
-		if( root->num_keys == 0 ) {
-			assert( insert_location == 0 );
-		}
-		// 3. array has elements, and we should insert at the beginning
-		if( root->num_keys > 0 && insert_location == 0 ) {
-			assert( r.key <= root->keys[insert_location] ); // could be equal!
-		}
-		// 4. insert somewhere in the middle
-		if( insert_location > 0 && insert_location < root->num_keys ) {
-			assert( r.key <= root->keys[insert_location] ); // insert shifts the rest right, so element right should be equal/larger
-			assert( root->keys[insert_location-1] < r.key ); // element to the left is smaller
-		}
-		
 		k = insert_location;
 //		printf("Insertion location: keys[%d] = %d (atend = %d)\n", k, root->keys[k], k == root->num_keys );
 		// if we're not appending but inserting, ODKU (we can't check on value since we might be at the end
@@ -688,26 +689,6 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	} else {
 		fprintf( stderr, "BS NOT FOUND\n" );
 		assert(0);
-	}
-
-	// TODO: move these to the binary_search function?
-	// correctness checks:
-	// 1. array has elements, and we should insert at the end, make sure the last element is smaller than the new one
-	if( root->num_keys > 0 && insert_location == root->num_keys ) {
-		assert( r.key > root->keys[root->num_keys-1] );
-	}
-	// 2. array has no elements
-	if( root->num_keys == 0 ) {
-		assert( insert_location == 0 );
-	}
-	// 3. array has elements, and we should insert at the beginning
-	if( root->num_keys > 0 && insert_location == 0 ) {
-		assert( r.key <= root->keys[insert_location] ); // could be equal!
-	}
-	// 4. insert somewhere in the middle
-	if( insert_location > 0 && insert_location < root->num_keys ) {
-		assert( r.key <= root->keys[insert_location] ); // insert shifts the rest right, so element right should be equal/larger
-		assert( root->keys[insert_location-1] < r.key ); // element to the left is smaller
 	}
 
 	// descend a node

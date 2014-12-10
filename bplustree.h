@@ -5,7 +5,8 @@
 #include "c4types.h"
 
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
-#define ORDER 3
+// TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
+#define ORDER 250
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
@@ -14,6 +15,8 @@ struct bpt_counters {
 	uint64_t creates;
 	uint64_t loads;
 	uint64_t frees;
+	uint64_t cache_hits;
+	uint64_t cache_misses;
 	uint64_t key_inserts;
 	uint64_t get_calls;
 	uint64_t insert_calls;
@@ -78,7 +81,14 @@ typedef struct database {
 	char table_filename[DATABASE_FILENAME_SIZE];
 	FILE* table_file;
 
+	char log_filename[DATABASE_FILENAME_SIZE];
+	FILE* log_file;
+
 	database_header* header;
+	
+	// keep some nodes in memory to avoid the slowness of disks
+	// (even though this disk is an SSD) Use this as a LRU cache
+	node* node_cache[2];
 
 } database;
 

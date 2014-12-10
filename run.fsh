@@ -1,6 +1,6 @@
 #!/usr/local/bin/fish
 
-set NUM_GENERATIONS 4
+set NUM_GENERATIONS 5
 
 echo "Generating up to $NUM_GENERATIONS generations."
 

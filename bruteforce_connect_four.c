@@ -59,7 +59,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	board* start_board = NULL;
 
 	for( size_t i=0; i<from->header->table_row_count; i++ ) {
-		printf("Reading board %lu\n", i);
+		printf("Reading board %lu/%lu\n", i, from->header->table_row_count);
 		start_board = read_board( from->table_file, i );
 
 		// no need to go on after the game is over

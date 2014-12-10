@@ -220,7 +220,7 @@ bool database_put( database* db, board* b ) {
 	// TODO(bug): this should not overwrite, that means wasting space in the table file, also return inserted/dupe
 	counters.key_inserts++;
 
-	print("loading root node ID %lx", db->header->root_node_id );
+	print("loading root node ID %lu", db->header->root_node_id );
 	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
 	bool inserted = bpt_insert_or_update( db, root_node, r );
 	print("inserted: %s", inserted ? "true" : "false");

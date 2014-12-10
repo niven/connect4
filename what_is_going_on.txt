@@ -129,6 +129,15 @@ Cases:
 
 So the bug was the fact that finding the correct node sometimes hits the path where a key in the keys array is equal to the to-be-inserted key and then instead of going to the node on the right (since that stores all keys >= target) we would go left.
 
+Now actually generating boards without dupes:
+
+Generation	#boards
+0				1 (empty)
+1				7
+2				49
+3				238
+4				1120
+
 
 
 

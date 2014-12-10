@@ -34,9 +34,9 @@ key_t max_key( database* db, node* n ) {
 		return n->keys[ n->num_keys-1 ];
 	}
 	
-	node* last_node = load_node_from_file( db, n->pointers[ n->num_keys ].child_node_id );
+	node* last_node = retrieve_node( db, n->pointers[ n->num_keys ].child_node_id );
 	key_t out = max_key( db, last_node );
-	free_node( last_node );
+
 	return out;
 }
 
@@ -314,8 +314,10 @@ bool database_put( database* db, board* b ) {
 	counters.key_inserts++;
 
 	print("loading root node ID %lu", db->header->root_node_id );
+	bpt_print( db, retrieve_node( db, db->header->root_node_id ), 0 );
+
 	node* root_node = retrieve_node( db, db->header->root_node_id );
-	bpt_print( db, root_node , 0 );
+	print("root node %lu", root_node->id);
 	bool inserted = bpt_insert_or_update( db, root_node, r );
 	print("inserted: %s", inserted ? "true" : "false");
 	
@@ -804,10 +806,10 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	print("Descending into node %lu", root->pointers[insert_location].child_node_id);
 
 	// TODO(performance): node cache
-	node* target = load_node_from_file( db, root->pointers[insert_location].child_node_id );
+	node* target = retrieve_node( db, root->pointers[insert_location].child_node_id );
 	bool was_insert = bpt_insert_or_update( db, target, r );
 	print("inserted into child node (was_insert: %s)", ( was_insert ? "true" : "false") );
-	free_node( target );
+//	free_node( target );
 	
 	return was_insert;
 }
@@ -861,7 +863,7 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 
 void put_node_in_cache( database* db, node* n ) {
 	
-	printf("Putting node %lu (%p) in the cache\n", n->id, n);
+	print("Putting node %lu (%p) in the cache", n->id, n);
 	
 	// put it at the beginning of the array so it will be found fast
 	// if we need it again, move the rest over
@@ -869,7 +871,7 @@ void put_node_in_cache( database* db, node* n ) {
 	// free the last node (if there is one)
 	node* last_node_in_cache = db->node_cache[ ARRAY_COUNT(db->node_cache)-1 ];
 	if( last_node_in_cache != NULL ) {
-		printf("Evicting last node in cache: %lu\n", last_node_in_cache->id );
+		print("Evicting last node in cache: %lu", last_node_in_cache->id );
 		database_store_node( db, last_node_in_cache );
 		free_node( last_node_in_cache );
 	}
@@ -877,14 +879,14 @@ void put_node_in_cache( database* db, node* n ) {
 	// shift the whole thing right by 1 node
 	// ie. move all elements - 1 from index 0 to index 1
 	size_t num_nodeptrs_to_move = (ARRAY_COUNT(db->node_cache)-1);
-	printf("Moving %lu node*\n", num_nodeptrs_to_move );
+	print("Moving %lu node*", num_nodeptrs_to_move );
 	memmove( &db->node_cache[1], &db->node_cache[0], sizeof(node*) * num_nodeptrs_to_move );
 	
 	// insert at the beginning
 	db->node_cache[0] = n;
 	
 	for(size_t i=0; i<ARRAY_COUNT(db->node_cache); i++) {
-		printf("Cache[%lu] = id:%lu %p\n", i, (db->node_cache[i] == NULL ? 0 : db->node_cache[i]->id), db->node_cache[i] );
+		print("Cache[%lu] = id:%lu %p", i, (db->node_cache[i] == NULL ? 0 : db->node_cache[i]->id), db->node_cache[i] );
 	}
 }
 
@@ -896,21 +898,23 @@ node* retrieve_node( database* db, size_t node_id ) {
 		put_node_in_cache( db, out );
 	}
 	
+	assert( out->id != 0 );
+	
 	return out;
 }
 
 node* get_node_from_cache( database* db, size_t node_id ) {
 
-	printf("Checking for node %lu in cache\n", node_id );
+	print("Checking for node %lu in cache", node_id );
 	for(size_t i=0; i<ARRAY_COUNT(db->node_cache); i++) {
-		printf("Cache[%lu] = id:%lu %p\n", i, db->node_cache[i]==NULL? 0 : db->node_cache[i]->id, db->node_cache[i] );
+		print("Cache[%lu] = id:%lu %p", i, db->node_cache[i]==NULL? 0 : db->node_cache[i]->id, db->node_cache[i] );
 		if( db->node_cache[i] == NULL ) {
-			printf("No more items in cache\n");
+			prints("No more items in cache");
 			counters.cache_misses++;
 			return NULL;
 		}
 		if( db->node_cache[i]->id == node_id ) {
-			printf("Cache hit!\n");
+			prints("Cache hit!");
 			counters.cache_hits++;
 			return db->node_cache[i];
 		}

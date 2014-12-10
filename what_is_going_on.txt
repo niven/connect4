@@ -45,7 +45,90 @@ Gen	Boards
 6		25,362
 7		84,530
 
-Now something is wrong, read about it in unique_boards_bug.txt
+Let's see if we can get the number for gen 3 by thinking about it.
+
+
+Gen 2 has 49 boards, that we split in 7 groups, we split on the location of the X pieces.
+We imagine the 3rd move has been made
+Group0 (2 O's somewhere):
+
+--+---+---+---+---+---+---+---+
+0 | X |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+
+Case 1:
+--+---+---+---+---+---+---+---+
+1 | O |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+0 | X |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+There are 6 possible places for the 2nd O, and all are unique boards
+(O on O on X in col is not a legal board)
+Cases:
+1: 6
+2: ?
+3: ?
+4: ?
+
+Case 2:
+--+---+---+---+---+---+---+---+
+1 | X |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+0 | O |   |   |   |   |   |   |
+--+---+---+---+---+---+---+---+
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+There are 7 possible places for the 2nd O, and all are unique boards
+
+Cases:
+1: 6
+2: 7
+3: ?
+4: ?
+
+Now consider all the cases where 2 O's end up stacked, and are not on top of the X (covered by Case 1):
+Case 3 (example):
+--+---+---+---+---+---+---+---+
+1 |   |   | O |   |   |   |   |
+--+---+---+---+---+---+---+---+
+0 | X |   | O |   |   |   |   |
+--+---+---+---+---+---+---+---+
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+There are 6 possible ways to do this
+
+Cases:
+1: 6
+2: 7
+3: 6
+4: ?
+
+Now the remaining ones are:
+Case 4 (everything on the bottom line):
+
+--+---+---+---+---+---+---+---+
+0 | X | O | O |   |   |   |   |
+--+---+---+---+---+---+---+---+
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+
+O-on-1 * 5
+O-on-2 * 4 (O can't be on 1 since we already have that one)
+O-on-3 * 3
+O-on-4 * 2
+O-on-5 * 1
+Total: 15
+
+Cases:
+1: 6
+2: 7
+3: 6
+4: 15
+ = 34
+ 
+34*7 = 238 unique boards
+
+So the bug was the fact that finding the correct node sometimes hits the path where a key in the keys array is equal to the to-be-inserted key and then instead of going to the node on the right (since that stores all keys >= target) we would go left.
+
 
 
 

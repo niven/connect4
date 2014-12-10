@@ -51,12 +51,12 @@ internal void test_dupes() {
 		free_board( current );
 		current = next;
 		
-		node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+		node* root_node = load_node_from_file( db, db->header->root_node_id );
 		bpt_print( db, root_node, 0 );
 		free_node( root_node );
 	}
 	
-	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+	node* root_node = load_node_from_file( db, db->header->root_node_id );
 	assert( bpt_size( db, root_node ) == COUNT );
 	free_node( root_node );
 
@@ -104,7 +104,7 @@ internal void test_store_cmdline_seq( char* seq ) {
 		current = next;
 
 		printf("<<<<< After insert\n" );
-		node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+		node* root_node = load_node_from_file( db, db->header->root_node_id );
 		bpt_print( db, root_node, 0 );
 		free_node( root_node );
 		

@@ -70,6 +70,8 @@ typedef struct database_header {
 #define DATABASE_FILENAME_SIZE 256
 typedef struct database {
 
+	const char* name;
+
 	char index_filename[DATABASE_FILENAME_SIZE];
 	FILE* index_file;
 
@@ -88,7 +90,7 @@ bool database_put( database* db, board* b );
 board* database_get( database* db, key_t key );
 size_t database_size( database* db );
 
-node* load_node_from_file( FILE* index_file, size_t node_id );
+node* load_node_from_file( database* db, size_t node_id );
 board* load_row_from_file( FILE* in, off_t offset );
 
 // public API (always takes a root)

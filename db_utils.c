@@ -138,7 +138,7 @@ node* get_node( database* db, size_t node_id ) {
 	}
 
 	// TODO(API): do we want load node to just read, or figure out where to read from what? Maybe opp. for diff granularity
-	node* n = load_node_from_file( db->index_file, node_id );
+	node* n = load_node_from_file( db, node_id );
 	if( n == NULL ) {
 		printf("Could not load node %lu\n", node_id );
 	} else {

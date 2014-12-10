@@ -19,7 +19,7 @@ internal void write_database_header( database* db );
 internal off_t file_offset_from_node( size_t id );
 internal off_t file_offset_from_row( size_t row_index );
 internal void database_set_filenames( database* db, const char* name );
-
+internal void append_log( database* db, const char* format, ... );
 
 // the initial node is 1 (0 is reserved)
 off_t file_offset_from_node( size_t id ) {
@@ -36,6 +36,23 @@ off_t file_offset_from_row( size_t row_index ) {
 	return (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
 }
 
+void append_log( database* db, const char* format, ... ) {
+
+
+	char buf[256];
+	sprintf( buf, "%s.log", db->name );
+	FILE* log = fopen( buf, "a" );
+
+	va_list args;
+	va_start( args, format );
+	vfprintf( log, format, args );
+	va_end( args );
+	
+	fclose( log );
+	
+}
+
+
 void database_store_row( database* db, size_t row_index, board* b ) {
 
 	print("storing board 0x%lx on disk as row %lu", encode_board(b), row_index );
@@ -49,10 +66,11 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 		so we can't use 'a'.
 	*/
 	off_t offset = file_offset_from_row( row_index );
-	FILE* out = open_and_seek( db->table_filename, "r+", offset );
 
 	// move the file cursor to the initial byte of the row
-	print("storing %lu bytes at offset %llu", BOARD_SERIALIZATION_NUM_BYTES, offset );
+	FILE* out = open_and_seek( db->table_filename, "r+", offset );
+
+	append_log( db, "storing %lu bytes at offset %llu\n", BOARD_SERIALIZATION_NUM_BYTES, offset );
 	
 	write_board_record( b, out );
 	
@@ -64,7 +82,7 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 
 void database_store_node( database* db, node* n ) {
 
-	print("writing node %lu (parent %lu) to %s", n->id, n->parent_node_id, db->index_filename );
+	append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
 	
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );
@@ -72,7 +90,7 @@ void database_store_node( database* db, node* n ) {
 	// TODO: just fseek since we keep the files open
 	FILE* out = open_and_seek( db->index_filename, "r+", offset );
 	
-	print("storing %lu bytes at offset %llu", node_block_bytes, offset );
+	append_log( db, "database_store_node(): storing %lu bytes at offset %llu\n", node_block_bytes, offset );
 	
 	size_t written = fwrite( n, node_block_bytes, 1, out );
 	if( written != 1 ) {
@@ -88,7 +106,7 @@ void database_store_node( database* db, node* n ) {
 
 void write_database_header( database* db ) {
 
-	print("nodes: %lu - rows: %lu - root node id: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
+	append_log( db, "write_database_header(): nodes: %lu - rows: %lu - root node id: %lu\n", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
 	fseek( db->index_file, 0, SEEK_SET );
 	size_t objects_written = fwrite( db->header, sizeof(database_header), 1, db->index_file );
 	if( objects_written != 1 ) {
@@ -130,6 +148,8 @@ database* database_create( const char* name ) {
 		perror("malloc()");
 		exit( EXIT_FAILURE );
 	}
+	
+	db->name = name;
 	
 	db->header = (database_header*) malloc( sizeof(database_header) );
 	
@@ -224,7 +244,7 @@ bool database_put( database* db, board* b ) {
 	counters.key_inserts++;
 
 	print("loading root node ID %lu", db->header->root_node_id );
-	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+	node* root_node = load_node_from_file( db, db->header->root_node_id );
 	bpt_print( db, root_node , 0 );
 	bool inserted = bpt_insert_or_update( db, root_node, r );
 	print("inserted: %s", inserted ? "true" : "false");
@@ -235,11 +255,11 @@ bool database_put( database* db, board* b ) {
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root
 	prints("finding possible new root after insert");
-	root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+	root_node = load_node_from_file( db, db->header->root_node_id );
 	print("Current root node %lu (parent %lu)", root_node->id, root_node->parent_node_id );
 	while( root_node->parent_node_id != 0 ) {
 		print("%lu is not the root, moving up to node %lu", root_node->id, root_node->parent_node_id );
-		node* up = load_node_from_file( db->index_file, root_node->parent_node_id );
+		node* up = load_node_from_file( db, root_node->parent_node_id );
 		free_node( root_node );
 		root_node = up;
 	}
@@ -549,7 +569,7 @@ void bpt_split( database* db, node* n ) {
 	// TODO(performance): keep the subnodes around so update parent pointer doesn't hit the disk
 	if( !n->is_leaf ) {
 		for(size_t i=0; i < sibling->num_keys+1; i++ ) {
-			node* s = load_node_from_file( db->index_file, sibling->pointers[i].child_node_id );
+			node* s = load_node_from_file( db, sibling->pointers[i].child_node_id );
 			s->parent_node_id = sibling->id;
 			database_store_node( db, s );
 			free_node( s );
@@ -608,13 +628,13 @@ void bpt_split( database* db, node* n ) {
 		// as well
 #ifdef VERBOSE
 		print("going to insert into parent node ID %lu", n->parent_node_id);
-		node* temp = load_node_from_file( db->index_file, n->parent_node_id );
+		node* temp = load_node_from_file( db, n->parent_node_id );
 		bpt_print( db, temp, 0 );
 		free_node( temp );
 #endif		
 		counters.parent_inserts++;
 		// TODO(performance): node cache
-		node* parent = load_node_from_file( db->index_file, n->parent_node_id );
+		node* parent = load_node_from_file( db, n->parent_node_id );
 		bpt_insert_node( db, parent, up_key, sibling->id );
 		free_node( parent );
 	}
@@ -695,18 +715,16 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 		print("key 0x%lx is already stored, bailing out.", r.key );
 		return false; // TODO(clarity): maybe constants for these
 	}
-	if( binsearch_result == BINSEARCH_INSERT ) {
-		prints("Regualr inserst");
-	}
 
 	// descend a node
+	// TODO(bug?): maybe we don't always pick the right node here?
 	if( insert_location < root->num_keys ) {
 		print("Must be in left pointer of keys[%lu] = 0x%lx (node %lu)", insert_location, root->keys[insert_location], root->pointers[insert_location].child_node_id );
 	} else {
 		print("Must be in right pointer of keys[%lu] = 0x%lx (node %lu)", insert_location-1, root->keys[insert_location-1], root->pointers[insert_location].child_node_id );
 	}
 	// TODO(performance): node cache
-	node* target = load_node_from_file( db->index_file, root->pointers[insert_location].child_node_id );
+	node* target = load_node_from_file( db, root->pointers[insert_location].child_node_id );
 	bool was_insert = bpt_insert_or_update( db, target, r );
 	print("inserted into child node (was_insert: %s)", ( was_insert ? "true" : "false") );
 	free_node( target );
@@ -754,27 +772,27 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 		if( current != root ) {
 			free_node( current );
 		}
-		current = load_node_from_file( db->index_file, next_node_id );
+		current = load_node_from_file( db, next_node_id );
 	}
 	
 	print("returning node %lu", current->id);
 	return current;
 }
 
-node* load_node_from_file( FILE* index_file, size_t node_id ) {
+node* load_node_from_file( database* db, size_t node_id ) {
 
 	size_t node_block_bytes = sizeof( node );
 	off_t node_block_offset = file_offset_from_node( node_id );
 
 	// move the file cursor to the initial byte of the row
 	// fseek returns nonzero on failure
-	if( fseek( index_file, (long) node_block_offset, SEEK_SET ) ) {
+	if( fseek( db->index_file, (long) node_block_offset, SEEK_SET ) ) {
 		perror("fseek()");
 		exit( EXIT_FAILURE );
 	}
 	
 	node* n = (node*) malloc( sizeof(node) );
-	size_t objects_read = fread( n, node_block_bytes, 1, index_file );
+	size_t objects_read = fread( n, node_block_bytes, 1, db->index_file );
 	if( objects_read != 1 ) {
 		perror("fread()");
 		free( n );
@@ -784,7 +802,7 @@ node* load_node_from_file( FILE* index_file, size_t node_id ) {
 
 	counters.loads++;
 
-	print("retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", node_id, n, counters.creates, counters.loads, counters.frees );
+	append_log( db, "load_node_from_file(): retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)\n", node_id, n, counters.creates, counters.loads, counters.frees );
 	return n;
 }
 
@@ -801,7 +819,7 @@ board* load_row_from_file( FILE* in, off_t offset ) {
 board* database_get( database* db, key_t key ) {
 	
 	print("loading root node ID %lu", db->header->root_node_id );
-	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+	node* root_node = load_node_from_file( db, db->header->root_node_id );
 	record* r = bpt_get( db, root_node, key );
 	free_node( root_node );
 	
@@ -894,7 +912,7 @@ void bpt_print( database* db, node* start, int indent ) {
 	// print every key/node
 	node* n;
 	for( size_t i=0; i<start->num_keys; i++ ) {
-		n = load_node_from_file( db->index_file, start->pointers[i].child_node_id  );
+		n = load_node_from_file( db, start->pointers[i].child_node_id  );
 		assert( n != NULL );
 
 		if( n->is_leaf ) {
@@ -907,7 +925,7 @@ void bpt_print( database* db, node* start, int indent ) {
 		
 	}
 	// print the last node
-	n = load_node_from_file( db->index_file, start->pointers[start->num_keys].child_node_id  ); 
+	n = load_node_from_file( db, start->pointers[start->num_keys].child_node_id  ); 
 	assert( n != NULL );
 	bpt_print( db, n, indent + 1 );
 	free_node( n );
@@ -927,7 +945,7 @@ size_t bpt_size( database* db, node* start ) {
 	
 	size_t count = 0;
 	for( size_t i=0; i<=start->num_keys; i++ ) { // 1 more pointer than keys
-		node* child = load_node_from_file( db->index_file, start->pointers[i].child_node_id );
+		node* child = load_node_from_file( db, start->pointers[i].child_node_id );
 		count += bpt_size( db, child );
 		free_node( child );		
 	}

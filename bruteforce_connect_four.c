@@ -69,10 +69,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 
 		// try and make a move in every column
 		for(int col=0; col<COLS; col++) {
-			// ONLY MAKE X DROPS IN COL 0
-			if( current_player(start_board) == BLACK && col > 0) {
-				continue;
-			}
+
 			board* move_made = drop( start_board, col );
 			if( move_made == NULL ) {
 				printf("Can't drop in column %d\n", col);

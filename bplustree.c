@@ -636,24 +636,16 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	if( root->is_leaf ) {
 		bpt_print( db, root, 0 );
 
-		// now we can't just go ahead and add it at the end, we need to keep
-		// this shit sorted. (and remember to move the pointers as well)
-		// So maybe instead of a keys and pointers array just have a
-		// struct with key/pointer. But anyway.
-
-		if( binary_search( root->keys, root->num_keys, r.key, &insert_location) ) {
-			print("Leaf node - insert location: %lu", insert_location);
-		} else {
-			fprintf( stderr, "BS NOT FOUND\n" );
-			assert(0);
-		}
+		int bsearch_result = binary_search( root->keys, root->num_keys, r.key, &insert_location);
+		assert( bsearch_result == BINSEARCH_FOUND || bsearch_result == BINSEARCH_INSERT );
+		print("Leaf node - insert location: %lu", insert_location);
 		
 		k = insert_location;
 //		printf("Insertion location: keys[%d] = %d (atend = %d)\n", k, root->keys[k], k == root->num_keys );
 		// if we're not appending but inserting, ODKU (we can't check on value since we might be at the end
 		// and the value there could be anything)
 		if( k < root->num_keys && root->keys[k] == r.key ) {
-//			printf("Overwrite of keys[%d] = %d (value %d to %d)\n", k, r.key, root->pointers[k].value_int, r.value.value_int );
+			print("Overwrite of keys[%lu] = %lu (value %lu to %lu)", k, r.key, root->pointers[k].table_row_index, r.value.table_row_index );
 			root->pointers[k] = r.value;
 			
 			return false; // was not inserted but updated (or ignored)

@@ -11,6 +11,8 @@
 
 typedef unsigned char bool;
 
+#define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
+
 // enjoy this ugly hack:
 // macro to auto insert function name in printf function
 // but this introduces extra " marks around the format string

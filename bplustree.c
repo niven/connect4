@@ -206,6 +206,9 @@ void database_close( database* db ) {
 	prints("closed");
 }
 
+global_variable key_t stored_keys[200];
+global_variable int num_stored_keys;
+
 bool database_put( database* db, board* b ) {
 	
 	// the index knows if we already have this record,
@@ -222,6 +225,7 @@ bool database_put( database* db, board* b ) {
 
 	print("loading root node ID %lu", db->header->root_node_id );
 	node* root_node = load_node_from_file( db->index_file, db->header->root_node_id );
+	bpt_print( db, root_node , 0 );
 	bool inserted = bpt_insert_or_update( db, root_node, r );
 	print("inserted: %s", inserted ? "true" : "false");
 	free_node( root_node );
@@ -246,6 +250,13 @@ bool database_put( database* db, board* b ) {
 	
 	// now write the data as a "row" to the table file
 	if( inserted ) {
+		key_t latest_key = encode_board( b );
+		print("Latest key: 0x%lx", latest_key);
+		for(int i=0; i< num_stored_keys; i++) {
+			print("Stored[%02d]: 0x%lx", i, stored_keys[i]);
+			assert( stored_keys[i] != latest_key );
+		}
+		stored_keys[ num_stored_keys++ ] = latest_key;
 		database_store_row( db, db->header->table_row_count, b );
 		db->header->table_row_count++;
 	}
@@ -676,18 +687,23 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 
 	// NOT a leaf node, recurse to insert
 	// TODO: maybe just find_node()?
-	if( binary_search( root->keys, root->num_keys, r.key, &insert_location) ) {
-		print("Descend node - insert location: %lu", insert_location);
-	} else {
-		fprintf( stderr, "BS NOT FOUND\n" );
-		assert(0);
+	int binsearch_result = binary_search( root->keys, root->num_keys, r.key, &insert_location);
+	assert( binsearch_result == BINSEARCH_FOUND || binsearch_result == BINSEARCH_INSERT );
+	print("Descending into node %lu - insert location: %lu", root->pointers[insert_location].child_node_id, insert_location);
+
+	if( binsearch_result == BINSEARCH_FOUND ) {
+		print("key 0x%lx is already stored, bailing out.", r.key );
+		return false; // TODO(clarity): maybe constants for these
+	}
+	if( binsearch_result == BINSEARCH_INSERT ) {
+		prints("Regualr inserst");
 	}
 
 	// descend a node
 	if( insert_location < root->num_keys ) {
-		print("Must be in left pointer of keys[%lu] = 0x%lx", insert_location, root->keys[insert_location] );
+		print("Must be in left pointer of keys[%lu] = 0x%lx (node %lu)", insert_location, root->keys[insert_location], root->pointers[insert_location].child_node_id );
 	} else {
-		print("Must be in right pointer of keys[%lu] = 0x%lx, node %lu", insert_location-1, root->keys[insert_location-1], root->pointers[insert_location].child_node_id );
+		print("Must be in right pointer of keys[%lu] = 0x%lx (node %lu)", insert_location-1, root->keys[insert_location-1], root->pointers[insert_location].child_node_id );
 	}
 	// TODO(performance): node cache
 	node* target = load_node_from_file( db->index_file, root->pointers[insert_location].child_node_id );

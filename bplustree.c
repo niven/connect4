@@ -206,6 +206,8 @@ database* database_create( const char* name ) {
 	db->header->table_row_count = 0;
 	db->header->node_count = 0;
 
+	db->free_slots_in_node_cache = ARRAY_COUNT(db->node_cache);
+	
 	// create a new bpt
 	node* first_node = new_bptree( ++db->header->node_count ); // get the next node id, and update count
 	db->header->root_node_id = first_node->id;
@@ -256,6 +258,7 @@ database* database_open( const char* name ) {
 	read_database_header( db );
 	print("nodes: %lu, rows: %lu, root node ID: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
 
+	db->free_slots_in_node_cache = ARRAY_COUNT(db->node_cache);
 	
 	return db;	
 }

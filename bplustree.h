@@ -15,8 +15,6 @@ struct bpt_counters {
 	uint64_t creates;
 	uint64_t loads;
 	uint64_t frees;
-	uint64_t cache_hits;
-	uint64_t cache_misses;
 	uint64_t key_inserts;
 	uint64_t get_calls;
 	uint64_t insert_calls;
@@ -81,14 +79,7 @@ typedef struct database {
 	char table_filename[DATABASE_FILENAME_SIZE];
 	FILE* table_file;
 
-	char log_filename[DATABASE_FILENAME_SIZE];
-	FILE* log_file;
-
 	database_header* header;
-	
-	// keep some nodes in memory to avoid the slowness of disks
-	// (even though this disk is an SSD) Use this as a LRU cache
-	node* node_cache[2];
 
 } database;
 

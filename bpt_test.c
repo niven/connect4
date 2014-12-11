@@ -92,7 +92,6 @@ internal void test_store_cmdline_seq( char* seq ) {
 		render( next, element, false );
 
 		database_put( db, next );
-
 		key_t key = encode_board( next );
 		printf(">>>>>>>> inserted key: %lx\n", key);
 		board* retrieved = database_get( db, key );
@@ -106,7 +105,6 @@ internal void test_store_cmdline_seq( char* seq ) {
 
 		printf("<<<<< After insert\n" );
 		node* root_node = load_node_from_file( db, db->header->root_node_id );
-
 		bpt_print( db, root_node, 0 );
 		free_node( root_node );
 		

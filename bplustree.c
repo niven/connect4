@@ -22,11 +22,6 @@ internal void database_set_filenames( database* db, const char* name );
 internal void append_log( database* db, const char* format, ... );
 internal void check_tree_correctness( database* db, node* n );
 internal key_t max_key( database* db, node* n );
-internal void database_open_files( database* db, bool create );
-
-internal node* retrieve_node( database* db, size_t node_id );
-internal node* get_node_from_cache( database* db, size_t node_id );
-internal void put_node_in_cache( database* db, node* n );
 
 key_t max_key( database* db, node* n ) {
 	
@@ -41,7 +36,7 @@ key_t max_key( database* db, node* n ) {
 }
 
 void check_tree_correctness( database* db, node* n ) {
-#ifdef VERBOSE	
+	
 	print("Checking correctness of node %lu", n->id );
 	
 	// for leaves, check if all keys are ascending
@@ -56,18 +51,20 @@ void check_tree_correctness( database* db, node* n ) {
 
 	for(size_t i=0; i<n->num_keys; i++ ) {
 		// for every key, the max
-		node* temp = retrieve_node( db, n->pointers[i].child_node_id ); 
+		node* temp = load_node_from_file( db, n->pointers[i].child_node_id ); 
 		key_t max = max_key( db, temp );
+		free_node( temp );
 		print("key[%lu] = 0x%lx, max from left node = 0x%lx", i, n->keys[i], max );
 		assert( max < n->keys[i] );
 	}
 	
 	// check the final one
-	node* temp = retrieve_node( db, n->pointers[ n->num_keys ].child_node_id ); 
+	node* temp = load_node_from_file( db, n->pointers[ n->num_keys ].child_node_id ); 
 	key_t max = max_key( db, temp );
+	free_node( temp );
 	print("key[%lu] = 0x%lx, max from right node = 0x%lx", n->num_keys-1, n->keys[ n->num_keys-1], max );
 	assert( n->keys[ n->num_keys-1] <= max );
-#endif
+	
 }
 
 // the initial node is 1 (0 is reserved)
@@ -87,16 +84,18 @@ off_t file_offset_from_row( size_t row_index ) {
 
 void append_log( database* db, const char* format, ... ) {
 
-#ifdef VERBOSE
+
 	char buf[256];
 	sprintf( buf, "%s.log", db->name );
+	FILE* log = fopen( buf, "a" );
 
 	va_list args;
 	va_start( args, format );
-	vfprintf( db->log_file, format, args );
+	vfprintf( log, format, args );
 	va_end( args );
-#endif
-		
+	
+	fclose( log );
+	
 }
 
 
@@ -184,29 +183,8 @@ void database_set_filenames( database* db, const char* name ) {
 	written = snprintf( db->table_filename, DATABASE_FILENAME_SIZE, "%s%s", name, ".c4_table" );
 	assert( written < DATABASE_FILENAME_SIZE );
 	
-	written = snprintf( db->log_filename, DATABASE_FILENAME_SIZE, "%s%s", name, ".log" );
-	assert( written < DATABASE_FILENAME_SIZE );
-	
 }
 
-void database_open_files( database* db, bool create ) {
-	
-	if( create ) {
-		create_empty_file( db->index_filename );
-		print("created index file %s", db->index_filename);
-		create_empty_file( db->table_filename );
-		print("created table file %s", db->table_filename);
-		create_empty_file( db->log_filename );
-		print("created log file %s", db->log_filename);
-	}
-
-	db->index_file = fopen( db->index_filename, "r+" );
-	
-	db->table_file = fopen( db->table_filename, "r+" );
-
-	db->log_file = fopen( db->log_filename, "a" );
-	
-}
 
 database* database_create( const char* name ) {
 
@@ -230,7 +208,16 @@ database* database_create( const char* name ) {
 	
 	database_set_filenames( db, name );
 
-	database_open_files( db, true ); // create the files
+	// create the index file
+	create_empty_file( db->index_filename );
+	db->index_file = fopen( db->index_filename, "r+" );
+	print("created index file %s", db->index_filename);
+	
+	// create the table file
+	create_empty_file( db->table_filename );
+	db->table_file = fopen( db->table_filename, "r+" );
+	
+	print("created table file %s", db->table_filename);
 	
 	write_database_header( db );
 
@@ -253,7 +240,13 @@ database* database_open( const char* name ) {
 	
 	database_set_filenames( db, name );
 
-	database_open_files( db, false ); // don't create
+	// open the index file
+	db->index_file = fopen( db->index_filename, "r+" );
+	print("opened index file %s", db->index_filename);
+	
+	// open the table file
+	db->table_file = fopen( db->table_filename, "r+" );
+	print("opened table file %s", db->table_filename);
 	
 	// read the root node, node_count and row_count
 	read_database_header( db );
@@ -265,19 +258,7 @@ database* database_open( const char* name ) {
 
 void database_close( database* db ) {
 	
-	print("closing %s", db->name);
-	
-	// write and free all cached nodes
-	prints("writing and freeing all cached nodes.");
-	for(size_t i=0; i<ARRAY_COUNT(db->node_cache); i++ ) {
-		if( db->node_cache[i] != NULL ) {
-			print("node %lu", db->node_cache[i]->id );
-			database_store_node( db, db->node_cache[i] );
-			free_node( db->node_cache[i] );
-		} else {
-			break; // just to avoid looping over things that are NULL
-		}
-	}
+	print("closing %s and %s", db->table_filename, db->index_filename);
 	
 	write_database_header( db );
 
@@ -285,18 +266,14 @@ void database_close( database* db ) {
 	
 	fclose( db->index_file );
 	fclose( db->table_file );
-	fclose( db->log_file );
 
 	free( db );
 	
 	prints("closed");
-	bpt_dump_cf();
 }
 
-#ifdef VERBOSE
 global_variable key_t stored_keys[1024];
 global_variable int num_stored_keys;
-#endif
 
 bool database_put( database* db, board* b ) {
 	
@@ -309,35 +286,38 @@ bool database_put( database* db, board* b ) {
 	
 	record r = { .key = board_key, .value.table_row_index = db->header->table_row_count };
 
+	// TODO(bug): this should not overwrite, that means wasting space in the table file, also return inserted/dupe
 	counters.key_inserts++;
 
 	print("loading root node ID %lu", db->header->root_node_id );
-	bpt_print( db, retrieve_node( db, db->header->root_node_id ), 0 );
+	node* root_node = load_node_from_file( db, db->header->root_node_id );
+	bpt_print( db, root_node , 0 );
 
-	node* root_node = retrieve_node( db, db->header->root_node_id );
-	print("root node %lu", root_node->id);
 	bool inserted = bpt_insert_or_update( db, root_node, r );
 	print("inserted: %s", inserted ? "true" : "false");
+	free_node( root_node );
 	
+	// BUG HERE
 	// tree might have grown, and since it grows upward *root might not point at the
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root
 	prints("finding possible new root after insert");
-	root_node = retrieve_node( db, db->header->root_node_id );
+	root_node = load_node_from_file( db, db->header->root_node_id );
 	print("Current root node %lu (parent %lu)", root_node->id, root_node->parent_node_id );
 	while( root_node->parent_node_id != 0 ) {
 		print("%lu is not the root, moving up to node %lu", root_node->id, root_node->parent_node_id );
-		node* up = retrieve_node( db, root_node->parent_node_id );
+		node* up = load_node_from_file( db, root_node->parent_node_id );
+		free_node( root_node );
 		root_node = up;
 	}
 	db->header->root_node_id = root_node->id;
 	
 	print( "after insert: root node id: %lu (%p)", db->header->root_node_id, root_node );
 	check_tree_correctness (db, root_node );
+	free_node( root_node );
 	
 	// now write the data as a "row" to the table file
 	if( inserted ) {
-#ifdef VERBOSE
 		key_t latest_key = encode_board( b );
 		print("Latest key: 0x%lx", latest_key);
 		for(int i=0; i< num_stored_keys; i++) {
@@ -345,7 +325,6 @@ bool database_put( database* db, board* b ) {
 			assert( stored_keys[i] != latest_key );
 		}
 		stored_keys[ num_stored_keys++ ] = latest_key;
-#endif		
 		database_store_row( db, db->header->table_row_count, b );
 		db->header->table_row_count++;
 	}
@@ -440,7 +419,7 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 void free_node( node* n ) {
 
 	counters.frees++;
-	print("ID %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, counters.creates, counters.loads, counters.frees );
+//	print("ID %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, counters.creates, counters.loads, counters.frees );
 
 	assert( n != NULL );
 	assert( n->id != 0 );
@@ -476,8 +455,6 @@ node* new_bptree( size_t node_id ) {
 
 void bpt_dump_cf() {
 	printf("BPT ORDER: %d\n", ORDER);
-	printf("Total cache hits: %llu\n", counters.cache_hits);
-	printf("Total cache misses: %llu\n", counters.cache_misses);
 	printf("Total creates: %llu\n", counters.creates);
 	printf("Total loads: %llu\n", counters.loads);
 	printf("Total frees: %llu\n", counters.frees);
@@ -859,68 +836,6 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 	return current;
 }
 
-void put_node_in_cache( database* db, node* n ) {
-	
-	print("Putting node %lu (%p) in the cache", n->id, n);
-	
-	// put it at the beginning of the array so it will be found fast
-	// if we need it again, move the rest over
-	
-	// free the last node (if there is one)
-	node* last_node_in_cache = db->node_cache[ ARRAY_COUNT(db->node_cache)-1 ];
-	if( last_node_in_cache != NULL ) {
-		print("Evicting last node in cache: %lu", last_node_in_cache->id );
-		database_store_node( db, last_node_in_cache );
-		free_node( last_node_in_cache );
-	}
-
-	// shift the whole thing right by 1 node
-	// ie. move all elements - 1 from index 0 to index 1
-	size_t num_nodeptrs_to_move = (ARRAY_COUNT(db->node_cache)-1);
-	print("Moving %lu node*", num_nodeptrs_to_move );
-	memmove( &db->node_cache[1], &db->node_cache[0], sizeof(node*) * num_nodeptrs_to_move );
-	
-	// insert at the beginning
-	db->node_cache[0] = n;
-	
-	for(size_t i=0; i<ARRAY_COUNT(db->node_cache); i++) {
-		print("Cache[%lu] = id:%lu %p", i, (db->node_cache[i] == NULL ? 0 : db->node_cache[i]->id), db->node_cache[i] );
-	}
-}
-
-node* retrieve_node( database* db, size_t node_id ) {
-	
-	node* out = get_node_from_cache( db, node_id );
-	if( out == NULL ) {
-		out = load_node_from_file( db, node_id );
-		put_node_in_cache( db, out );
-	}
-	
-	assert( out->id != 0 );
-	
-	return out;
-}
-
-node* get_node_from_cache( database* db, size_t node_id ) {
-
-	print("Checking for node %lu in cache", node_id );
-	for(size_t i=0; i<ARRAY_COUNT(db->node_cache); i++) {
-		print("Cache[%lu] = id:%lu %p", i, db->node_cache[i]==NULL? 0 : db->node_cache[i]->id, db->node_cache[i] );
-		if( db->node_cache[i] == NULL ) {
-			prints("No more items in cache");
-			counters.cache_misses++;
-			return NULL;
-		}
-		if( db->node_cache[i]->id == node_id ) {
-			prints("Cache hit!");
-			counters.cache_hits++;
-			return db->node_cache[i];
-		}
-	}
-	counters.cache_misses++;
-	return NULL;
-}
-
 node* load_node_from_file( database* db, size_t node_id ) {
 
 	size_t node_block_bytes = sizeof( node );
@@ -961,9 +876,9 @@ board* load_row_from_file( FILE* in, off_t offset ) {
 board* database_get( database* db, key_t key ) {
 	
 	print("loading root node ID %lu", db->header->root_node_id );
-	node* root_node = retrieve_node( db, db->header->root_node_id ); // load_node_from_file( db, db->header->root_node_id );
+	node* root_node = load_node_from_file( db, db->header->root_node_id );
 	record* r = bpt_get( db, root_node, key );
-//	free_node( root_node );
+	free_node( root_node );
 	
 	if( r == NULL ) {
 		return NULL;
@@ -1054,7 +969,7 @@ void bpt_print( database* db, node* start, int indent ) {
 	// print every key/node
 	node* n;
 	for( size_t i=0; i<start->num_keys; i++ ) {
-		n = retrieve_node( db, start->pointers[i].child_node_id  );
+		n = load_node_from_file( db, start->pointers[i].child_node_id  );
 		assert( n != NULL );
 
 		if( n->is_leaf ) {
@@ -1063,13 +978,14 @@ void bpt_print( database* db, node* start, int indent ) {
 			bpt_print( db, n, indent+1 );			
 		}
 		printf("%sK[%lu]-[ 0x%lx ]\n", ind, i, start->keys[i] );
+		free_node( n );
 		
 	}
 	// print the last node
-	n = retrieve_node( db, start->pointers[start->num_keys].child_node_id  ); 
+	n = load_node_from_file( db, start->pointers[start->num_keys].child_node_id  ); 
 	assert( n != NULL );
 	bpt_print( db, n, indent + 1 );
-
+	free_node( n );
 	if( indent == 0 ) {
 		printf("+---------------------- END NODE %lu --------------------------+\n", start->id);
 	}

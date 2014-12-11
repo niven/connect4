@@ -79,9 +79,9 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 				bool was_insert = database_put( to, move_made );
 				if( was_insert ) {
 					gc.unique_boards++;
-					//render( move_made, "Unique board", false );
+					render( move_made, "Unique board", false );
 				} else {
-					//render( move_made, "Dupe board", false );
+					render( move_made, "Dupe board", false );
 				}
 
 				free_board( move_made );
@@ -112,9 +112,6 @@ int main( int argc, char** argv ) {
 	char* database_name = NULL;
 	char* key_str = NULL;
 	int c;	
-
-	int page_size = getpagesize();
-	printf("page size: %d, node size: %lu\n", page_size, sizeof(node));
 
 	map_squares_to_winlines(); // could be static but don't like doing it by hand
 

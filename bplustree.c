@@ -23,6 +23,9 @@ internal void append_log( database* db, const char* format, ... );
 internal void check_tree_correctness( database* db, node* n );
 internal key_t max_key( database* db, node* n );
 
+#include "node_cache.c"
+
+
 key_t max_key( database* db, node* n ) {
 	
 	if( n->is_leaf ) {

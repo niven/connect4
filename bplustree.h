@@ -12,6 +12,8 @@
 
 
 struct bpt_counters {
+	uint64_t cache_hits;
+	uint64_t cache_misses;
 	uint64_t creates;
 	uint64_t loads;
 	uint64_t frees;
@@ -57,6 +59,11 @@ typedef struct node {
 
 } node;
 
+typedef struct node_cache_item {
+	size_t refcount;
+	node* node_ptr;
+} node_cache_item;
+
 // TODO: rename
 node* new_bptree( size_t node_id );
 void bpt_dump_cf( void );
@@ -80,6 +87,8 @@ typedef struct database {
 	FILE* table_file;
 
 	database_header* header;
+
+	node_cache_item node_cache[2];
 
 } database;
 

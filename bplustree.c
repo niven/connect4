@@ -34,7 +34,7 @@ key_t max_key( database* db, node* n ) {
 	
 	node* last_node = load_node_from_file( db, n->pointers[ n->num_keys ].child_node_id );
 	key_t out = max_key( db, last_node );
-	free_node( last_node );
+	free_node( db, last_node );
 
 	return out;
 }
@@ -57,7 +57,7 @@ void check_tree_correctness( database* db, node* n ) {
 		// for every key, the max
 		node* temp = load_node_from_file( db, n->pointers[i].child_node_id ); 
 		key_t max = max_key( db, temp );
-		free_node( temp );
+		free_node( db, temp );
 		print("key[%lu] = 0x%lx, max from left node = 0x%lx", i, n->keys[i], max );
 		assert( max < n->keys[i] );
 	}
@@ -65,7 +65,7 @@ void check_tree_correctness( database* db, node* n ) {
 	// check the final one
 	node* temp = load_node_from_file( db, n->pointers[ n->num_keys ].child_node_id ); 
 	key_t max = max_key( db, temp );
-	free_node( temp );
+	free_node( db, temp );
 	print("key[%lu] = 0x%lx, max from right node = 0x%lx", n->num_keys-1, n->keys[ n->num_keys-1], max );
 	assert( n->keys[ n->num_keys-1] <= max );
 	
@@ -227,7 +227,7 @@ database* database_create( const char* name ) {
 
 	// it's empty, but just in case you call create/close or something	
 	database_store_node( db, first_node );
-	free_node( first_node );
+	free_node( db, first_node );
 	
 
 	return db;
@@ -299,7 +299,7 @@ bool database_put( database* db, board* b ) {
 
 	bool inserted = bpt_insert_or_update( db, root_node, r );
 	print("inserted: %s", inserted ? "true" : "false");
-	free_node( root_node );
+	free_node( db, root_node );
 	
 	// BUG HERE
 	// tree might have grown, and since it grows upward *root might not point at the
@@ -311,14 +311,14 @@ bool database_put( database* db, board* b ) {
 	while( root_node->parent_node_id != 0 ) {
 		print("%lu is not the root, moving up to node %lu", root_node->id, root_node->parent_node_id );
 		node* up = load_node_from_file( db, root_node->parent_node_id );
-		free_node( root_node );
+		free_node( db, root_node );
 		root_node = up;
 	}
 	db->header->root_node_id = root_node->id;
 	
 	print( "after insert: root node id: %lu (%p)", db->header->root_node_id, root_node );
 	check_tree_correctness (db, root_node );
-	free_node( root_node );
+	free_node( db, root_node );
 	
 	// now write the data as a "row" to the table file
 	if( inserted ) {
@@ -420,21 +420,7 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 	return BINSEARCH_INSERT;
 }
 
-void free_node( node* n ) {
 
-	counters.frees++;
-//	print("ID %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, counters.creates, counters.loads, counters.frees );
-
-	assert( n != NULL );
-	assert( n->id != 0 );
-
-	assert( counters.frees <= counters.loads + counters.creates );
-
-	n->id = 0;
-	free( n );
-
-	
-}
 
 node* new_bptree( size_t node_id ) {
 	
@@ -627,7 +613,7 @@ void bpt_split( database* db, node* n ) {
 			node* s = load_node_from_file( db, sibling->pointers[i].child_node_id );
 			s->parent_node_id = sibling->id;
 			database_store_node( db, s );
-			free_node( s );
+			free_node( db, s );
 		}
 	}
 	
@@ -668,7 +654,7 @@ void bpt_split( database* db, node* n ) {
 		n->parent_node_id = sibling->parent_node_id = new_root->id;
 
 		database_store_node( db, new_root );
-		free_node( new_root );
+		free_node( db, new_root );
 
 		print("n->p %lu s->p %lu", n->parent_node_id, sibling->parent_node_id);
 		
@@ -691,18 +677,18 @@ void bpt_split( database* db, node* n ) {
 		print("going to insert into parent node ID %lu", n->parent_node_id);
 		node* temp = load_node_from_file( db, n->parent_node_id );
 		bpt_print( db, temp, 0 );
-		free_node( temp );
+		free_node( db, temp );
 #endif		
 		counters.parent_inserts++;
 		// TODO(performance): node cache
 		node* parent = load_node_from_file( db, n->parent_node_id );
 		bpt_insert_node( db, parent, up_key, sibling->id );
-		free_node( parent );
+		free_node( db, parent );
 	}
 	check_tree_correctness (db, sibling );
 	check_tree_correctness (db, n );
 
-	free_node( sibling );
+	free_node( db, sibling );
 	
 }
 
@@ -788,7 +774,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	node* target = load_node_from_file( db, root->pointers[insert_location].child_node_id );
 	bool was_insert = bpt_insert_or_update( db, target, r );
 	print("inserted into child node (was_insert: %s)", ( was_insert ? "true" : "false") );
-	free_node( target );
+	free_node( db, target );
 	
 	return was_insert;
 }
@@ -831,7 +817,7 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 		print("Moving to child node %lu", next_node_id);
 		// TODO(elegance): must be a way to do this more elegant and without the if
 		if( current != root ) {
-			free_node( current );
+			free_node( db, current );
 		}
 		current = load_node_from_file( db, next_node_id );
 	}
@@ -882,7 +868,7 @@ board* database_get( database* db, key_t key ) {
 	print("loading root node ID %lu", db->header->root_node_id );
 	node* root_node = load_node_from_file( db, db->header->root_node_id );
 	record* r = bpt_get( db, root_node, key );
-	free_node( root_node );
+	free_node( db, root_node );
 	
 	if( r == NULL ) {
 		return NULL;
@@ -914,7 +900,7 @@ record* bpt_get( database* db, node* root, key_t key ) {
 	if( BINSEARCH_FOUND != binary_search( dest_node->keys, dest_node->num_keys, key, &key_index ) ) {
 		prints("Key not found");
 		if( dest_node->id != root->id ) {
-			free_node( dest_node );
+			free_node( db, dest_node );
 		}
 		return NULL;
 	}
@@ -931,7 +917,7 @@ record* bpt_get( database* db, node* root, key_t key ) {
 
 	if( dest_node->id != root->id ) {
 		print("dest id %lu root id %lu", dest_node->id, root->id);
-		free_node( dest_node );
+		free_node( db, dest_node );
 	}
 	return r;
 	
@@ -982,14 +968,14 @@ void bpt_print( database* db, node* start, int indent ) {
 			bpt_print( db, n, indent+1 );			
 		}
 		printf("%sK[%lu]-[ 0x%lx ]\n", ind, i, start->keys[i] );
-		free_node( n );
+		free_node( db, n );
 		
 	}
 	// print the last node
 	n = load_node_from_file( db, start->pointers[start->num_keys].child_node_id  ); 
 	assert( n != NULL );
 	bpt_print( db, n, indent + 1 );
-	free_node( n );
+	free_node( db, n );
 	if( indent == 0 ) {
 		printf("+---------------------- END NODE %lu --------------------------+\n", start->id);
 	}
@@ -1008,7 +994,7 @@ size_t bpt_size( database* db, node* start ) {
 	for( size_t i=0; i<=start->num_keys; i++ ) { // 1 more pointer than keys
 		node* child = load_node_from_file( db, start->pointers[i].child_node_id );
 		count += bpt_size( db, child );
-		free_node( child );		
+		free_node( db, child );		
 	}
 	
 	return count;

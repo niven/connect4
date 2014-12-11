@@ -3,6 +3,58 @@ internal node* retrieve_node( database* db, size_t node_id );
 internal node* get_node_from_cache( database* db, size_t node_id );
 
 /*
+	Free a node.
+	Check if this node is in the cache.
+
+	If it isn't: just free it
+
+	If it is: decrement it's refcount (may end up at 0) and move it to the end
+
+*/
+void free_node( database* db, node* n ) {
+
+	assert( n != NULL );
+	assert( n->id != 0 );
+
+	for(size_t i=0; i<ARRAY_COUNT(db->node_cache); i++) {
+		print("Cache[%lu] = id:%lu rc:%lu %p", i, 
+			(db->node_cache[i].node_ptr == NULL ? 0 : db->node_cache[i].node_ptr->id), db->node_cache[i].refcount, db->node_cache[i].node_ptr );
+		if( db->node_cache[i].node_ptr == NULL ) {
+			break; // no more items after this
+		}
+		if( db->node_cache[i].node_ptr->id == n->id ) {
+			node_cache_item found = db->node_cache[i];
+			assert( found.node_ptr == n ); // TODO(improvement): maybe this is the thing to check on, both?
+			print("found node %lu in cache, refcount: %lu", n->id, db->node_cache[i].refcount );
+			assert( found.refcount != 0 );
+			found.refcount--;
+			
+			// move this item to the end
+			size_t num_nodeptrs_to_move = ARRAY_COUNT(db->node_cache) - i;// eg. 5 items, moving item 3 to the end, meaning items 4,5 shift left
+			print("Moving %lu node_cache_items", num_nodeptrs_to_move );
+			if( num_nodeptrs_to_move > 0 ) { // could be already at the end
+				memmove( &db->node_cache[i], &db->node_cache[i+1], sizeof(node_cache_item) * num_nodeptrs_to_move );
+			}
+			
+			db->node_cache[ LAST_INDEX(db->node_cache) ] = found;
+			return;
+		}
+	}
+
+
+	// it's not in the cache
+
+	counters.frees++;
+	print("node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, counters.creates, counters.loads, counters.frees );
+
+	assert( counters.frees <= counters.loads + counters.creates );
+
+	n->id = 0; // helps finding bugs if someone is still using this
+	free( n );
+
+}
+
+/*
 	Put a node pointer in the cache if there is space
 	If the cache if not full (last item has a NULL nodeptr, meaning it's slot is free) put it in the beginning and move the rest over
 	If the cache is full:
@@ -24,7 +76,7 @@ void put_node_in_cache( database* db, node* n ) {
 		if( last_node_in_cache.node_ptr != NULL ){
 			print("Evicting last node in cache: %lu", last_node_in_cache.node_ptr->id );
 			database_store_node( db, last_node_in_cache.node_ptr );
-			free_node( last_node_in_cache.node_ptr );
+			free_node( db, last_node_in_cache.node_ptr ); // TODO(granularity): maybe a separate free_just_node otherwise this will search the cache
 		} else {
 			prints("WTF: NULL node_ptr for refcount 0 item");
 			assert(0);
@@ -37,7 +89,7 @@ void put_node_in_cache( database* db, node* n ) {
 	// shift the whole thing right by 1 node
 	// ie. move all elements - 1 from index 0 to index 1
 	size_t num_nodeptrs_to_move = (ARRAY_COUNT(db->node_cache)-1);
-	print("Moving %lu node*", num_nodeptrs_to_move );
+	print("Moving %lu node_cache_items", num_nodeptrs_to_move );
 	memmove( &db->node_cache[1], &db->node_cache[0], sizeof(node_cache_item) * num_nodeptrs_to_move );
 	
 	// insert at the beginning
@@ -87,7 +139,7 @@ node* get_node_from_cache( database* db, size_t node_id ) {
 			
 			// now move it to the front
 			size_t num_nodeptrs_to_move = i; // eg. moving item 3 means we shift items 0,1,2 right by 1
-			print("Moving %lu node*", num_nodeptrs_to_move );
+			print("Moving %lu node_cache_items", num_nodeptrs_to_move );
 			memmove( &db->node_cache[1], &db->node_cache[0], sizeof(node_cache_item) * num_nodeptrs_to_move );
 			
 			// increment refcount since something wants to hold on to this

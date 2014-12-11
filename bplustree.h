@@ -110,7 +110,7 @@ size_t bpt_size( database* db, node* n );
 
 void bpt_print( database* db, node* start, int indent );
 
-void free_node( node* n );
+void free_node( database* db, node* n );
 
 // internal stuff (operates on nodes)
 // TODO: declare in .c file

@@ -53,12 +53,12 @@ internal void test_dupes() {
 		
 		node* root_node = load_node_from_file( db, db->header->root_node_id );
 		bpt_print( db, root_node, 0 );
-		free_node( root_node );
+		free_node( db, root_node );
 	}
 	
 	node* root_node = load_node_from_file( db, db->header->root_node_id );
 	assert( bpt_size( db, root_node ) == COUNT );
-	free_node( root_node );
+	free_node( db, root_node );
 
 	assert( db->header->table_row_count == COUNT );
 	
@@ -106,7 +106,7 @@ internal void test_store_cmdline_seq( char* seq ) {
 		printf("<<<<< After insert\n" );
 		node* root_node = load_node_from_file( db, db->header->root_node_id );
 		bpt_print( db, root_node, 0 );
-		free_node( root_node );
+		free_node( db, root_node );
 		
 		element = strtok( NULL, "," );
 	}

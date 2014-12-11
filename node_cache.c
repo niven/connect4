@@ -73,13 +73,18 @@ void put_node_in_cache( database* db, node* n ) {
 	// free the last node (if there is one)
 	node_cache_item last_node_in_cache = db->node_cache[ LAST_INDEX(db->node_cache) ];
 	if( last_node_in_cache.refcount == 0 ) {
+		print("last node in cache: %lu rc:%lu %p", 
+			last_node_in_cache.node_ptr == NULL ? 0 : last_node_in_cache.node_ptr->id,
+			last_node_in_cache.node_ptr == NULL ? 0 : last_node_in_cache.refcount,
+			last_node_in_cache.node_ptr
+		);
 		if( last_node_in_cache.node_ptr != NULL ){
 			print("Evicting last node in cache: %lu", last_node_in_cache.node_ptr->id );
 			database_store_node( db, last_node_in_cache.node_ptr );
 			free_node( db, last_node_in_cache.node_ptr ); // TODO(granularity): maybe a separate free_just_node otherwise this will search the cache
 		} else {
-			prints("WTF: NULL node_ptr for refcount 0 item");
-			assert(0);
+			// the last item isn't there, which means we have space to put something in
+			prints("space available in cache");
 		}
 	} else {
 		// no more space in cache

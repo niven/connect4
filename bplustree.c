@@ -266,6 +266,12 @@ void database_close( database* db ) {
 	
 	write_database_header( db );
 
+	// TODO(bug): free everything in the cache
+	for(size_t i=0; i<ARRAY_COUNT(db->node_cache); i++) {
+		assert( db->node_cache[i].refcount == 0 );
+		assert( db->node_cache[i].node_ptr == NULL );
+	}
+
 	free( db->header );
 	
 	fclose( db->index_file );
@@ -445,6 +451,8 @@ node* new_bptree( size_t node_id ) {
 
 void bpt_dump_cf() {
 	printf("BPT ORDER: %d\n", ORDER);
+	printf("Total cache hits: %llu\n", counters.cache_hits);
+	printf("Total cache misses: %llu\n", counters.cache_misses);
 	printf("Total creates: %llu\n", counters.creates);
 	printf("Total loads: %llu\n", counters.loads);
 	printf("Total frees: %llu\n", counters.frees);
@@ -959,7 +967,7 @@ void bpt_print( database* db, node* start, int indent ) {
 	// print every key/node
 	node* n;
 	for( size_t i=0; i<start->num_keys; i++ ) {
-		n = load_node_from_file( db, start->pointers[i].child_node_id  );
+		n = retrieve_node( db, start->pointers[i].child_node_id  );
 		assert( n != NULL );
 
 		if( n->is_leaf ) {
@@ -972,7 +980,7 @@ void bpt_print( database* db, node* start, int indent ) {
 		
 	}
 	// print the last node
-	n = load_node_from_file( db, start->pointers[start->num_keys].child_node_id  ); 
+	n = retrieve_node( db, start->pointers[start->num_keys].child_node_id  ); 
 	assert( n != NULL );
 	bpt_print( db, n, indent + 1 );
 	free_node( db, n );

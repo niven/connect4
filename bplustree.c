@@ -29,8 +29,9 @@ key_t max_key( database* db, node* n ) {
 		return n->keys[ n->num_keys-1 ];
 	}
 	
-	node* last_node = retrieve_node( db, n->pointers[ n->num_keys ].child_node_id );
+	node* last_node = load_node_from_file( db, n->pointers[ n->num_keys ].child_node_id );
 	key_t out = max_key( db, last_node );
+	free_node( last_node );
 
 	return out;
 }
@@ -781,10 +782,10 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	print("Descending into node %lu", root->pointers[insert_location].child_node_id);
 
 	// TODO(performance): node cache
-	node* target = retrieve_node( db, root->pointers[insert_location].child_node_id );
+	node* target = load_node_from_file( db, root->pointers[insert_location].child_node_id );
 	bool was_insert = bpt_insert_or_update( db, target, r );
 	print("inserted into child node (was_insert: %s)", ( was_insert ? "true" : "false") );
-//	free_node( target );
+	free_node( target );
 	
 	return was_insert;
 }

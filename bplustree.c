@@ -135,8 +135,6 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 	
 }
 
-
-
 void database_store_node( database* db, node* n ) {
 
 	// append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
@@ -145,19 +143,20 @@ void database_store_node( database* db, node* n ) {
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );
 
-	// TODO: just fseek since we keep the files open
-	FILE* out = open_and_seek( db->index_filename, "r+", offset );
+	// fseek returns nonzero on failure
+	if( fseek( db->index_file, offset, SEEK_SET ) ) {
+		perror("fseek()");
+		exit( EXIT_FAILURE );
+	}
 	
 	append_log( db, "database_store_node(): storing %lu bytes at offset %llu\n", node_block_bytes, offset );
 	
-	size_t written = fwrite( n, node_block_bytes, 1, out );
+	size_t written = fwrite( n, node_block_bytes, 1, db->index_file );
 	if( written != 1 ) {
 		perror("fwrite()");
 		exit( EXIT_FAILURE );
 	}
 	
-	fclose( out );
-
 }
 
 // stuff that deals with the fact we store things on disk

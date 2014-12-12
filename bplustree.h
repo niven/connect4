@@ -110,6 +110,7 @@ record* bpt_get( database* db, node* n, key_t key );
 size_t bpt_size( database* db, node* n );
 
 void print_index( database* db );
+void print_index_from( database* db, size_t start_node_id );
 
 void free_node( database* db, node* n );
 

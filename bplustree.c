@@ -632,20 +632,18 @@ void bpt_split( database* db, node* n ) {
 		}
 	}
 	
-	
-	// when splitting a node a key and 2 nodes mode up
+	// when splitting a node a key and 2 nodes move up
 	n->num_keys = n->num_keys - keys_moving_right - (n->is_leaf ? 0 : 1);
-
-#ifdef VERBOSE
-	print("created sibling node %lu (%p)", sibling->id, sibling);
-	bpt_print( db, sibling, 0 );
-	print("node %lu left over (%p)", n->id, n);
-	bpt_print( db, n, 0 );
-#endif
-
 
 	database_store_node( db, n );
 	database_store_node( db, sibling ); // store it first, in case bpt_insert_node needs to load us
+
+#ifdef VERBOSE
+	print("created sibling node %lu (%p)", sibling->id, sibling);
+	print_index_from( db, sibling->id );
+	print("node %lu left over (%p)", n->id, n);
+	print_index_from( db, n->id );
+#endif
 	
 	// the key that moves up is the split key in the leaf node case, and otherwise
 	// the key we didn't propagate to the sibling node and didn't keep in the node
@@ -724,7 +722,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	size_t insert_location = 0;
 
 	if( root->is_leaf ) {
-		bpt_print( db, root, 0 );
+		print_index_from( db, root->id );
 
 		int bsearch_result = binary_search( root->keys, root->num_keys, r.key, &insert_location);
 		assert( bsearch_result == BINSEARCH_FOUND || bsearch_result == BINSEARCH_INSERT );
@@ -950,21 +948,27 @@ internal void bpt_print_leaf( node* n, int indent ) {
 
 }
 
-void print_index( database* db ) {
+void print_index_from( database* db, size_t start_node_id ) {
 	
-	node* root = retrieve_node( db, db->header->root_node_id );
-	if( root->is_leaf ) {
-		printf("+---------------------- LEAF NODE %lu ------------------------------+\n", root->id);
-		bpt_print_leaf( root, 0 );
-		printf("+---------------------- END LEAF NODE %lu --------------------------+\n", root->id);	
+	node* start = retrieve_node( db, start_node_id );
+	if( start->is_leaf ) {
+		printf("+---------------------- LEAF NODE %lu ------------------------------+\n", start->id);
+		bpt_print_leaf( start, 0 );
+		printf("+---------------------- END LEAF NODE %lu --------------------------+\n", start->id);	
 	} else {
-		printf("+---------------------- NODE %lu ------------------------------+\n", root->id);
-		bpt_print( db, root, 0 );
-		printf("+---------------------- END NODE %lu --------------------------+\n", root->id);	
+		printf("+---------------------- NODE %lu ------------------------------+\n", start->id);
+		bpt_print( db, start, 0 );
+		printf("+---------------------- END NODE %lu --------------------------+\n", start->id);	
 	}
-	free_node( db, root );
-	clear_cache( db );
+	free_node( db, start );
+	clear_cache( db ); // TODO(remove): clearing the cache now to make sure when nodes get updated we don't reuse stale ones
 }
+
+void print_index( database* db ) {	
+	print_index_from( db, db->header->root_node_id );
+}
+
+
 
 void bpt_print( database* db, node* start, int indent ) {
 #ifdef VERBOSE

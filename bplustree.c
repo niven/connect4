@@ -23,6 +23,10 @@ internal void append_log( database* db, const char* format, ... );
 internal void check_tree_correctness( database* db, node* n );
 internal key_t max_key( database* db, node* n );
 internal void bpt_print( database* db, node* start, int indent );
+internal void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id );
+internal void bpt_split( database* db, node* node );
+internal bool bpt_insert_or_update( database* db, node* n, record r );
+
 
 #include "node_cache.c"
 
@@ -213,7 +217,7 @@ database* database_create( const char* name ) {
 	db->free_slots_in_node_cache = ARRAY_COUNT(db->node_cache);
 	
 	// create a new bpt
-	node* first_node = new_bptree( ++db->header->node_count ); // get the next node id, and update count
+	node* first_node = new_node( ++db->header->node_count ); // get the next node id, and update count
 	db->header->root_node_id = first_node->id;
 	
 	database_set_filenames( db, name );
@@ -435,7 +439,7 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 
 
 
-node* new_bptree( size_t node_id ) {
+node* new_node( size_t node_id ) {
 	
 	node* out = (node*)malloc( sizeof(node) );
 	if( out == NULL ) {
@@ -611,7 +615,7 @@ void bpt_split( database* db, node* n ) {
 	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
 	print("moving %zu keys (%zu nodes/values) right from offset %zu (key = 0x%lx)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
-	node* sibling = new_bptree( ++db->header->node_count );	
+	node* sibling = new_node( ++db->header->node_count );	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
 	memcpy( &sibling->pointers[0], &n->pointers[offset], sizeof(pointer)*(keys_moving_right+1) );
 	
@@ -655,7 +659,7 @@ void bpt_split( database* db, node* n ) {
 	if( n->parent_node_id == 0 ) {
 
 		print("no parent, creating new root: ID %lu", db->header->node_count + 1 );
-		node* new_root = new_bptree( ++db->header->node_count );
+		node* new_root = new_node( ++db->header->node_count );
 
 		new_root->keys[0] = up_key; // since left must all be smaller
 		new_root->pointers[0].child_node_id = n->id;

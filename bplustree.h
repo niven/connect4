@@ -64,10 +64,6 @@ typedef struct node_cache_item {
 	node* node_ptr;
 } node_cache_item;
 
-// TODO: rename
-node* new_bptree( size_t node_id );
-void bpt_dump_cf( void );
-
 // TODO(convenience): maybe just put these directly in struct database
 typedef struct database_header {
 	size_t node_count;
@@ -93,6 +89,7 @@ typedef struct database {
 
 } database;
 
+// public API (always takes a root)
 database* database_create( const char* name );
 database* database_open( const char* name );
 void database_close( database* db );
@@ -101,10 +98,13 @@ bool database_put( database* db, board* b );
 board* database_get( database* db, key_t key );
 size_t database_size( database* db );
 
+// internal stuff (operates on nodes)
+node* new_node( size_t node_id );
+void bpt_dump_cf( void );
+
 node* load_node_from_file( database* db, size_t node_id );
 board* load_row_from_file( FILE* in, off_t offset );
 
-// public API (always takes a root)
 bool bpt_put( node** root, record r );
 record* bpt_get( database* db, node* n, key_t key );
 size_t bpt_size( database* db, node* n );
@@ -113,11 +113,5 @@ void print_index( database* db );
 void print_index_from( database* db, size_t start_node_id );
 
 void free_node( database* db, node* n );
-
-// internal stuff (operates on nodes)
-// TODO: declare in .c file
-void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id );
-void bpt_split( database* db, node* node );
-bool bpt_insert_or_update( database* db, node* n, record r );
 
 #endif

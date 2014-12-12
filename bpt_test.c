@@ -51,9 +51,7 @@ internal void test_dupes() {
 		free_board( current );
 		current = next;
 		
-		node* root_node = load_node_from_file( db, db->header->root_node_id );
-		bpt_print( db, root_node, 0 );
-		free_node( db, root_node );
+		print_index( db );
 	}
 	
 	node* root_node = load_node_from_file( db, db->header->root_node_id );
@@ -104,9 +102,8 @@ internal void test_store_cmdline_seq( char* seq ) {
 		current = next;
 
 		printf("<<<<< After insert\n" );
-		node* root_node = load_node_from_file( db, db->header->root_node_id );
-		bpt_print( db, root_node, 0 );
-		free_node( db, root_node );
+		print_index( db );
+
 		
 		element = strtok( NULL, "," );
 	}

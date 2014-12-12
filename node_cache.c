@@ -105,7 +105,7 @@ void free_node( database* db, node* n ) {
 */
 void put_node_in_cache( database* db, node* n ) {
 	
-	print("Putting node %lu (%p) in the cache", n->id, n);
+	print("Putting node %lu (%p) in the cache (%lu slots free)", n->id, n, db->free_slots_in_node_cache);
 	assert( db->free_slots_in_node_cache <= ARRAY_COUNT( db->node_cache ) );
 	
 	// if there is room left, just put it there
@@ -115,11 +115,12 @@ void put_node_in_cache( database* db, node* n ) {
 		// put it at the beginning of the array so it will be found fast if we need it again
 		// and shift the rest right
 
-		// shift the whole thing right by 1 node
-		// ie. move all (elements - 1) from index 0 to index 1
-		size_t num_nodeptrs_to_move = ARRAY_COUNT(db->node_cache) - 1;
-		print("Moving %lu node_cache_items", num_nodeptrs_to_move );
-		memmove( &db->node_cache[1], &db->node_cache[0], sizeof(node_cache_item) * num_nodeptrs_to_move );
+		// shift all occupied slots right by 1
+		size_t num_nodeptrs_to_move = ARRAY_COUNT(db->node_cache) - db->free_slots_in_node_cache;
+		if( num_nodeptrs_to_move > 0 ){
+			print("Moving %lu node_cache_items", num_nodeptrs_to_move );
+			memmove( &db->node_cache[1], &db->node_cache[0], sizeof(node_cache_item) * num_nodeptrs_to_move );
+		}
 
 		db->node_cache[0] = (node_cache_item){ .refcount = 1, .node_ptr = n };
 		db->free_slots_in_node_cache--;
@@ -205,6 +206,7 @@ node* get_node_from_cache( database* db, size_t node_id ) {
 			return found.node_ptr;
 		}
 	}
+	print("node %lu was not in the cache", node_id);
 	counters.cache_misses++;
 	return NULL;
 }

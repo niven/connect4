@@ -22,6 +22,7 @@ internal void database_set_filenames( database* db, const char* name );
 internal void append_log( database* db, const char* format, ... );
 internal void check_tree_correctness( database* db, node* n );
 internal key_t max_key( database* db, node* n );
+internal void bpt_print( database* db, node* start, int indent );
 
 #include "node_cache.c"
 
@@ -49,6 +50,7 @@ void check_tree_correctness( database* db, node* n ) {
 		for(size_t i=0; i<n->num_keys-1; i++ ) {
 			assert( n->keys[i] < n->keys[i+1]);
 		}
+		print("node %lu OK", n->id);
 		return;
 	}
 	
@@ -68,6 +70,7 @@ void check_tree_correctness( database* db, node* n ) {
 	free_node( db, temp );
 	print("key[%lu] = 0x%lx, max from right node = 0x%lx", n->num_keys-1, n->keys[ n->num_keys-1], max );
 	assert( n->keys[ n->num_keys-1] <= max );
+	print("node %lu OK", n->id);
 	
 }
 
@@ -132,7 +135,8 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 
 void database_store_node( database* db, node* n ) {
 
-	append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
+	// append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
+	print("writing node %lu (parent %lu) to %s", n->id, n->parent_node_id, db->index_filename );
 	
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );
@@ -144,7 +148,7 @@ void database_store_node( database* db, node* n ) {
 	
 	size_t written = fwrite( n, node_block_bytes, 1, out );
 	if( written != 1 ) {
-		perror("frwite()");
+		perror("fwrite()");
 		exit( EXIT_FAILURE );
 	}
 	
@@ -303,9 +307,9 @@ bool database_put( database* db, board* b ) {
 	counters.key_inserts++;
 
 	print("loading root node ID %lu", db->header->root_node_id );
-	node* root_node = load_node_from_file( db, db->header->root_node_id );
-	bpt_print( db, root_node , 0 );
+	print_index( db );
 
+	node* root_node = load_node_from_file( db, db->header->root_node_id );
 	bool inserted = bpt_insert_or_update( db, root_node, r );
 	print("inserted: %s", inserted ? "true" : "false");
 	free_node( db, root_node );
@@ -501,7 +505,7 @@ void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert
 
 #ifdef VERBOSE
 	prints("after insert:");
-	bpt_print( db, n, 0 );
+	print_index( db );
 #endif
 
 	check_tree_correctness( db, n );
@@ -524,7 +528,7 @@ void bpt_split( database* db, node* n ) {
 	counters.splits++;
 
 	print("node %lu: %s (%p)", n->id, (n->is_leaf ? "leaf" : "node"), n );
-	bpt_print( db, n, 0 );
+	print_index( db ); // TODO(granularity): function to print starting from a specific node
 	/* 
 	Create a sibling node
 	
@@ -686,9 +690,7 @@ void bpt_split( database* db, node* n ) {
 		// as well
 #ifdef VERBOSE
 		print("going to insert into parent node ID %lu", n->parent_node_id);
-		node* temp = load_node_from_file( db, n->parent_node_id );
-		bpt_print( db, temp, 0 );
-		free_node( db, temp );
+		print_index( db );
 #endif		
 		counters.parent_inserts++;
 		// TODO(performance): node cache
@@ -860,7 +862,8 @@ node* load_node_from_file( database* db, size_t node_id ) {
 
 	counters.loads++;
 
-	append_log( db, "load_node_from_file(): retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)\n", node_id, n, counters.creates, counters.loads, counters.frees );
+	// append_log( db, "load_node_from_file(): retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)\n", node_id, n, counters.creates, counters.loads, counters.frees );
+	print("retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", node_id, n, counters.creates, counters.loads, counters.frees );
 	return n;
 }
 
@@ -939,18 +942,28 @@ internal void bpt_print_leaf( node* n, int indent ) {
 	char ind[100] = "                               END";
 	ind[indent*2] = '\0';
 	
-	if( indent == 0 ) {
-		printf("+---------------------- LEAF NODE %lu --------------------------+\n", n->id);
-	}
 	printf("%sL(%lu)-[ ", ind, n->id);
 	for( size_t i=0; i<n->num_keys; i++ ) {
 		printf("0x%lx ", n->keys[i] );
 	}
 	printf("] - (%p) (#keys: %lu, parent id %lu)\n", n, n->num_keys, n->parent_node_id);
-	if( indent == 0 ) {
-		printf("+---------------------- END LEAF NODE %lu --------------------------+\n", n->id);
-	}
 
+}
+
+void print_index( database* db ) {
+	
+	node* root = retrieve_node( db, db->header->root_node_id );
+	if( root->is_leaf ) {
+		printf("+---------------------- LEAF NODE %lu ------------------------------+\n", root->id);
+		bpt_print_leaf( root, 0 );
+		printf("+---------------------- END LEAF NODE %lu --------------------------+\n", root->id);	
+	} else {
+		printf("+---------------------- NODE %lu ------------------------------+\n", root->id);
+		bpt_print( db, root, 0 );
+		printf("+---------------------- END NODE %lu --------------------------+\n", root->id);	
+	}
+	free_node( db, root );
+	clear_cache( db );
 }
 
 void bpt_print( database* db, node* start, int indent ) {
@@ -962,9 +975,7 @@ void bpt_print( database* db, node* start, int indent ) {
 		bpt_print_leaf( start, indent );
 		return;
 	}
-	if( indent == 0 ) {
-		printf("+---------------------- NODE %lu --------------------------+\n", start->id );
-	}
+
 	printf("%sN(%lu) (%p) keys: %zu (parent id %lu)\n", ind, start->id, start, start->num_keys, start->parent_node_id);
 		
 	// print every key/node
@@ -987,9 +998,7 @@ void bpt_print( database* db, node* start, int indent ) {
 	assert( n != NULL );
 	bpt_print( db, n, indent + 1 );
 	free_node( db, n );
-	if( indent == 0 ) {
-		printf("+---------------------- END NODE %lu --------------------------+\n", start->id);
-	}
+
 #endif
 }
 

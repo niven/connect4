@@ -109,7 +109,7 @@ bool bpt_put( node** root, record r );
 record* bpt_get( database* db, node* n, key_t key );
 size_t bpt_size( database* db, node* n );
 
-void bpt_print( database* db, node* start, int indent );
+void print_index( database* db );
 
 void free_node( database* db, node* n );
 

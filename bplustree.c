@@ -740,7 +740,6 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 		}
 		
 		// now insert at k, but first shift everything after k right
-		// TODO: These don't overlap afaict, why not memcpy? src==dest maybe?
 		memmove( &root->keys[k+1], &root->keys[k], KEY_SIZE*(root->num_keys - k) );
 		memmove( &root->pointers[k+1], &root->pointers[k], sizeof(pointer)*(root->num_keys - k) );
 

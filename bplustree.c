@@ -12,20 +12,21 @@
 
 global_variable struct bpt_counters counters;
 
-internal void database_store_row( database* db, size_t row_index, board* b );
+internal void append_log( database* db, const char* format, ... );
+internal void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id );
+internal bool bpt_insert_or_update( database* db, node* n, record r );
+internal void bpt_print( database* db, node* start, int indent );
+internal void bpt_split( database* db, node* node );
+internal void check_tree_correctness( database* db, node* n );
+internal void database_open_files( database* db );
+internal void database_set_filenames( database* db, const char* name );
 internal void database_store_node( database* db, node* data );
-internal void read_database_header( database* db );
-internal void write_database_header( database* db );
+internal void database_store_row( database* db, size_t row_index, board* b );
 internal off_t file_offset_from_node( size_t id );
 internal off_t file_offset_from_row( size_t row_index );
-internal void database_set_filenames( database* db, const char* name );
-internal void append_log( database* db, const char* format, ... );
-internal void check_tree_correctness( database* db, node* n );
 internal key_t max_key( database* db, node* n );
-internal void bpt_print( database* db, node* start, int indent );
-internal void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id );
-internal void bpt_split( database* db, node* node );
-internal bool bpt_insert_or_update( database* db, node* n, record r );
+internal void read_database_header( database* db );
+internal void write_database_header( database* db );
 
 
 #include "node_cache.c"
@@ -77,6 +78,9 @@ void check_tree_correctness( database* db, node* n ) {
 	print("node %lu OK", n->id);
 	
 }
+
+/************** stuff that deals with the fact we store things on disk ********************/
+
 
 // the initial node is 1 (0 is reserved)
 off_t file_offset_from_node( size_t id ) {
@@ -159,7 +163,6 @@ void database_store_node( database* db, node* n ) {
 	
 }
 
-// stuff that deals with the fact we store things on disk
 
 void write_database_header( database* db ) {
 
@@ -196,6 +199,17 @@ void database_set_filenames( database* db, const char* name ) {
 	
 }
 
+void database_open_files( database* db ) {
+	
+	// open the index file
+	db->index_file = fopen( db->index_filename, "r+" );
+	print("opened index file %s", db->index_filename);
+	
+	// open the table file
+	db->table_file = fopen( db->table_filename, "r+" );
+	print("opened table file %s", db->table_filename);
+	
+}
 
 database* database_create( const char* name ) {
 
@@ -223,14 +237,13 @@ database* database_create( const char* name ) {
 
 	// create the index file
 	create_empty_file( db->index_filename );
-	db->index_file = fopen( db->index_filename, "r+" );
 	print("created index file %s", db->index_filename);
-	
+
 	// create the table file
 	create_empty_file( db->table_filename );
-	db->table_file = fopen( db->table_filename, "r+" );
-	
 	print("created table file %s", db->table_filename);
+	
+	database_open_files( db );
 	
 	write_database_header( db );
 
@@ -253,13 +266,7 @@ database* database_open( const char* name ) {
 	
 	database_set_filenames( db, name );
 
-	// open the index file
-	db->index_file = fopen( db->index_filename, "r+" );
-	print("opened index file %s", db->index_filename);
-	
-	// open the table file
-	db->table_file = fopen( db->table_filename, "r+" );
-	print("opened table file %s", db->table_filename);
+	database_open_files( db );
 	
 	// read the root node, node_count and row_count
 	read_database_header( db );

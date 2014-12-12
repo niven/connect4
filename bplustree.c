@@ -15,7 +15,6 @@ global_variable struct bpt_counters counters;
 internal void append_log( database* db, const char* format, ... );
 internal void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id );
 internal bool bpt_insert_or_update( database* db, node* n, record r );
-internal void bpt_print( database* db, node* start, int indent );
 internal void bpt_split( database* db, node* node );
 internal void database_open_files( database* db );
 internal void database_set_filenames( database* db, const char* name );
@@ -28,7 +27,7 @@ internal void write_database_header( database* db );
 
 
 #include "node_cache.c"
-#include "bptree_utils.c"
+#include "bplustree_utils.c"
 
 
 
@@ -897,18 +896,6 @@ record* bpt_get( database* db, node* root, key_t key ) {
 	
 }
 
-internal void bpt_print_leaf( node* n, int indent ) {
-	
-	char ind[100] = "                               END";
-	ind[indent*2] = '\0';
-	
-	printf("%sL(%lu)-[ ", ind, n->id);
-	for( size_t i=0; i<n->num_keys; i++ ) {
-		printf("0x%lx ", n->keys[i] );
-	}
-	printf("] - (%p) (#keys: %lu, parent id %lu)\n", n, n->num_keys, n->parent_node_id);
-
-}
 
 void print_index_from( database* db, size_t start_node_id ) {
 	
@@ -930,43 +917,6 @@ void print_index( database* db ) {
 	print_index_from( db, db->header->root_node_id );
 }
 
-
-
-void bpt_print( database* db, node* start, int indent ) {
-#ifdef VERBOSE
-	char ind[100] = "                               END";
-	ind[indent*2] = '\0';
-	
-	if( start->is_leaf ) {
-		bpt_print_leaf( start, indent );
-		return;
-	}
-
-	printf("%sN(%lu) (%p) keys: %zu (parent id %lu)\n", ind, start->id, start, start->num_keys, start->parent_node_id);
-		
-	// print every key/node
-	node* n;
-	for( size_t i=0; i<start->num_keys; i++ ) {
-		n = retrieve_node( db, start->pointers[i].child_node_id  );
-		assert( n != NULL );
-
-		if( n->is_leaf ) {
-			bpt_print_leaf( n, indent+1 );
-		} else {
-			bpt_print( db, n, indent+1 );			
-		}
-		printf("%sK[%lu]-[ 0x%lx ]\n", ind, i, start->keys[i] );
-		free_node( db, n );
-		
-	}
-	// print the last node
-	n = retrieve_node( db, start->pointers[start->num_keys].child_node_id  ); 
-	assert( n != NULL );
-	bpt_print( db, n, indent + 1 );
-	free_node( db, n );
-
-#endif
-}
 
 // NOTE(performance): this could be very slow, but I'm not sure that will ever be relevant
 size_t bpt_size( database* db, node* start ) {

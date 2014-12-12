@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -292,6 +293,8 @@ internal void update_winlines( board* b, int move_y, int move_x ) {
 
 
 board* drop( board* src, int x ) {
+	
+	assert( !is_over( src) );
 	
 	if( x < 0 || x > COLS ) {
 		fprintf( stderr, "Can't drop into %d\n", x );

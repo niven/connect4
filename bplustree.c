@@ -30,7 +30,6 @@ internal void write_database_header( database* db );
 #include "bplustree_utils.c"
 
 
-
 /************** stuff that deals with the fact we store things on disk ********************/
 
 
@@ -235,11 +234,7 @@ void database_close( database* db ) {
 	
 	write_database_header( db );
 
-	// TODO(bug): free everything in the cache
-	for(size_t i=0; i<ARRAY_COUNT(db->node_cache); i++) {
-		assert( db->node_cache[i].refcount == 0 );
-		assert( db->node_cache[i].node_ptr == NULL );
-	}
+	clear_cache( db );
 
 	free( db->header );
 	

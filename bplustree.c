@@ -17,67 +17,20 @@ internal void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_
 internal bool bpt_insert_or_update( database* db, node* n, record r );
 internal void bpt_print( database* db, node* start, int indent );
 internal void bpt_split( database* db, node* node );
-internal void check_tree_correctness( database* db, node* n );
 internal void database_open_files( database* db );
 internal void database_set_filenames( database* db, const char* name );
 internal void database_store_node( database* db, node* data );
 internal void database_store_row( database* db, size_t row_index, board* b );
 internal off_t file_offset_from_node( size_t id );
 internal off_t file_offset_from_row( size_t row_index );
-internal key_t max_key( database* db, node* n );
 internal void read_database_header( database* db );
 internal void write_database_header( database* db );
 
 
 #include "node_cache.c"
+#include "bptree_utils.c"
 
 
-key_t max_key( database* db, node* n ) {
-	
-	if( n->is_leaf ) {
-		return n->keys[ n->num_keys-1 ];
-	}
-	
-	node* last_node = load_node_from_file( db, n->pointers[ n->num_keys ].child_node_id );
-	key_t out = max_key( db, last_node );
-	free_node( db, last_node );
-
-	return out;
-}
-
-void check_tree_correctness( database* db, node* n ) {
-	
-	print("Checking correctness of node %lu", n->id );
-	
-	// for leaves, check if all keys are ascending
-	if( n->is_leaf ) {
-		
-		for(size_t i=0; i<n->num_keys-1; i++ ) {
-			assert( n->keys[i] < n->keys[i+1]);
-		}
-		print("node %lu OK", n->id);
-		return;
-	}
-	
-
-	for(size_t i=0; i<n->num_keys; i++ ) {
-		// for every key, the max
-		node* temp = load_node_from_file( db, n->pointers[i].child_node_id ); 
-		key_t max = max_key( db, temp );
-		free_node( db, temp );
-		print("key[%lu] = 0x%lx, max from left node = 0x%lx", i, n->keys[i], max );
-		assert( max < n->keys[i] );
-	}
-	
-	// check the final one
-	node* temp = load_node_from_file( db, n->pointers[ n->num_keys ].child_node_id ); 
-	key_t max = max_key( db, temp );
-	free_node( db, temp );
-	print("key[%lu] = 0x%lx, max from right node = 0x%lx", n->num_keys-1, n->keys[ n->num_keys-1], max );
-	assert( n->keys[ n->num_keys-1] <= max );
-	print("node %lu OK", n->id);
-	
-}
 
 /************** stuff that deals with the fact we store things on disk ********************/
 

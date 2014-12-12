@@ -260,7 +260,6 @@ bool database_put( database* db, board* b ) {
 	
 	record r = { .key = board_key, .value.table_row_index = db->header->table_row_count };
 
-	// TODO(bug): this should not overwrite, that means wasting space in the table file, also return inserted/dupe
 	counters.key_inserts++;
 
 	print("loading root node ID %lu", db->header->root_node_id );
@@ -271,7 +270,6 @@ bool database_put( database* db, board* b ) {
 	print("inserted: %s", inserted ? "true" : "false");
 	free_node( db, root_node );
 	
-	// BUG HERE
 	// tree might have grown, and since it grows upward *root might not point at the
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root

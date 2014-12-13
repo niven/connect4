@@ -1,4 +1,0 @@
-write_database_header(): nodes: 1 - rows: 0 - root node id: 1
-database_store_node(): writing node 1 (parent 0) to num_moves_3.c4_index
-database_store_node(): storing 88 bytes at offset 24
-write_database_header(): nodes: 1 - rows: 0 - root node id: 1

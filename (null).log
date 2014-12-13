@@ -1,0 +1,16 @@
+write_database_header(): nodes: 1 - rows: 0 - root node id: 1
+load_node_from_file(): retrieved node 1 (0x7f9268600010) (cr: 0/ld: 1/fr: 0)
+write_database_header(): nodes: 1 - rows: 1 - root node id: 1
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7
+write_database_header(): nodes: 7 - rows: 7 - root node id: 7

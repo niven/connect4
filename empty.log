@@ -1,0 +1,10 @@
+write_database_header(): nodes: 1 - rows: 1 - root node id: 1
+write_database_header(): nodes: 1 - rows: 0 - root node id: 1
+database_store_node(): writing node 1 (parent 0) to empty.c4_index
+database_store_node(): storing 88 bytes at offset 24
+load_node_from_file(): retrieved node 1 (0x7faa2b500000) (cr: 1/ld: 1/fr: 1)
+database_store_node(): writing node 1 (parent 0) to empty.c4_index
+database_store_node(): storing 88 bytes at offset 24
+load_node_from_file(): retrieved node 1 (0x7faa2b600000) (cr: 1/ld: 2/fr: 2)
+storing 27 bytes at offset 0
+write_database_header(): nodes: 1 - rows: 1 - root node id: 1

@@ -1,16 +1,20 @@
 internal void put_node_in_cache( database* db, node* n );
 internal node* retrieve_node( database* db, size_t node_id );
 internal node* get_node_from_cache( database* db, size_t node_id );
-internal void reclaim_node( node* n );
+internal void free_node( node* n );
 internal void dump_cache( database* db );
 internal void clear_cache( database* db );
+
+// TODO(performance): Searching a node in the cache is slow (maybe a hash table to lookup?)
+// and moving a node_cache_item to the end is not useful if it's refcount is not 0 yet
+
 
 void clear_cache( database* db ) {
 	size_t num_items_in_cache = ARRAY_COUNT(db->node_cache) - db->free_slots_in_node_cache;
 	print("items: %lu", num_items_in_cache);
 	for(size_t i=0; i < num_items_in_cache; i++) {
 		print("reclaiming slot %lu", i);
-		reclaim_node( db->node_cache[i].node_ptr );
+		free_node( db->node_cache[i].node_ptr );
 		db->node_cache[i].node_ptr = NULL;
 		db->node_cache[i].refcount = 0;
 		db->free_slots_in_node_cache++;
@@ -25,7 +29,7 @@ void dump_cache( database* db ) {
 	}
 	
 }
-void reclaim_node( node* n ) {
+void free_node( node* n ) {
 
 	counters.frees++;
 	print("node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, counters.creates, counters.loads, counters.frees );
@@ -38,7 +42,7 @@ void reclaim_node( node* n ) {
 }
 
 /*
-	Free a node.
+
 	Check if this node is in the cache.
 
 	If it isn't: just free it
@@ -46,7 +50,7 @@ void reclaim_node( node* n ) {
 	If it is: decrement it's refcount (may end up at 0) and move it to the end
 
 */
-void free_node( database* db, node* n ) {
+void release_node( database* db, node* n ) {
 
 	assert( n != NULL );
 	assert( n->id != 0 );
@@ -89,7 +93,7 @@ void free_node( database* db, node* n ) {
 
 	// it's not in the cache
 	print("node %lu was not in the cache", n->id);
-	reclaim_node( n );
+	free_node( n );
 	dump_cache( db );
 	
 }
@@ -136,7 +140,7 @@ void put_node_in_cache( database* db, node* n ) {
 		print("last node in cache: %lu rc:%lu %p", last_node_in_cache.node_ptr->id, last_node_in_cache.refcount, last_node_in_cache.node_ptr );
 		print("Evicting last node in cache: %lu", last_node_in_cache.node_ptr->id );
 		database_store_node( db, last_node_in_cache.node_ptr );
-		reclaim_node( last_node_in_cache.node_ptr ); 
+		free_node( last_node_in_cache.node_ptr ); 
 		db->free_slots_in_node_cache++;
 	} else {
 		// no more space in cache

@@ -56,7 +56,7 @@ internal void test_dupes() {
 	
 	node* root_node = load_node_from_file( db, db->header->root_node_id );
 	assert( bpt_size( db, root_node ) == COUNT );
-	free_node( db, root_node );
+	release_node( db, root_node );
 
 	assert( db->header->table_row_count == COUNT );
 	

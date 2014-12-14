@@ -5,7 +5,8 @@ extern winline winlines[NUM_WINLINES];
 extern char states[4];
 
 // 42 lists of ints, every one a list of [num_winlines, winline_0, winline_1, ...]
-extern unsigned int* s2w[42];
+// To explain what this actually *is*: This maps every square on the board to all winlines it can be part of.
+extern unsigned int* s2w[ ROWS * COLS ];
 
 void map_squares_to_winlines( void );
 void free_s2w( void );

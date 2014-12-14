@@ -246,11 +246,12 @@ void database_close( database* db ) {
 	prints("closed");
 }
 
-global_variable key_t stored_keys[1024];
+// TODO(bug): find a good way to do this, and not chase bugs for hours.
+global_variable key_t stored_keys[4096];
 global_variable int num_stored_keys;
 
 bool database_put( database* db, board* b ) {
-	
+
 	// the index knows if we already have this record,
 	// but in order to store it we need to have the offset in the table
 	// which we know as we can just keep track of that
@@ -289,7 +290,9 @@ bool database_put( database* db, board* b ) {
 	release_node( db, root_node );
 	
 	// now write the data as a "row" to the table file
+
 	if( inserted ) {
+		assert( num_stored_keys < 4000 ); // THIS BS AGAIN
 		key_t latest_key = encode_board( b );
 		print("Latest key: 0x%lx", latest_key);
 		for(int i=0; i< num_stored_keys; i++) {
@@ -300,7 +303,7 @@ bool database_put( database* db, board* b ) {
 		database_store_row( db, db->header->table_row_count, b );
 		db->header->table_row_count++;
 	}
-	
+
 	return inserted;
 	
 }
@@ -803,6 +806,8 @@ node* load_node_from_file( database* db, size_t node_id ) {
 		exit( EXIT_FAILURE );
 	}
 	
+	// TODO(bug): Feel this might cause hard ot find bugs. Maybe a check for filesize and error out on fread fail
+	// (also, no malloc ok check)
 	node* n = (node*) malloc( sizeof(node) );
 	size_t objects_read = fread( n, node_block_bytes, 1, db->index_file );
 	if( objects_read != 1 ) {
@@ -891,6 +896,8 @@ record* bpt_get( database* db, node* root, key_t key ) {
 
 
 void print_index_from( database* db, size_t start_node_id ) {
+
+#ifdef VERBOSE		
 	
 	node* start = retrieve_node( db, start_node_id );
 	if( start->is_leaf ) {
@@ -904,6 +911,7 @@ void print_index_from( database* db, size_t start_node_id ) {
 	}
 	release_node( db, start );
 	clear_cache( db ); // TODO(remove): clearing the cache now to make sure when nodes get updated we don't reuse stale ones
+#endif
 }
 
 void print_index( database* db ) {	

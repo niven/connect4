@@ -14,7 +14,7 @@ internal void bpt_print_leaf( node* n, int indent ) {
 
 
 internal void bpt_print( database* db, node* start, int indent ) {
-#ifdef VERBOSE
+
 	char ind[100] = "                               END";
 	ind[indent*2] = '\0';
 	
@@ -46,7 +46,6 @@ internal void bpt_print( database* db, node* start, int indent ) {
 	bpt_print( db, n, indent + 1 );
 	release_node( db, n );
 
-#endif
 }
 
 internal key_t max_key( database* db, node* n ) {

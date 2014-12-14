@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ctype.h>
 #include <math.h> /* ceil() */
 #include <stdarg.h>
@@ -37,9 +38,8 @@ internal board* read_board(FILE* in, size_t board_index ) {
 		printf("Most likely no such board index: %lu\n", board_index );
 		return NULL;
 	}
-	
-	return read_board_record( in );
-	
+
+	return read_board_record( in );	
 }
 
 internal void next_gen( const char* database_from, const char* database_to ) {
@@ -57,7 +57,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	printf("Boards in database: %lu\n", from->header->table_row_count );
 	
 	board* start_board = NULL;
-
+	char scratch[256];
 	for( size_t i=0; i<from->header->table_row_count; i++ ) {
 		printf("Reading board %lu\n", i);
 		start_board = read_board( from->table_file, i );
@@ -71,17 +71,21 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 		for(int col=0; col<COLS; col++) {
 
 			board* move_made = drop( start_board, col );
+
 			if( move_made == NULL ) {
 				printf("Can't drop in column %d\n", col);
 			} else {
 				update_counters( &gc, move_made );
-
+				
 				bool was_insert = database_put( to, move_made );
+
 				if( was_insert ) {
 					gc.unique_boards++;
-					render( move_made, "Unique board", false );
+					sprintf( scratch, "Unique board - %lu - %d", i, col );
+					render( move_made, scratch, false );
 				} else {
-					render( move_made, "Dupe board", false );
+					sprintf( scratch, "Dupe board - %lu - %d", i, col );
+					render( move_made, scratch, false );
 				}
 
 				free_board( move_made );
@@ -114,6 +118,8 @@ int main( int argc, char** argv ) {
 	int c;	
 
 	map_squares_to_winlines(); // could be static but don't like doing it by hand
+
+
 
 	while( (c = getopt (argc, argv, "gc:a:d:rn:") ) != -1 ) {
 

@@ -19,6 +19,7 @@ void clear_cache( database* db ) {
 		db->node_cache[i].refcount = 0;
 		db->free_slots_in_node_cache++;
 	}
+
 	assert( ARRAY_COUNT(db->node_cache) == db->free_slots_in_node_cache );
 }
 
@@ -29,6 +30,7 @@ void dump_cache( database* db ) {
 	}
 	
 }
+
 void free_node( node* n ) {
 
 	counters.frees++;
@@ -92,7 +94,7 @@ void release_node( database* db, node* n ) {
 	}
 
 	// it's not in the cache
-	print("node %lu was not in the cache", n->id);
+	print("node %lu was not in the cache", n->idf);
 	free_node( n );
 	dump_cache( db );
 	

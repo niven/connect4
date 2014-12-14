@@ -217,7 +217,6 @@ void database_close( database* db ) {
 	print("closing %s and %s", db->table_filename, db->index_filename);
 	
 	write_database_header( db );
-	printf("cl1\n");
 	
 	clear_cache( db );
 

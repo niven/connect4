@@ -8,12 +8,13 @@ internal void clear_cache( database* db );
 // TODO(performance): Searching a node in the cache is slow (maybe a hash table to lookup?)
 // and moving a node_cache_item to the end is not useful if it's refcount is not 0 yet
 
-
+// TODO(rename): maybe flush_cache or something
 void clear_cache( database* db ) {
 	size_t num_items_in_cache = ARRAY_COUNT(db->node_cache) - db->free_slots_in_node_cache;
 	print("items: %lu", num_items_in_cache);
 	for(size_t i=0; i < num_items_in_cache; i++) {
 		print("reclaiming slot %lu", i);
+		database_store_node( db, db->node_cache[i].node_ptr );
 		free_node( db->node_cache[i].node_ptr );
 		db->node_cache[i].node_ptr = NULL;
 		db->node_cache[i].refcount = 0;

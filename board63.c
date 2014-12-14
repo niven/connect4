@@ -1,10 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
-
-#include "c4types.h"
-#include "board63.h"
-
 
 // print "0b" + (63 bits as fillcount 3 + ':' + 6 bits values + '\n') + 'endstate marker' + NUL
 void print_board63( board63 b ) {

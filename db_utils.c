@@ -4,10 +4,8 @@
 #include <sys/stat.h>
 
 #include "base.h"
-#include "c4types.h"
 #include "board.h"
 #include "bplustree.h"
-#include "board63.h"
 
 typedef enum command {
 

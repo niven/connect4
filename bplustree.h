@@ -2,7 +2,7 @@
 #define __B_PLUS_TREE__
 
 #include "base.h"
-#include "c4types.h"
+#include "board.h"
 
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)

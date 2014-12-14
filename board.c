@@ -6,10 +6,9 @@
 #include "base.h"
 #include "utils.h"
 
-#include "c4types.h"
-#include "board63.h"
-
 #include "board.h"
+
+#include "board63.c"
 
 // states for squares
 char states[4] = {' ', 'O', 'X', '@'}; // empty, white, black, unused | 00, 01, 10, 11

@@ -13,9 +13,7 @@
 
 #include "base.h"
 
-#include "c4types.h"
 #include "board.h"
-#include "board63.h"
 #include "counter.h"
 #include "bplustree.h"
 
@@ -57,15 +55,15 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	printf("Boards in database: %lu\n", from->header->table_row_count );
 	
 	board* start_board = NULL;
-	char scratch[256];
+	// char scratch[256];
 	time_t start_time = time( NULL );
 	time_t next_time;
 	for( size_t i=0; i<from->header->table_row_count; i++ ) {
 		
 		if( time( &next_time ) - start_time > 2 ) {
 			start_time = next_time;
-			unsigned int percentage_done = (i*100) / from->header->table_row_count;
-			printf("Reading board %lu/%lu - %zu%%\n", i, from->header->table_row_count, percentage_done);
+			unsigned int percentage_done = (unsigned int)(i*100) / from->header->table_row_count;
+			printf("Reading board %lu/%lu - %u%%\n", i, from->header->table_row_count, percentage_done);
 		} 		
 		
 		// TODO(performance): maybe read these in blocks of a few hundred or so
@@ -82,7 +80,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			board* move_made = drop( start_board, col );
 
 			if( move_made == NULL ) {
-				printf("Can't drop in column %d\n", col);
+				print("Can't drop in column %d (column full)", col);
 			} else {
 				update_counters( &gc, move_made );
 				

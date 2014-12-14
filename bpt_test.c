@@ -5,13 +5,10 @@
 #include <time.h> 
 
 
-// TODO(clarity): fix this mess of includes
 #include "base.h"
-#include "c4types.h"
 
 #include "utils.h"
 #include "board.h"
-#include "board63.h"
 
 #include "bplustree.h"
 

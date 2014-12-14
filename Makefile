@@ -9,11 +9,11 @@ CFLAGS=-std=c99 -g -Weverything -pedantic ${DONTCARE_WARNINGS} -O0 ${MODEFLAG}
 CMD=${CC} ${CFLAGS}
 
 all: libs db
-	${CMD} bin/utils.o bin/bplustree.o bin/board63.o bin/board.o bpt_test.c -o bpt
-	${CMD} bin/utils.o bin/counter.o bin/board63.o bin/board.o bin/bplustree.o bruteforce_connect_four.c -o bfcf
+	${CMD} bin/utils.o bin/bplustree.o bin/board.o bpt_test.c -o bpt
+	${CMD} bin/utils.o bin/counter.o bin/board.o bin/bplustree.o bruteforce_connect_four.c -o bfcf
 
 db: libs
-	${CMD} bin/utils.o bin/board.o bin/board63.o bin/bplustree.o db_utils.c -o db
+	${CMD} bin/utils.o bin/board.o bin/bplustree.o db_utils.c -o db
 
 
 clean:
@@ -24,4 +24,3 @@ libs:
 	${CMD} -c utils.c -o bin/utils.o
 	${CMD} -c counter.c -o bin/counter.o
 	${CMD} -c board.c -o bin/board.o
-	${CMD} -c board63.c -o bin/board63.o

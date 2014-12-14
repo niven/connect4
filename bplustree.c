@@ -5,8 +5,6 @@
 
 #include "base.h"
 #include "utils.h"
-#include "c4types.h"
-#include "board63.h"
 #include "board.h"
 #include "bplustree.h"
 

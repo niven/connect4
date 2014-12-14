@@ -296,10 +296,8 @@ board* drop( board* src, int x ) {
 	
 	assert( !is_over( src) );
 	
-	if( x < 0 || x > COLS ) {
-		fprintf( stderr, "Can't drop into %d\n", x );
-		return NULL;
-	}
+	assert( x >= 0 );
+	assert( x < COLS );
 	
 	// check if any room left
 	int y_index = -1;

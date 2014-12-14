@@ -405,6 +405,7 @@ void bpt_dump_cf() {
 	printf("BPT ORDER: %d\n", ORDER);
 	printf("Total cache hits: %llu\n", counters.cache_hits);
 	printf("Total cache misses: %llu\n", counters.cache_misses);
+	printf("Total cache evicts: %llu\n", counters.cache_evicts);
 	printf("Total creates: %llu\n", counters.creates);
 	printf("Total loads: %llu\n", counters.loads);
 	printf("Total frees: %llu\n", counters.frees);

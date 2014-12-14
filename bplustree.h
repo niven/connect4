@@ -14,6 +14,7 @@
 struct bpt_counters {
 	uint64_t cache_hits;
 	uint64_t cache_misses;
+	uint64_t cache_evicts;
 	uint64_t creates;
 	uint64_t loads;
 	uint64_t frees;

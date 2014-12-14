@@ -58,8 +58,17 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	board* start_board = NULL;
 	char scratch[256];
+	time_t start_time = time( NULL );
+	time_t next_time;
 	for( size_t i=0; i<from->header->table_row_count; i++ ) {
-		printf("Reading board %lu\n", i);
+		
+		if( time( &next_time ) - start_time > 2 ) {
+			start_time = next_time;
+			unsigned int percentage_done = (i*100) / from->header->table_row_count;
+			printf("Reading board %lu/%lu - %zu%%\n", i, from->header->table_row_count, percentage_done);
+		} 		
+		
+		// TODO(performance): maybe read these in blocks of a few hundred or so
 		start_board = read_board( from->table_file, i );
 
 		// no need to go on after the game is over

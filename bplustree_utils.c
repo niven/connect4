@@ -54,7 +54,7 @@ internal key_t max_key( database* db, node* n ) {
 		return n->keys[ n->num_keys-1 ];
 	}
 	
-	node* last_node = load_node_from_file( db, n->pointers[ n->num_keys ].child_node_id );
+	node* last_node = retrieve_node( db, n->pointers[ n->num_keys ].child_node_id );
 	key_t out = max_key( db, last_node );
 	release_node( db, last_node );
 
@@ -78,7 +78,7 @@ internal void check_tree_correctness( database* db, node* n ) {
 
 	for(size_t i=0; i<n->num_keys; i++ ) {
 		// for every key, the max
-		node* temp = load_node_from_file( db, n->pointers[i].child_node_id ); 
+		node* temp = retrieve_node( db, n->pointers[i].child_node_id ); 
 		key_t max = max_key( db, temp );
 		release_node( db, temp );
 		print("key[%lu] = 0x%lx, max from left node = 0x%lx", i, n->keys[i], max );
@@ -86,7 +86,7 @@ internal void check_tree_correctness( database* db, node* n ) {
 	}
 	
 	// check the final one
-	node* temp = load_node_from_file( db, n->pointers[ n->num_keys ].child_node_id ); 
+	node* temp = retrieve_node( db, n->pointers[ n->num_keys ].child_node_id ); 
 	key_t max = max_key( db, temp );
 	release_node( db, temp );
 	print("key[%lu] = 0x%lx, max from right node = 0x%lx", n->num_keys-1, n->keys[ n->num_keys-1], max );

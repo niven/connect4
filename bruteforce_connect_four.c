@@ -81,11 +81,11 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 
 				if( was_insert ) {
 					gc.unique_boards++;
-					sprintf( scratch, "Unique board - %lu - %d", i, col );
-					render( move_made, scratch, false );
+					// sprintf( scratch, "Unique board - %lu - %d", i, col );
+					// render( move_made, scratch, false );
 				} else {
-					sprintf( scratch, "Dupe board - %lu - %d", i, col );
-					render( move_made, scratch, false );
+					// sprintf( scratch, "Dupe board - %lu - %d", i, col );
+					// render( move_made, scratch, false );
 				}
 
 				free_board( move_made );

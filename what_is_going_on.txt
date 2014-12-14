@@ -131,12 +131,15 @@ So the bug was the fact that finding the correct node sometimes hits the path wh
 
 Now actually generating boards without dupes:
 
-Generation	#boards
+Generation	#boards		wins W	wins B
 0				1 (empty)
 1				7
 2				49
 3				238
 4				1120
+5				4263
+6				16422
+7				54859			1288
 
 
 

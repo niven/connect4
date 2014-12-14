@@ -234,8 +234,8 @@ void database_close( database* db ) {
 }
 
 // TODO(bug): find a good way to do this, and not chase bugs for hours.
-global_variable key_t stored_keys[4096];
-global_variable int num_stored_keys;
+// global_variable key_t stored_keys[4096];
+// global_variable int num_stored_keys;
 
 bool database_put( database* db, board* b ) {
 
@@ -279,14 +279,14 @@ bool database_put( database* db, board* b ) {
 	// now write the data as a "row" to the table file
 
 	if( inserted ) {
-		assert( num_stored_keys < 4000 ); // THIS BS AGAIN
-		key_t latest_key = encode_board( b );
-		print("Latest key: 0x%lx", latest_key);
-		for(int i=0; i< num_stored_keys; i++) {
-			print("Stored[%02d]: 0x%lx", i, stored_keys[i]);
-			assert( stored_keys[i] != latest_key );
-		}
-		stored_keys[ num_stored_keys++ ] = latest_key;
+		// assert( num_stored_keys < 4000 ); // THIS BS AGAIN
+		// key_t latest_key = encode_board( b );
+		// print("Latest key: 0x%lx", latest_key);
+		// for(int i=0; i< num_stored_keys; i++) {
+		// 	print("Stored[%02d]: 0x%lx", i, stored_keys[i]);
+		// 	assert( stored_keys[i] != latest_key );
+		// }
+		// stored_keys[ num_stored_keys++ ] = latest_key;
 		database_store_row( db, db->header->table_row_count, b );
 		db->header->table_row_count++;
 	}

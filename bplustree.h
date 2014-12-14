@@ -85,7 +85,8 @@ typedef struct database {
 
 	database_header* header;
 
-	node_cache_item node_cache[100];
+	// TODO(performance): find the optimal size for the cache
+	node_cache_item node_cache[1024];
 	size_t free_slots_in_node_cache;
 
 } database;

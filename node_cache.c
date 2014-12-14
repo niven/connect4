@@ -142,7 +142,7 @@ void put_node_in_cache( database* db, node* n ) {
 		assert( last_node_in_cache.node_ptr != NULL ); // there must be an item here
 		print("last node in cache: %lu rc:%lu %p", last_node_in_cache.node_ptr->id, last_node_in_cache.refcount, last_node_in_cache.node_ptr );
 		print("Evicting last node in cache: %lu", last_node_in_cache.node_ptr->id );
-		counters.cache_evicts;
+		counters.cache_evicts++;
 		database_store_node( db, last_node_in_cache.node_ptr );
 		free_node( last_node_in_cache.node_ptr ); 
 		db->free_slots_in_node_cache++;

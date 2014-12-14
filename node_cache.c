@@ -89,15 +89,15 @@ void release_node( database* db, node* n ) {
 			
 			db->node_cache[ num_items_in_cache - 1 ] = found;
 			print("new location of node %lu in cache: %lu", found.node_ptr->id, num_items_in_cache-1 );
-			dump_cache( db );
+			// dump_cache( db );
 			return;
 		}
 	}
 
 	// it's not in the cache
-	print("node %lu was not in the cache", n->idf);
+	print("node %lu was not in the cache", n->id);
 	free_node( n );
-	dump_cache( db );
+	// dump_cache( db );
 	
 }
 
@@ -173,7 +173,7 @@ node* retrieve_node( database* db, size_t node_id ) {
 		put_node_in_cache( db, out );
 	}
 
-	dump_cache( db );
+	// dump_cache( db );
 	
 	assert( out->id != 0 );
 	
@@ -190,10 +190,10 @@ node* get_node_from_cache( database* db, size_t node_id ) {
 	print("Checking for node %lu in cache (%lu free slots)", node_id, db->free_slots_in_node_cache );
 	size_t num_items_in_cache = ARRAY_COUNT( db->node_cache ) - db->free_slots_in_node_cache;
 	for(size_t i=0; i<num_items_in_cache; i++) {
-		print("Cache[%lu] = id:%lu rc:%lu %p", i, 
-				db->node_cache[i].node_ptr->id, 
-				db->node_cache[i].refcount, 
-				db->node_cache[i].node_ptr );
+		// print("Cache[%lu] = id:%lu rc:%lu %p", i,
+		// 		db->node_cache[i].node_ptr->id,
+		// 		db->node_cache[i].refcount,
+		// 		db->node_cache[i].node_ptr );
 
 		if( db->node_cache[i].node_ptr->id == node_id ) {
 			prints("Cache hit!");

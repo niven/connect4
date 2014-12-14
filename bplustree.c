@@ -12,7 +12,6 @@
 
 global_variable struct bpt_counters counters;
 
-internal void append_log( database* db, const char* format, ... );
 internal void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id );
 internal bool bpt_insert_or_update( database* db, node* n, record r );
 internal void bpt_split( database* db, node* node );
@@ -48,23 +47,6 @@ off_t file_offset_from_row( size_t row_index ) {
 	return (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
 }
 
-void append_log( database* db, const char* format, ... ) {
-
-
-	char buf[256];
-	sprintf( buf, "%s.log", db->name );
-	FILE* log = fopen( buf, "a" );
-
-	va_list args;
-	va_start( args, format );
-	vfprintf( log, format, args );
-	va_end( args );
-	
-	fclose( log );
-	
-}
-
-
 void database_store_row( database* db, size_t row_index, board* b ) {
 
 	print("storing board 0x%lx on disk as row %lu", encode_board(b), row_index );
@@ -82,7 +64,7 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 	// move the file cursor to the initial byte of the row
 	FILE* out = open_and_seek( db->table_filename, "r+", offset );
 
-	append_log( db, "storing %lu bytes at offset %llu\n", BOARD_SERIALIZATION_NUM_BYTES, offset );
+	print("storing %lu bytes at offset %llu", BOARD_SERIALIZATION_NUM_BYTES, offset );
 	
 	write_board_record( b, out );
 	
@@ -104,7 +86,7 @@ void database_store_node( database* db, node* n ) {
 		exit( EXIT_FAILURE );
 	}
 	
-	append_log( db, "database_store_node(): storing %lu bytes at offset %llu\n", node_block_bytes, offset );
+	print("storing %lu bytes at offset %llu", node_block_bytes, offset );
 	
 	size_t written = fwrite( n, node_block_bytes, 1, db->index_file );
 	if( written != 1 ) {
@@ -117,9 +99,13 @@ void database_store_node( database* db, node* n ) {
 
 void write_database_header( database* db ) {
 
-	append_log( db, "write_database_header(): nodes: %lu - rows: %lu - root node id: %lu\n", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
+
+	print("nodes: %lu - rows: %lu - root node id: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
+
 	fseek( db->index_file, 0, SEEK_SET );
+
 	size_t objects_written = fwrite( db->header, sizeof(database_header), 1, db->index_file );
+
 	if( objects_written != 1 ) {
 		perror("frwite()");
 		exit( EXIT_FAILURE );
@@ -159,7 +145,7 @@ void database_open_files( database* db ) {
 	// open the table file
 	db->table_file = fopen( db->table_filename, "r+" );
 	print("opened table file %s", db->table_filename);
-	
+
 }
 
 database* database_create( const char* name ) {
@@ -193,7 +179,7 @@ database* database_create( const char* name ) {
 	// create the table file
 	create_empty_file( db->table_filename );
 	print("created table file %s", db->table_filename);
-	
+
 	database_open_files( db );
 	
 	write_database_header( db );
@@ -233,7 +219,8 @@ void database_close( database* db ) {
 	print("closing %s and %s", db->table_filename, db->index_filename);
 	
 	write_database_header( db );
-
+	printf("cl1\n");
+	
 	clear_cache( db );
 
 	free( db->header );
@@ -266,7 +253,7 @@ bool database_put( database* db, board* b ) {
 	print("loading root node ID %lu", db->header->root_node_id );
 	print_index( db );
 
-	node* root_node = load_node_from_file( db, db->header->root_node_id );
+	node* root_node = retrieve_node( db, db->header->root_node_id );
 	bool inserted = bpt_insert_or_update( db, root_node, r );
 	print("inserted: %s", inserted ? "true" : "false");
 	release_node( db, root_node );
@@ -275,11 +262,11 @@ bool database_put( database* db, board* b ) {
 	// actual root anymore. But since all parent pointers are set we can traverse up
 	// to find the actual root
 	prints("finding possible new root after insert");
-	root_node = load_node_from_file( db, db->header->root_node_id );
+	root_node = retrieve_node( db, db->header->root_node_id );
 	print("Current root node %lu (parent %lu)", root_node->id, root_node->parent_node_id );
 	while( root_node->parent_node_id != 0 ) {
 		print("%lu is not the root, moving up to node %lu", root_node->id, root_node->parent_node_id );
-		node* up = load_node_from_file( db, root_node->parent_node_id );
+		node* up = retrieve_node( db, root_node->parent_node_id );
 		release_node( db, root_node );
 		root_node = up;
 	}
@@ -583,7 +570,7 @@ void bpt_split( database* db, node* n ) {
 	// TODO(performance): keep the subnodes around so update parent pointer doesn't hit the disk
 	if( !n->is_leaf ) {
 		for(size_t i=0; i < sibling->num_keys+1; i++ ) {
-			node* s = load_node_from_file( db, sibling->pointers[i].child_node_id );
+			node* s = retrieve_node( db, sibling->pointers[i].child_node_id );
 			s->parent_node_id = sibling->id;
 			database_store_node( db, s );
 			release_node( db, s );
@@ -650,7 +637,7 @@ void bpt_split( database* db, node* n ) {
 #endif		
 		counters.parent_inserts++;
 		// TODO(performance): node cache
-		node* parent = load_node_from_file( db, n->parent_node_id );
+		node* parent = retrieve_node( db, n->parent_node_id );
 		bpt_insert_node( db, parent, up_key, sibling->id );
 		release_node( db, parent );
 	}
@@ -739,7 +726,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	print("Descending into node %lu", root->pointers[insert_location].child_node_id);
 
 	// TODO(performance): node cache
-	node* target = load_node_from_file( db, root->pointers[insert_location].child_node_id );
+	node* target = retrieve_node( db, root->pointers[insert_location].child_node_id );
 	bool was_insert = bpt_insert_or_update( db, target, r );
 	print("inserted into child node (was_insert: %s)", ( was_insert ? "true" : "false") );
 	release_node( db, target );
@@ -787,7 +774,7 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 		if( current != root ) {
 			release_node( db, current );
 		}
-		current = load_node_from_file( db, next_node_id );
+		current = retrieve_node( db, next_node_id );
 	}
 	
 	print("returning node %lu", current->id);
@@ -819,7 +806,6 @@ node* load_node_from_file( database* db, size_t node_id ) {
 
 	counters.loads++;
 
-	// append_log( db, "load_node_from_file(): retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)\n", node_id, n, counters.creates, counters.loads, counters.frees );
 	print("retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", node_id, n, counters.creates, counters.loads, counters.frees );
 	return n;
 }
@@ -837,7 +823,7 @@ board* load_row_from_file( FILE* in, off_t offset ) {
 board* database_get( database* db, key_t key ) {
 	
 	print("loading root node ID %lu", db->header->root_node_id );
-	node* root_node = load_node_from_file( db, db->header->root_node_id );
+	node* root_node = retrieve_node( db, db->header->root_node_id );
 	record* r = bpt_get( db, root_node, key );
 	release_node( db, root_node );
 	
@@ -910,7 +896,7 @@ void print_index_from( database* db, size_t start_node_id ) {
 		printf("+---------------------- END NODE %lu --------------------------+\n", start->id);	
 	}
 	release_node( db, start );
-	clear_cache( db ); // TODO(remove): clearing the cache now to make sure when nodes get updated we don't reuse stale ones
+
 #endif
 }
 
@@ -929,7 +915,7 @@ size_t bpt_size( database* db, node* start ) {
 	
 	size_t count = 0;
 	for( size_t i=0; i<=start->num_keys; i++ ) { // 1 more pointer than keys
-		node* child = load_node_from_file( db, start->pointers[i].child_node_id );
+		node* child = retrieve_node( db, start->pointers[i].child_node_id );
 		count += bpt_size( db, child );
 		release_node( db, child );		
 	}

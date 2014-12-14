@@ -84,7 +84,7 @@ typedef struct database {
 
 	database_header* header;
 
-	node_cache_item node_cache[2];
+	node_cache_item node_cache[100];
 	size_t free_slots_in_node_cache;
 
 } database;

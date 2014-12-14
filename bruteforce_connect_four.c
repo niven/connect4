@@ -103,6 +103,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	write_counter( &gc, "gencounter.gc" );
 
+   bpt_dump_cf();
 }
 
 

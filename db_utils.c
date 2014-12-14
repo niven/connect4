@@ -198,6 +198,7 @@ int main( int argc, char** argv  ) {
 	
 	if( argc == 2 ) {
 		db = database_open( argv[1] );
+		printf("Nodes %lu, Rows: %lu, Root Node ID: %lu\n", db->header->node_count, db->header->table_row_count, db->header->root_node_id);
 	}
 	
 	do {

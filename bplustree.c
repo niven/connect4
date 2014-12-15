@@ -60,13 +60,15 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 	off_t offset = file_offset_from_row( row_index );
 
 	// move the file cursor to the initial byte of the row
-	FILE* out = open_and_seek( db->table_filename, "r+", offset );
+	// fseek returns nonzero on failure
+	if( fseek( db->table_file, offset, SEEK_SET ) ) {
+		perror("fseek()");
+		exit( EXIT_FAILURE );
+	}
 
 	print("storing %lu bytes at offset %llu", BOARD_SERIALIZATION_NUM_BYTES, offset );
 	
-	write_board_record( b, out );
-	
-	fclose( out );
+	write_board_record( b, db->table_file );
 	
 }
 

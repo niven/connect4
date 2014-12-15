@@ -5,9 +5,38 @@ internal void free_node( node* n );
 internal void dump_cache( database* db );
 internal void clear_cache( database* db );
 
+internal void push_free_node( node_cache_free_item** head, node_cache_item item );
+internal node_cache_item pop_free_node( node_cache_free_item** head );
+
 // TODO(performance): Searching a node in the cache is slow (maybe a hash table to lookup?)
 // and moving a node_cache_item to the end is not useful if it's refcount is not 0 yet
 // maybe a linked list would be better, the biggest bottleneck now seems to be memmove()
+
+void push_free_node( node_cache_free_item** head, node_cache_item item ) {
+
+	assert( item.refcount == 0 );
+	assert( item.node_ptr != NULL );
+	
+	node_cache_free_item* first = (node_cache_free_item*) malloc( sizeof(node_cache_free_item) );
+	first->item = item;
+	first->next = *head;
+	*head = first;
+
+}
+
+node_cache_item pop_free_node( node_cache_free_item** head ) {
+	
+	assert( *head != NULL );
+	
+	node_cache_item first = (*head)->item;
+
+	node_cache_free_item* new_head = (*head)->next;
+	free( *head );
+	*head = new_head;
+
+	return first;
+}
+
 
 // TODO(rename): maybe flush_cache or something
 void clear_cache( database* db ) {
@@ -186,6 +215,7 @@ node* retrieve_node( database* db, size_t node_id ) {
 	Get the node from the cache if it's in there.
 	If it is, increment the refcount of that item by 1
 	and puts it in the front of the cache
+	TODO(performance): this is the slowest now
 */
 node* get_node_from_cache( database* db, size_t node_id ) {
 

@@ -61,10 +61,18 @@ typedef struct node {
 
 } node;
 
+
 typedef struct node_cache_item {
 	size_t refcount;
 	node* node_ptr;
 } node_cache_item;
+
+// linked list for all node cache items that have refcount==0
+// so we can easily find one to evict
+typedef struct node_cache_free_item {
+	node_cache_item item;
+	struct node_cache_free_item* next;
+} node_cache_free_item;
 
 // TODO(convenience): maybe just put these directly in struct database
 typedef struct database_header {
@@ -89,7 +97,7 @@ typedef struct database {
 	// TODO(performance): find the optimal size for the cache
 	node_cache_item node_cache[NODE_CACHE_SIZE];
 	size_t free_slots_in_node_cache;
-
+	node_cache_free_item* free_node_list;
 } database;
 
 // public API (always takes a root)

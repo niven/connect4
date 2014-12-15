@@ -221,6 +221,8 @@ void database_close( database* db ) {
 	write_database_header( db );
 	
 	clear_cache( db );
+	// TODO(WIP): clear free_node_list
+	assert( db->free_node_list == NULL );
 
 	free( db->header );
 	
@@ -781,6 +783,7 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 	return current;
 }
 
+// TODO(performance): probably mmap() the file
 node* load_node_from_file( database* db, size_t node_id ) {
 
 	size_t node_block_bytes = sizeof( node );

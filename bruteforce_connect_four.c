@@ -7,9 +7,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <strings.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+
 
 #include "base.h"
 
@@ -28,6 +30,7 @@ internal void update_counters( gen_counter* gc, board* b ) {
 	// unique boards?
 }
 
+// TODO(performance): first test, but I'm pretty sure reading individual 88 byte chunks and fseek is terrible
 internal board* read_board(FILE* in, size_t board_index ) {
 	
 	off_t filepos = (off_t)board_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
@@ -40,10 +43,18 @@ internal board* read_board(FILE* in, size_t board_index ) {
 	return read_board_record( in );	
 }
 
+internal board* read_board_from_mmap(char* data, size_t board_index ) {
+	
+	unsigned long long board_pos = (unsigned long long)board_index * BOARD_SERIALIZATION_NUM_BYTES;
+
+	return read_board_record_from_buf( data, board_pos );	
+}
+
 internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	gen_counter gc = { .total_boards = 0 }; // will init the rest to default, which is 0
 	
+	clock_t cpu_time_start = clock();
 	// open database_from
 	// read 1 board
 	// drop everywhere we can
@@ -53,6 +64,14 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	database* to = database_create( database_to );
 	
 	printf("Boards in database: %lu\n", from->header->table_row_count );
+	
+	struct stat board_file_stat;
+	fstat( fileno(from->table_file), &board_file_stat );
+	// TODO(research): find out if we can just effecitively mmap any file size
+	assert( board_file_stat.st_size < 1 * 1024 * 1024 * 1024 );
+	char* board_data = mmap( NULL, (size_t)board_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );
+	// TODO: check return value
+	
 	
 	board* start_board = NULL;
 	// char scratch[256];
@@ -67,8 +86,13 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 		} 		
 		
 		// TODO(performance): maybe read these in blocks of a few hundred or so
-		start_board = read_board( from->table_file, i );
-
+		// board* start_board_o = read_board( from->table_file, i );
+		start_board = read_board_from_mmap( board_data, i );
+		
+		// render( start_board_o, "fromfile", true );
+		// render( start_board, "frommem", true );
+		// abort();
+		
 		// no need to go on after the game is over
 		if( start_board->state & OVER ) {
 			continue;
@@ -107,6 +131,10 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 
 	database_close( from );
 	database_close( to );
+	
+	gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
+	
+	munmap( board_data, (size_t) board_file_stat.st_size );
 	
 	write_counter( &gc, "gencounter.gc" );
 

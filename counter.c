@@ -6,6 +6,7 @@
 void print_counter( gen_counter* c ) {
 
 	printf("Generation Counters\n" );
+	printf("CPU time used: %f\n", c->cpu_time_used );
 	printf("Total boards: %ld\n", c->total_boards );
 	printf("Unique boards: %ld\n", c->unique_boards );
 	printf("Wins white: %ld\n", c->wins_white );

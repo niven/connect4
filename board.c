@@ -355,6 +355,31 @@ void render( board* b, const char* text, int show_winlines ) {
 	}
 }
 
+board* read_board_record_from_buf( char* buf, unsigned long long pos ) {
+	
+	board63 b63;
+	memcpy( &b63, &buf[pos], sizeof(board63) );
+
+	board* b = decode_board63( b63 );
+
+	// read winlines if this is not an end-state-board (win/draw)
+	if( (b->state & OVER) == 0 ) { // ongoing
+
+		// read state
+		b->state = buf[ pos + sizeof(board63) ];
+
+		b->winlines = new_winbits();
+		memcpy( &b->winlines->white, &buf[ pos + sizeof(board63) + 1 ], NUM_WINLINE_BYTES );
+		memcpy( &b->winlines->black, &buf[ pos + sizeof(board63) + 1 + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
+		
+	} else {
+		b->winlines = NULL;
+	}
+	
+	return b;
+	
+}
+
 board* read_board_record( FILE* in ) {
 	
 //	printf("next_board_record()\n");

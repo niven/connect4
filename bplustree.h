@@ -10,6 +10,7 @@
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
+#define NODE_CACHE_SIZE 4096
 
 struct bpt_counters {
 	uint64_t cache_hits;
@@ -86,7 +87,7 @@ typedef struct database {
 	database_header* header;
 
 	// TODO(performance): find the optimal size for the cache
-	node_cache_item node_cache[1024];
+	node_cache_item node_cache[NODE_CACHE_SIZE];
 	size_t free_slots_in_node_cache;
 
 } database;

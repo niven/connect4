@@ -276,8 +276,10 @@ internal void update_winlines( board* b, int move_y, int move_x ) {
 		}
 //		printf("In line in winline %d = %d\n", winline_index, in_line );
 		if( in_line == 4 ) {
+#ifdef VERBOSE
 			sprintf( scratch, "%s wins on line %d", current == WHITE ? "White" : "Black", winline_index );
 			render( b, scratch, false );
+#endif			
 			b->state |= OVER;
 		}
 	}

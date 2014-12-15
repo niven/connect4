@@ -7,6 +7,7 @@ internal void clear_cache( database* db );
 
 // TODO(performance): Searching a node in the cache is slow (maybe a hash table to lookup?)
 // and moving a node_cache_item to the end is not useful if it's refcount is not 0 yet
+// maybe a linked list would be better, the biggest bottleneck now seems to be memmove()
 
 // TODO(rename): maybe flush_cache or something
 void clear_cache( database* db ) {

@@ -215,8 +215,10 @@ database* database_open( const char* name ) {
 	print("nodes: %lu, rows: %lu, root node ID: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
 
 	db->node_cache = (cache*) malloc( sizeof(cache) );
-	assert( db->node_cache->num_stored == 0 );
-	assert( db->node_cache->free_list == NULL );
+	// TODO(correctness): not sure if this needs to be explicitly zero'd or maybe calloc?
+	memset( db->node_cache->buckets, 0, sizeof(db->node_cache->buckets) );
+	db->node_cache->num_stored = 0;
+	db->node_cache->free_list = NULL;
 	
 	return db;	
 }

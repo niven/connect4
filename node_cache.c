@@ -11,6 +11,11 @@ internal node_cache_item pop_free_node( node_cache_free_item** head );
 // TODO(performance): Searching a node in the cache is slow (maybe a hash table to lookup?)
 // and moving a node_cache_item to the end is not useful if it's refcount is not 0 yet
 // maybe a linked list would be better, the biggest bottleneck now seems to be memmove()
+// Something that might be bad: if we have 1 slot left and use linear probing open addressing
+// to find slots in the table we have a painful long search for those last few items
+// OTOH, the cache should quickly be full so we just take 1 from the free_list
+// OTGH, in that scenario we actually construct an array with 1 empty slot
+// Maybe some more thought needed.
 
 void push_free_node( node_cache_free_item** head, node_cache_item item ) {
 

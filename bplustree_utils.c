@@ -13,7 +13,7 @@ internal void bpt_print_leaf( node* n, int indent ) {
 }
 
 
-internal void bpt_print( database* db, node* start, int indent ) {
+internal inline void bpt_print( database* db, node* start, int indent ) {
 
 	char ind[100] = "                               END";
 	ind[indent*2] = '\0';
@@ -48,7 +48,7 @@ internal void bpt_print( database* db, node* start, int indent ) {
 
 }
 
-internal key_t max_key( database* db, node* n ) {
+internal inline key_t max_key( database* db, node* n ) {
 	
 	if( n->is_leaf ) {
 		return n->keys[ n->num_keys-1 ];

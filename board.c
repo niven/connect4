@@ -246,7 +246,6 @@ internal void update_winlines( board* b, int move_y, int move_x ) {
 //	printf("num winlines: %d\n", s2w[square_index][0]);
 	
 	unsigned char* winline = current == WHITE ? b->winlines->black : b->winlines->white;
-	char scratch[200];
 	
 	for( unsigned int w=1; w<=s2w[square_index][0]; w++ ) {
 		unsigned int winline_index = s2w[square_index][w];
@@ -277,6 +276,7 @@ internal void update_winlines( board* b, int move_y, int move_x ) {
 //		printf("In line in winline %d = %d\n", winline_index, in_line );
 		if( in_line == 4 ) {
 #ifdef VERBOSE
+			char scratch[200];
 			sprintf( scratch, "%s wins on line %d", current == WHITE ? "White" : "Black", winline_index );
 			render( b, scratch, false );
 #endif			

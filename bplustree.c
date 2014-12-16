@@ -164,7 +164,10 @@ database* database_create( const char* name ) {
 	db->header->table_row_count = 0;
 	db->header->node_count = 0;
 
-	db->free_slots_in_node_cache = ARRAY_COUNT(db->node_cache);
+	db->node_cache = (cache*) malloc( sizeof(cache) );
+	assert( db->node_cache->num_stored == 0 );
+	assert( db->node_cache->free_list == NULL );
+	
 	
 	// create a new bpt
 	node* first_node = new_node( ++db->header->node_count ); // get the next node id, and update count
@@ -209,7 +212,9 @@ database* database_open( const char* name ) {
 	read_database_header( db );
 	print("nodes: %lu, rows: %lu, root node ID: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
 
-	db->free_slots_in_node_cache = ARRAY_COUNT(db->node_cache);
+	db->node_cache = (cache*) malloc( sizeof(cache) );
+	assert( db->node_cache->num_stored == 0 );
+	assert( db->node_cache->free_list == NULL );
 	
 	return db;	
 }
@@ -220,10 +225,9 @@ void database_close( database* db ) {
 	
 	write_database_header( db );
 	
-	clear_cache( db );
-	// TODO(WIP): clear free_node_list
-	assert( db->free_node_list == NULL );
-
+	clear_cache( db->node_cache );
+	free( db->node_cache );
+	
 	free( db->header );
 	
 	fclose( db->index_file );
@@ -396,9 +400,9 @@ node* new_node( size_t node_id ) {
 	out->num_keys = 0;
 	out->is_leaf = true;
 	
-	counters.creates++;
+	counters.node_creates++;
 	
-	print("created node ID: %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", out->id, out, counters.creates, counters.loads, counters.frees  );
+	print("created node ID: %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", out->id, out, counters.node_creates, counters.node_loads, counters.node_frees  );
 	return out;
 }
 
@@ -407,9 +411,13 @@ void bpt_dump_cf() {
 	printf("Total cache hits: %llu\n", counters.cache_hits);
 	printf("Total cache misses: %llu\n", counters.cache_misses);
 	printf("Total cache evicts: %llu\n", counters.cache_evicts);
-	printf("Total creates: %llu\n", counters.creates);
-	printf("Total loads: %llu\n", counters.loads);
-	printf("Total frees: %llu\n", counters.frees);
+	printf("Total cache entry allocs: %llu\n", counters.cache_entry_allocs);
+	printf("Total cache entry frees: %llu\n", counters.cache_entry_frees);
+	printf("Total cache free entry allocs: %llu\n", counters.cache_free_entry_allocs);
+	printf("Total cache free entry frees: %llu\n", counters.cache_free_entry_frees);
+	printf("Total node creates: %llu\n", counters.node_creates);
+	printf("Total node loads: %llu\n", counters.node_loads);
+	printf("Total node frees: %llu\n", counters.node_frees);
 	printf("Total key inserts: %llu\n", counters.key_inserts);
 	printf("Total get calls: %llu\n", counters.get_calls);
 	printf("Total splits: %llu\n", counters.splits);
@@ -422,7 +430,7 @@ void bpt_dump_cf() {
 		printf("Key compares (leaf+node) per key insert: %llu\n", counters.key_compares / counters.key_inserts );
 	}
 	printf("Anycounter: %llu\n", counters.any);
-	assert( (counters.creates + counters.loads) == counters.frees );
+	assert( (counters.node_creates + counters.node_loads) == counters.node_frees );
 }
 
 void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id ) {
@@ -807,9 +815,9 @@ node* load_node_from_file( database* db, size_t node_id ) {
 		return NULL; // couldn't read a node
 	}
 
-	counters.loads++;
+	counters.node_loads++;
 
-	print("retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", node_id, n, counters.creates, counters.loads, counters.frees );
+	print("retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", node_id, n, counters.node_creates, counters.node_loads, counters.node_frees );
 	return n;
 }
 

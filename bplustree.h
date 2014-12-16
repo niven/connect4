@@ -10,15 +10,17 @@
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
-#define NODE_CACHE_SIZE 4096
-
 struct bpt_counters {
 	uint64_t cache_hits;
 	uint64_t cache_misses;
 	uint64_t cache_evicts;
-	uint64_t creates;
-	uint64_t loads;
-	uint64_t frees;
+	uint64_t cache_entry_allocs;
+	uint64_t cache_entry_frees;
+	uint64_t cache_free_entry_allocs;
+	uint64_t cache_free_entry_frees;
+	uint64_t node_creates;
+	uint64_t node_loads;
+	uint64_t node_frees;
 	uint64_t key_inserts;
 	uint64_t get_calls;
 	uint64_t insert_calls;
@@ -73,7 +75,7 @@ Constraints:
 - Nothing with a refcount > 0 can ever be freed
 - Keep as many nodes as possible in the cache (ie, keep it full at all times)
 - retrieve must be O(1)
-- put must be O(1)
+- release must be O(1)
 
 Overview:
 In order to have O(1) access the nodes are stored in a hash. Every bucket uses separate chaining.
@@ -127,19 +129,17 @@ Operations:
 	- load it from disk
 	- Insert
 
-
-
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_BUCKETS 4
-#define CACHE_MAX 12
+#define CACHE_BUCKETS ((size_t)4)
+#define CACHE_MAX ((size_t)12)
 
 
 // doubly linked list of refcount==0 entries in cache
 typedef struct free_entry {
-	foo* evictable_foo;
-	int key;
+	node* evictable_node;
+	size_t node_id;
 	struct free_entry* next;
 	struct free_entry* prev;
 } free_entry;
@@ -147,32 +147,22 @@ typedef struct free_entry {
 // bucket entries
 typedef struct entry {
 	union {
-		foo* to_foo;
+		node* to_node;
 		free_entry* to_free_entry;
 	} ptr;
-	int key;
-	int refcount;
+	size_t node_id;
+	size_t refcount;
 	struct entry* next;
 } entry;
 
 // Cache with buckets, number stored and free list (entries with refcount 0)
 typedef struct cache {
 	entry* buckets[CACHE_BUCKETS];
-	int num_stored;
+	size_t num_stored;
 	free_entry* free_list;
 } cache;
 
-typedef struct node_cache_item {
-	size_t refcount;
-	node* node_ptr;
-} node_cache_item;
-
-// linked list for all node cache items that have refcount==0
-// so we can easily find one to evict
-typedef struct node_cache_free_item {
-	node_cache_item item;
-	struct node_cache_free_item* next;
-} node_cache_free_item;
+/*************************** Database ********************************/
 
 // TODO(convenience): maybe just put these directly in struct database
 typedef struct database_header {
@@ -195,9 +185,7 @@ typedef struct database {
 	database_header* header;
 
 	// TODO(performance): find the optimal size for the cache
-	node_cache_item node_cache[NODE_CACHE_SIZE];
-	size_t free_slots_in_node_cache;
-	node_cache_free_item* free_node_list;
+	cache* node_cache;
 } database;
 
 // public API (always takes a root)

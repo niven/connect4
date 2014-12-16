@@ -30,19 +30,6 @@ internal void update_counters( gen_counter* gc, board* b ) {
 	// unique boards?
 }
 
-// TODO(performance): first test, but I'm pretty sure reading individual 88 byte chunks and fseek is terrible
-internal board* read_board(FILE* in, size_t board_index ) {
-	
-	off_t filepos = (off_t)board_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
-	if( fseek( in, filepos, SEEK_SET ) ) {
-		perror("fseek()");
-		printf("Most likely no such board index: %lu\n", board_index );
-		return NULL;
-	}
-
-	return read_board_record( in );	
-}
-
 internal board* read_board_from_mmap(char* data, size_t board_index ) {
 	
 	unsigned long long board_pos = (unsigned long long)board_index * BOARD_SERIALIZATION_NUM_BYTES;

@@ -5,15 +5,16 @@
 #include "utils.h"
 
 // MurmurHash3 integer finalizer MOD cache buckets
+// TODO(bug?): check if correct for size_t
 size_t hash(size_t i) {
 
-	int h = i;
+	size_t h = i;
 	h ^= h >> 16;
 	h *= 0x85ebca6b;
 	h ^= h >> 13;
 	h *= 0xc2b2ae35;
 	h ^= h >> 16;
-	return h % CACHE_BUCKETS;
+	return h;
 }
 
 

@@ -165,8 +165,10 @@ database* database_create( const char* name ) {
 	db->header->node_count = 0;
 
 	db->node_cache = (cache*) malloc( sizeof(cache) );
-	assert( db->node_cache->num_stored == 0 );
-	assert( db->node_cache->free_list == NULL );
+	// TODO(correctness): not sure if this needs to be explicitly zero'd or maybe calloc?
+	memset( db->node_cache->buckets, 0, sizeof(db->node_cache->buckets) );
+	db->node_cache->num_stored = 0;
+	db->node_cache->free_list = NULL;
 	
 	
 	// create a new bpt

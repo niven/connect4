@@ -6,7 +6,7 @@
 FILE* open_and_seek( const char* filename, const char* mode, off_t offset );
 void create_empty_file( const char* filename );
 void print_bits(unsigned char c);
-
+size_t hash(size_t i);
 
 // GCD for only positive ints and not caring about m==n==0 returning 0
 size_t gcd(size_t m, size_t n);

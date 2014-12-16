@@ -4,6 +4,19 @@
 
 #include "utils.h"
 
+// MurmurHash3 integer finalizer MOD cache buckets
+size_t hash(size_t i) {
+
+	int h = i;
+	h ^= h >> 16;
+	h *= 0x85ebca6b;
+	h ^= h >> 13;
+	h *= 0xc2b2ae35;
+	h ^= h >> 16;
+	return h % CACHE_BUCKETS;
+}
+
+
 // GCD for only positive ints and not caring about m==n==0 returning 0
 size_t gcd(size_t m, size_t n) {
     if(m == 0 && n == 0)

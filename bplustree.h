@@ -61,6 +61,106 @@ typedef struct node {
 
 } node;
 
+/*********************** Node cache types ************************/
+
+/*
+Node cache.
+
+Having a cache makes sure we hit the disk as little as possible.
+
+Constraints:
+- The items in the cache must be refcounted (since an item could be retrieved more than once, and is used)
+- Nothing with a refcount > 0 can ever be freed
+- Keep as many nodes as possible in the cache (ie, keep it full at all times)
+- retrieve must be O(1)
+- put must be O(1)
+
+Overview:
+In order to have O(1) access the nodes are stored in a hash. Every bucket uses separate chaining.
+Adding an item to the cache can happen when it is not full yet or when there is at least 1 "free entry".
+A free entry means a node that has refcount == 0. The retrieve works by removing the free entry from the cache
+and then inserting normally. This is in fact the normal situation: the cache is completely full but has some
+free entries that can be recycled.
+
+Finding a free entry must then also be O(1), which is why there is a separate free list (just a doubly linked list of free_entry's).
+
+The cache entry holds a pointer to either a node or a free_entry.
+
+Operations:
+(1) Insert, space in the cache: 
+	- hash the key
+	- create an entry
+	- set the node ptr of the entry
+(2) Insert, no space in the cache, free entry present
+	- take the first free entry
+	- hash the key
+	- find the entry in the bucket
+	- free the entry
+	- free the node pointed to by the free entry
+	- free the free_entry
+	- decrement num_stored
+	- go to (1)
+(3) Insert, no space in cache, no free entry:
+	- don't insert
+(4) Release, item not in the cache
+	- free the item
+(5) Release, item in the cache with refcount > 1
+	- hash the key
+	- find the entry in the bucket
+	- decrement its refcount
+(6) Release, item in the cache with refcount == 1
+	- hash the key etc.
+	- set its refcount to 0
+	- create a new free_entry
+	- set the free_entry to point to the node the entry points to
+	- set the entry ptr to point to the free_entry
+	- insert the free_enty in the free_list
+(7) Retrieve, item in the cache, refcount > 0
+	- increment its refcount
+(8) Retrieve, item in the cache, refcount == 0
+	- find the entry
+	- find the free_entry it points to
+	- set the entry to point to the node pointed to by the free_entry
+	- set its refcount to 1
+	- free the free_entry
+(9) Retrieve, item not in the cache
+	- load it from disk
+	- Insert
+
+
+
+*/
+
+// buckets in the hash that stores the entries and max number of entries in the cache
+#define CACHE_BUCKETS 4
+#define CACHE_MAX 12
+
+
+// doubly linked list of refcount==0 entries in cache
+typedef struct free_entry {
+	foo* evictable_foo;
+	int key;
+	struct free_entry* next;
+	struct free_entry* prev;
+} free_entry;
+
+// bucket entries
+typedef struct entry {
+	union {
+		foo* to_foo;
+		free_entry* to_free_entry;
+	} ptr;
+	int key;
+	int refcount;
+	struct entry* next;
+} entry;
+
+// Cache with buckets, number stored and free list (entries with refcount 0)
+typedef struct cache {
+	entry* buckets[CACHE_BUCKETS];
+	int num_stored;
+	free_entry* free_list;
+} cache;
 
 typedef struct node_cache_item {
 	size_t refcount;

@@ -167,7 +167,7 @@ void put_node_in_cache( database* db, node* n ) {
 					break;
 				}
 			}
-			printf("Found parent of the free_entry: node %lu (next node %lu)\n", current->node_id, current->next->node_id );
+			print("Found parent of the free_entry: node %lu (next node %lu)", current->node_id, current->next->node_id );
 			// free that one
 			entry* to_be_freed = current->next;
 			current->next = to_be_freed->next;

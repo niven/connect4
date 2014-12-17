@@ -6,7 +6,7 @@
 
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
-#define ORDER 240
+#define ORDER 6
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
@@ -198,7 +198,7 @@ board* database_get( database* db, key_t key );
 size_t database_size( database* db );
 
 // internal stuff (operates on nodes)
-node* new_node( size_t node_id );
+node* new_node( database* db );
 void bpt_dump_cf( void );
 
 node* load_node_from_file( database* db, size_t node_id );

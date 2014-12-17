@@ -172,7 +172,7 @@ database* database_create( const char* name ) {
 	
 	
 	// create a new bpt
-	node* first_node = new_node( ++db->header->node_count ); // get the next node id, and update count
+	node* first_node = new_node( db ); // get the next node id, and update count
 	db->header->root_node_id = first_node->id;
 	
 	database_set_filenames( db, name );
@@ -388,8 +388,8 @@ internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target
 }
 
 
-
-node* new_node( size_t node_id ) {
+// TODO(bug): take db as param, put in node cache
+node* new_node( database* db ) {
 	
 	node* out = (node*)malloc( sizeof(node) );
 	if( out == NULL ) {
@@ -397,7 +397,7 @@ node* new_node( size_t node_id ) {
 		exit( EXIT_FAILURE );
 	}
 	
-	out->id = node_id;
+	out->id = ++db->header->node_count;
 	
 	out->parent_node_id = 0;
 	
@@ -405,6 +405,14 @@ node* new_node( size_t node_id ) {
 	out->is_leaf = true;
 	
 	counters.node_creates++;
+	
+	// NOTE: Put the new new in the cache because it is likely to be used immediatky,
+	// but more importantly it may be retrieved before whatever calls new_node() calls release_node()
+	// which woul mean it would end up in the cache with a refcount 0 and then be released again.
+	// This way acquire/release is symmetrical:
+	// new_node() / release_node()
+	// retrieve_node() / release_node()
+	put_node_in_cache( db, out );
 	
 	print("created node ID: %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", out->id, out, counters.node_creates, counters.node_loads, counters.node_frees  );
 	return out;
@@ -570,7 +578,7 @@ void bpt_split( database* db, node* n ) {
 	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
 	print("moving %zu keys (%zu nodes/values) right from offset %zu (key = 0x%lx)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
-	node* sibling = new_node( ++db->header->node_count );	
+	node* sibling = new_node( db );	
 	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
 	memcpy( &sibling->pointers[0], &n->pointers[offset], sizeof(pointer)*(keys_moving_right+1) );
 	
@@ -614,7 +622,7 @@ void bpt_split( database* db, node* n ) {
 	if( n->parent_node_id == 0 ) {
 
 		print("no parent, creating new root: ID %lu", db->header->node_count + 1 );
-		node* new_root = new_node( ++db->header->node_count );
+		node* new_root = new_node( db );
 
 		new_root->keys[0] = up_key; // since left must all be smaller
 		new_root->pointers[0].child_node_id = n->id;
@@ -627,8 +635,6 @@ void bpt_split( database* db, node* n ) {
 
 		database_store_node( db, new_root );
 		release_node( db, new_root );
-
-		print("n->p %lu s->p %lu", n->parent_node_id, sibling->parent_node_id);
 		
 		// TODO(performance): we potentially store n+sibling twice in a row here
 		database_store_node( db, n );

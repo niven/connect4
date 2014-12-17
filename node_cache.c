@@ -159,25 +159,35 @@ void put_node_in_cache( database* db, node* n ) {
 				c->free_list = fe->next;
 			}
 			// now our free list is ok again
-			print("Can evict node %lu from free list (it's in bucket %lu)\n", fe->node_id, hash(fe->node_id) % CACHE_BUCKETS );
-			entry* current;
-			size_t b = hash(fe->node_id) % CACHE_BUCKETS;
-			for(current = c->buckets[b]; current->next->node_id != fe->node_id; current = current->next ) {
-				print("Checking node %lu (next node %lu)\n", current->node_id, current->next->node_id );
-				if( current->node_id == fe->node_id ) {
-					break;
+			size_t b = hash( fe->node_id ) % CACHE_BUCKETS;
+			print("Can evict node %lu from free list (it's in bucket %lu)", fe->node_id, b );
+			
+			// find and remove the entry from the bucket
+			entry* entry_to_free = NULL;
+			if( c->buckets[b]->node_id == fe->node_id ) { // it's the head item
+				prints("Removing the entry from the bucket (it was the head)");
+				entry_to_free = c->buckets[b];
+				c->buckets[b] = c->buckets[b]->next; // just move to the next one
+			} else {
+				entry* current;
+				for(current = c->buckets[b]; current->next->node_id != fe->node_id; current = current->next ) {
+					print("Checking node %lu (next %lu)", current->node_id, current->next->node_id );
+					if( current->node_id == fe->node_id ) {
+						break;
+					}
+					assert( current->next != NULL ); // it has to be in this list
 				}
+				print("Found the bucket entry: node %lu (next node %lu)", current->node_id, current->next->node_id );
+				entry_to_free = current->next;
+				current->next = current->next->next; // skip over it
 			}
-			print("Found parent of the free_entry: node %lu (next node %lu)", current->node_id, current->next->node_id );
-			// free that one
-			entry* to_be_freed = current->next;
-			current->next = to_be_freed->next;
+			assert( entry_to_free != NULL );
 			
 			// free the free_entry, the foo it points to and the entry in the bucket
 			free_node( fe->evictable_node );
 			free( fe );
 			counters.cache_free_entry_frees++;
-			free( to_be_freed );
+			free( entry_to_free );
 			counters.cache_entry_frees++;
 			
 			counters.cache_evicts++;

@@ -13,7 +13,7 @@ global_variable struct bpt_counters counters;
 internal void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id );
 internal bool bpt_insert_or_update( database* db, node* n, record r );
 internal void bpt_split( database* db, node* node );
-internal void database_open_files( database* db );
+internal void database_open_files( database* db, const char* mode );
 internal void database_set_filenames( database* db, const char* name );
 internal void database_store_node( database* db, node* data );
 internal void database_store_row( database* db, size_t row_index, board* b );
@@ -49,22 +49,16 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 
 	print("storing board 0x%lx on disk as row %lu", encode_board(b), row_index );
 
-	/* I'm always confused:
-		‘r+’ Open an existing file for both reading and writing. The initial contents
-		of the file are unchanged and the initial file position is at the beginning
-		of the file.
-	
-		Currently we always append, in later stages we will probably end up deleting rows,
-		so we can't use 'a'.
-	*/
-	off_t offset = file_offset_from_row( row_index );
+	// we only append to this file and it is opened with "a", this means we shouldn't have to fseek()
 
-	// move the file cursor to the initial byte of the row
-	// fseek returns nonzero on failure
-	if( fseek( db->table_file, offset, SEEK_SET ) ) {
-		perror("fseek()");
-		exit( EXIT_FAILURE );
-	}
+	// off_t offset = file_offset_from_row( row_index );
+	//
+	// // move the file cursor to the initial byte of the row
+	// // fseek returns nonzero on failure
+	// if( fseek( db->table_file, offset, SEEK_SET ) ) {
+	// 	perror("fseek()");
+	// 	exit( EXIT_FAILURE );
+	// }
 
 	print("storing %lu bytes at offset %llu", BOARD_SERIALIZATION_NUM_BYTES, offset );
 	
@@ -136,14 +130,14 @@ void database_set_filenames( database* db, const char* name ) {
 	
 }
 
-void database_open_files( database* db ) {
+void database_open_files( database* db, const char* mode ) {
 	
 	// open the index file
 	db->index_file = fopen( db->index_filename, "r+" );
 	print("opened index file %s", db->index_filename);
 	
 	// open the table file
-	db->table_file = fopen( db->table_filename, "r+" );
+	db->table_file = fopen( db->table_filename, mode );
 	print("opened table file %s", db->table_filename);
 
 }
@@ -185,7 +179,8 @@ database* database_create( const char* name ) {
 	create_empty_file( db->table_filename );
 	print("created table file %s", db->table_filename);
 
-	database_open_files( db );
+	// we are creating a new database file, so we will be only appending to the rows table
+	database_open_files( db, "a" );
 	
 	write_database_header( db );
 
@@ -208,7 +203,8 @@ database* database_open( const char* name ) {
 	
 	database_set_filenames( db, name );
 
-	database_open_files( db );
+	// we are opening a file presumably for reading the rows table, and maybe writing
+	database_open_files( db, "r+" );
 	
 	// read the root node, node_count and row_count
 	read_database_header( db );

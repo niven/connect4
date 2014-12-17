@@ -6,7 +6,7 @@
 
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
-#define ORDER 6
+#define ORDER 240
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
@@ -133,8 +133,8 @@ Operations:
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_BUCKETS ((size_t)4)
-#define CACHE_MAX ((size_t)12)
+#define CACHE_BUCKETS ((size_t)128)
+#define CACHE_MAX ((size_t)256)
 
 
 // doubly linked list of refcount==0 entries in cache

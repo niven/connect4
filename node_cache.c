@@ -52,6 +52,7 @@ void clear_cache( cache* c ) {
 void dump_cache( cache* c ) {
 	
 	print("Cache (%lu items):", c->num_stored);
+#ifdef VERBOSE	
 	for(size_t i=0; i<CACHE_BUCKETS; i++ ) {
 		entry* current = c->buckets[i];
 		print("bucket %lu %p", i, current);
@@ -69,7 +70,7 @@ void dump_cache( cache* c ) {
 			current = current->next;	
 		} while( current != c->free_list );
 	}
-	
+#endif	
 }
 
 void free_node( node* n ) {

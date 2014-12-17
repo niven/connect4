@@ -145,6 +145,8 @@ void put_node_in_cache( database* db, node* n ) {
 		prints("Cache full");
 		// check the free list
 		if( c->free_list != NULL ) {
+			// TODO(performance): this is a very (if not the the most common) path when the cache is full, maybe something could be optimized
+			
 			// take the first thing in the free list
 			free_entry* fe = c->free_list;
 			// remove it from the free list

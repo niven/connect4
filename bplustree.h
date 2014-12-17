@@ -97,6 +97,7 @@ Operations:
 	- take the first free entry
 	- hash the key
 	- find the entry in the bucket
+	- remove the entry from the bucket
 	- free the entry
 	- free the node pointed to by the free entry
 	- free the free_entry

@@ -798,6 +798,7 @@ internal node* bpt_find_node( database* db, node* root, key_t key ) {
 }
 
 // TODO(performance): probably mmap() the file
+// TODO(performance): maybe avoid file locking? OSX doesn't come with __fsetlocking() though
 node* load_node_from_file( database* db, size_t node_id ) {
 
 	size_t node_block_bytes = sizeof( node );

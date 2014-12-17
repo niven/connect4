@@ -203,11 +203,12 @@ void free_board( board* b ) {
 
 board* copy_board( board* src ) {
 	
-	board* dest = new_board();
+	board* dest = (board*) malloc( sizeof(board) );
 //	printf("Copy board dest %p, src %p\n", dest, src);
 	memcpy( dest->squares, src->squares, ROWS*COLS );
 	
 	if( src->winlines != NULL ) {
+		dest->winlines = new_winbits();
 //		printf("Copy winlines dest %p, src %p\n", dest->winlines, src->winlines);
 		memcpy( dest->winlines, src->winlines, sizeof(wins) );
 	}

@@ -65,8 +65,7 @@ void dump_cache( cache* c ) {
 	free_entry* current = c->free_list;
 	if( current != NULL ){
 		do {
-			print("   free entry: key=%lu (node %lu) [next=%lu, prev=%lu]",
-			current->node_id, current->evictable_node->id, current->next->node_id, current->prev->node_id );
+			print("   free entry: node %lu [next=%lu, prev=%lu]", current->evictable_node->id, current->next->node_id, current->prev->node_id );
 			current = current->next;	
 		} while( current != c->free_list );
 	}
@@ -90,13 +89,14 @@ void release_node( database* db, node* n ) {
 
 	assert( n != NULL );
 	assert( n->id != 0 );
-	
+
 	cache* c = db->node_cache;
 	size_t node_id = n->id;
+	print("node %lu", node_id );
 
 	size_t b = hash( node_id ) % CACHE_BUCKETS;
 	for( entry* i = c->buckets[b]; i != NULL; i = i->next ) {
-		print("release node %lu, looking in bucket %lu", node_id, b );
+		print("checking bucket[%lu] = %lu", b, i->node_id );
 		if( i->node_id == node_id ) {
 			assert( i->refcount > 0 );
 			// TODO(safety): maybe also assert the node* is correct?
@@ -228,14 +228,15 @@ node* retrieve_node( database* db, size_t node_id ) {
 node* get_node_from_cache( database* db, size_t node_id ) {
 	
 	cache* c = db->node_cache;
-	
+	print("node id %lu", node_id );
 	size_t b = hash( node_id ) % CACHE_BUCKETS;
 	for( entry* i = c->buckets[b]; i != NULL; i = i->next ) {
-		print("Get item %lu check bucket[%lu] = %lu", node_id, b, i->node_id);
+		print("checking bucket[%lu] = node %lu", b, i->node_id);
 		if( i->node_id == node_id ) {
 			
 			// either a foo, or a pointer to a free_entry
 			if( i->refcount == 0 ) {
+				print("Node %lu is on the free list: unfreeing", i->node_id );
 				// it's one on the free list, means we need to remove it from there
 				free_entry* discard = i->ptr.to_free_entry;
 				assert( discard != NULL );

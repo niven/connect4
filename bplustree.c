@@ -415,7 +415,7 @@ node* new_node( database* db ) {
 }
 
 void bpt_dump_cf() {
-	printf("BPT ORDER: %d\n", ORDER);
+	printf("BPT ORDER: %d, Node size: %d bytes, CACHE_BUCKETS: %lu, CACHE_MAX: %lu (Cache max mem use: %lu MB)\n", ORDER, sizeof(node), CACHE_BUCKETS, CACHE_MAX, (CACHE_MAX * sizeof(node))/ (1024*1024));
 	printf("Total cache hits: %llu\n", counters.cache_hits);
 	printf("Total cache misses: %llu\n", counters.cache_misses);
 	printf("Total cache evicts: %llu\n", counters.cache_evicts);

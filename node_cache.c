@@ -122,6 +122,7 @@ void release_node( database* db, node* n ) {
 
 				c->free_list = new_head;
 			}
+			prints("cache after release");
 			dump_cache( c );
 			return;
 		}

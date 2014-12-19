@@ -67,9 +67,9 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	for( size_t i=0; i<from->header->table_row_count; i++ ) {
 		
 		if( time( &next_time ) - start_time > 2 ) {
+			double percentage_done = 100.0f * ((double)i / (double)from->header->table_row_count);
+			printf("Reading board %lu/%lu - %.2f%% (%.0f boards/sec)\n", i, from->header->table_row_count, percentage_done, (double)i/(double)(next_time-start_time));
 			start_time = next_time;
-			unsigned int percentage_done = (unsigned int)(i*100) / from->header->table_row_count;
-			printf("Reading board %lu/%lu - %u%%\n", i, from->header->table_row_count, percentage_done);
 		} 		
 		
 		// TODO(performance): maybe read these in blocks of a few hundred or so
@@ -81,6 +81,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 		// abort();
 		
 		// no need to go on after the game is over
+		// we also don't write them to the file? Should we? I think so!
 		if( start_board->state & OVER ) {
 			continue;
 		}

@@ -139,14 +139,15 @@ Generation	#boards		wins W	wins B	CPU time(s)	filesize
 4				1,120
 5				4,263
 6				16,422
-7				54,859		1,288					0.268797
-8				184,275					2,932		1.267520
-9				558,186		29,054				4.737817
-10				1,662,623				61,878	15.142775
-11				4,568,683	376,035				44.748782	118MB
-12				12,236,101				763,718	133.686852	315MB
-
-
+7				54,859		1,288						0.268797
+8				184,275					2,932			1.267520
+9				558,186		29,054					4.737817
+10				1,662,623				61,878		15.142775
+11				4,568,683	376,035					44.748782	118 MB
+12				12,236,101				763,718		133.686852	315 MB
+13				30,929,111	3,570,170				394.499908	796 MB
+14				75,437,595				6,912,472	1125.133039	1700 MB
+15				176,541,259	26,717,899				3120.420834	4114 MB
 
 It's too bad I don't have good timings from before using the node cache, but to illustrate, generating move 11 took 553 CPU seconds without the node cache and 44 CPU seconds with the cache, generation 12 went down from 5616 to 147.
 

@@ -14,6 +14,16 @@ typedef unsigned char bool;
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
 #define LAST_INDEX(array) (ARRAY_COUNT(array)-1)
 
+
+#define FOPEN_CHECK( file, name, mode ) \
+file = fopen( name, mode ); \
+if( file == NULL ) { \
+		perror("fopen()"); \
+		printf( "%s:%d filename = %s\n", __FILE__, __LINE__, name); \
+		exit( EXIT_FAILURE ); \
+}
+
+
 // enjoy this ugly hack:
 // macro to auto insert function name in printf function
 // but this introduces extra " marks around the format string

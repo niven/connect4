@@ -133,11 +133,11 @@ void database_set_filenames( database* db, const char* name ) {
 void database_open_files( database* db, const char* mode ) {
 	
 	// open the index file
-	db->index_file = fopen( db->index_filename, "r+" );
+	FOPEN_CHECK( db->index_file, db->index_filename, mode );
 	print("opened index file %s", db->index_filename);
 	
 	// open the table file
-	db->table_file = fopen( db->table_filename, mode );
+	FOPEN_CHECK( db->table_file, db->table_filename, mode );
 	print("opened table file %s", db->table_filename);
 
 }

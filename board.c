@@ -450,11 +450,8 @@ void write_board_record( board* b, FILE* out ) {
 
 void write_board( char* filename, board* b ) {
 
-	FILE* out = fopen( filename, "wb" );
-	if( out == NULL ) {
-		perror("fopen()");
-		exit( EXIT_FAILURE );
-	}
+	FILE* out;
+	FOPEN_CHECK( out, filename, "wb" );
 
 	write_board_record( b, out );
 	

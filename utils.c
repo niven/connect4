@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "base.h"
 #include "utils.h"
 
 // MurmurHash3 integer finalizer MOD cache buckets
@@ -37,11 +38,8 @@ size_t gcd(size_t m, size_t n) {
 
 FILE* open_and_seek( const char* filename, const char* mode, off_t offset ) {
 	
-	FILE* f = fopen( filename, mode );
-	if( f == NULL ) {
-		perror("fopen()");
-		return NULL;
-	}
+	FILE* f;
+	FOPEN_CHECK( f, filename, mode );
 
 	// fseek returns nonzero on failure
 	if( fseek( f, offset, SEEK_SET ) ) {
@@ -53,12 +51,10 @@ FILE* open_and_seek( const char* filename, const char* mode, off_t offset ) {
 }
 
 void create_empty_file( const char* filename ) {
-	
-	FILE* out = fopen( filename, "w" );
-	if( out == NULL ) {
-		perror("fopen()");
-		exit( EXIT_FAILURE );
-	}
+
+	FILE* out;
+	FOPEN_CHECK( out, filename, "w" );
+
 	fclose( out );
 
 }

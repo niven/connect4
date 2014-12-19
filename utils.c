@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,8 +6,9 @@
 #include "utils.h"
 
 // MurmurHash3 integer finalizer MOD cache buckets
-// TODO(bug?): check if correct for size_t
 size_t hash(size_t i) {
+
+	assert( sizeof(size_t) <= 8 ); // check 64 bits
 
 	size_t h = i;
 	h ^= h >> 33;

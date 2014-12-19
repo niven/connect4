@@ -60,7 +60,7 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 	// 	exit( EXIT_FAILURE );
 	// }
 
-	print("storing %lu bytes at offset %llu", BOARD_SERIALIZATION_NUM_BYTES, offset );
+	print("storing %lu bytes", BOARD_SERIALIZATION_NUM_BYTES );
 	
 	write_board_record( b, db->table_file );
 	

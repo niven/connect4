@@ -13,7 +13,7 @@ global_variable struct bpt_counters counters;
 internal void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id );
 internal bool bpt_insert_or_update( database* db, node* n, record r );
 internal void bpt_split( database* db, node* node );
-internal void database_open_files( database* db, const char* mode );
+internal void database_open_files( database* db );
 internal void database_set_filenames( database* db, const char* name );
 internal void database_store_node( database* db, node* data );
 internal void database_store_row( database* db, size_t row_index, board* b );
@@ -130,14 +130,14 @@ void database_set_filenames( database* db, const char* name ) {
 	
 }
 
-void database_open_files( database* db, const char* mode ) {
+void database_open_files( database* db ) {
 	
-	// open the index file
-	FOPEN_CHECK( db->index_file, db->index_filename, mode );
+	// we read write to the index: new nodes are appended, but also rewritten when changed
+	FOPEN_CHECK( db->index_file, db->index_filename, "r+" );
 	print("opened index file %s", db->index_filename);
 	
-	// open the table file
-	FOPEN_CHECK( db->table_file, db->table_filename, mode );
+	// When generating boards they are appended, but the db client/generation input also reads
+	FOPEN_CHECK( db->table_file, db->table_filename, "a+" );
 	print("opened table file %s", db->table_filename);
 
 }
@@ -180,7 +180,8 @@ database* database_create( const char* name ) {
 	print("created table file %s", db->table_filename);
 
 	// we are creating a new database file, so we will be only appending to the rows table
-	database_open_files( db, "a" );
+	// and also only appending to the index.
+	database_open_files( db );
 	
 	write_database_header( db );
 
@@ -204,7 +205,7 @@ database* database_open( const char* name ) {
 	database_set_filenames( db, name );
 
 	// we are opening a file presumably for reading the rows table, and maybe writing
-	database_open_files( db, "r+" );
+	database_open_files( db );
 	
 	// read the root node, node_count and row_count
 	read_database_header( db );
@@ -221,7 +222,7 @@ database* database_open( const char* name ) {
 
 void database_close( database* db ) {
 	
-	print("closing %s and %s", db->table_filename, db->index_filename);
+	print("closing %s", db->name );
 	
 	write_database_header( db );
 	

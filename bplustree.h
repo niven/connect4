@@ -133,8 +133,8 @@ Operations:
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_BUCKETS ((size_t)4096)
-#define CACHE_MAX ((size_t)4096)
+#define CACHE_BUCKETS ((size_t)10)
+#define CACHE_MAX ((size_t)16)
 
 
 // doubly linked list of refcount==0 entries in cache

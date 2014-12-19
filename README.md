@@ -30,7 +30,7 @@ So now I'm implementing a rudimentary thing I call a "database".
 Anyway, source code so far:
 encoding/decoding/writing/loading boards+winlines.
 generating new boards from a move sequence, visualizing boards in amazing 2D ASCII art.
-a basic B+ Tree implementation that doesn't do deletes (don't need thenm), and isn't on disk yet.
+A quite fancy (if I say so myself) index that is a B+ Tree index that is persistent on disk, but efficiently cached in memory and also very, very fast.
 
 And todo many things so I though it was time to throw this onto github since it has turned into a medium sized software project (You can tell easily: you've started to worry about multiple files and have implemented a binary search)
 
@@ -51,4 +51,31 @@ Now let's discuss the database.
 Here we store a board. The way this happens is to create a unique key from the board state (encode as a board63) and store that in our on-disk binary+ tree. The associated data we store in another file.
 
 The bpt is nice and balanced and makes searches easy (and fast, since we do billions of these this is important). The data is stored in a table file where we keep winlines around etc.
+
+# Finding the smallest db to play the perfect game
+
+
+So I think work this backwards:
+Start with the last generation (42). These are all draws or wins for Black. (since the first wins for White are at move 7, so White only wins on odd moves, Black on even moves)
+
+Definition: a board can be Good or Bad: Good is a win for White, Bad is a draw or Win for Black.
+
+From the last generation, remove all boards that are Bad (this should be all of them, but good to check)
+Go to the previous generation
+
+So here we are at g41, Black moves. We don't care since we will allow Black to make any move they want (so even assume Black could make a draw, or just not take a possible win)
+
+So go back one more gen g40, White's move.
+
+Take each board, and generate (yes, again) and check for the presence of those in the next gen. Now there are some outcomes:
+all Good (aka, all there)
+all Bad (aka, none there)
+some Good, some Bad
+Now we essentially always go for a win, so any outcome that is a win is cool.
+Record all board states + the move that delivers a win for White.
+
+
+
+
+
 

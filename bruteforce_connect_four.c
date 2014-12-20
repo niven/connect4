@@ -57,9 +57,9 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	// TODO(research): find out if we can just effecitively mmap any file size
 	assert( board_file_stat.st_size < 1 * 1024 * 1024 * 1024 );
 	char* board_data = mmap( NULL, (size_t)board_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );
-	// TODO: check return value
-	
-	
+
+	assert( board_data != MAP_FAILED );
+
 	board* start_board = NULL;
 	// char scratch[256];
 	time_t start_time = time( NULL );
@@ -94,6 +94,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			if( move_made == NULL ) {
 				print("Can't drop in column %d (column full)", col);
 			} else {
+				assert( encode_board( move_made) != 0 ); // the empty board encodes to 0, so no other board should
 				update_counters( &gc, move_made );
 				
 				bool was_insert = database_put( to, move_made );

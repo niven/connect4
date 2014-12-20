@@ -37,6 +37,23 @@ internal board* read_board_from_mmap(char* data, size_t board_index ) {
 	return read_board_record_from_buf( data, board_pos );	
 }
 
+// take the boards of a generation, backtrack to previous gen for the perfect game
+internal void backtrack_perfect_game( int generation ) {
+	
+	/*
+		if this is the last gen (42):
+			Check there are only wins for black or draws
+
+		if this is the penultimate gen (41):
+			write a file with all winning boards for white, add a branch id for every board, set #children to 0
+	
+		otherwise:
+			write all good/draw/ongoing boards to a new file, with data: branch id, number of children+1
+
+	*/
+	
+}
+
 internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	gen_counter gc = { .total_boards = 0 }; // will init the rest to default, which is 0
@@ -57,6 +74,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	size_t boards_in_file = (size_t)board_file_stat.st_size / BOARD_SERIALIZATION_NUM_BYTES;
 	printf("File size: %lld bytes, %lu bytes/board  -> %zu boards\n", board_file_stat.st_size, BOARD_SERIALIZATION_NUM_BYTES, boards_in_file );
 	assert( boards_in_file == from->header->table_row_count );
+
 	// TODO(research): find out if we can just effecitively mmap any file size
 	assert( board_file_stat.st_size < 1 * 1024 * 1024 * 1024 );
 	char* board_data = mmap( NULL, (size_t)board_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );
@@ -74,12 +92,9 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			start_time = next_time;
 		} 		
 
-		// TODO(performance): maybe read these in blocks of a few hundred or so
-		// board* start_board_o = read_board( from->table_file, i );
 		start_board = read_board_from_mmap( board_data, i );
 		
 		// no need to go on after the game is over
-		// we also don't write them to the file? Should we? I think so!
 		if( start_board->state & OVER ) {
 			continue;
 		}

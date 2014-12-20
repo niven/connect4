@@ -417,7 +417,7 @@ board* read_board_record( FILE* in ) {
 		b->winlines = new_winbits();
 		objects_read = fread( b->winlines, 2*NUM_WINLINE_BYTES, 1, in );
 		if( objects_read != 1 ) {
-			perror("bfread()");
+			perror("fread()");
 			exit( EXIT_FAILURE );
 		}	
 	} else {

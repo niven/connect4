@@ -65,7 +65,7 @@ board63 encode_board( board* src ) {
 	dest <<= 1; // last bit is state
 	
 	if( src->state & OVER ) {
-		dest |= 1; // set the gameover bit, indicating no state or winlines follow.
+		dest |= 1; // set the gameover bit
 	}
 	
 	return dest;

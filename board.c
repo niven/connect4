@@ -365,25 +365,16 @@ board* read_board_record_from_buf( char* buf, unsigned long long pos ) {
 
 	board* b = decode_board63( b63 );
 
-	// read winlines if this is not an end-state-board (win/draw)
-	if( !is_over( b ) ) { // ongoing
+	// read state
+	b->state = buf[ pos + sizeof(board63) ];	
 
-		assert( !is_over(b) );
+	b->winlines = new_winbits();
+	// TODO(performance): why even have 2 of these? just have 1 array?
+	memcpy( &b->winlines->white, &buf[ pos + sizeof(board63) + 1 ], NUM_WINLINE_BYTES );
+	memcpy( &b->winlines->black, &buf[ pos + sizeof(board63) + 1 + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
 
-		// read state
-		b->state = buf[ pos + sizeof(board63) ];	
-
-		b->winlines = new_winbits();
-		// TODO(performance): why even have 2 of these? just have 1 array?
-		memcpy( &b->winlines->white, &buf[ pos + sizeof(board63) + 1 ], NUM_WINLINE_BYTES );
-		memcpy( &b->winlines->black, &buf[ pos + sizeof(board63) + 1 + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
-		
-	} else {
-		b->winlines = NULL;
-	}
 	
-	return b;
-	
+	return b;	
 }
 
 board* read_board_record( FILE* in ) {
@@ -406,22 +397,16 @@ board* read_board_record( FILE* in ) {
 
 	board* b = decode_board63( b63 );
 
-	// read winlines if this is not an end-state-board (win/draw)
-	if( !is_over( b ) ) { // ongoing
-
-		// read state
-		fread( &b->state, sizeof(b->state), 1, in );
+	// read state
+	fread( &b->state, sizeof(b->state), 1, in );
 
 //		printf("Reading winlines\n");
-		b->winlines = new_winbits();
-		objects_read = fread( b->winlines, 2*NUM_WINLINE_BYTES, 1, in );
-		if( objects_read != 1 ) {
-			perror("fread()");
-			exit( EXIT_FAILURE );
-		}	
-	} else {
-		b->winlines = NULL;
-	}
+	b->winlines = new_winbits();
+	objects_read = fread( b->winlines, 2*NUM_WINLINE_BYTES, 1, in );
+	if( objects_read != 1 ) {
+		perror("fread()");
+		exit( EXIT_FAILURE );
+	}	
 
 	return b;
 }
@@ -437,16 +422,14 @@ void write_board_record( board* b, FILE* out ) {
 		exit( EXIT_FAILURE );
 	}
 
-	if( !is_over( b ) ) { // ongoing
-		// write gamestate
-		fwrite( &b->state, sizeof(b->state), 1, out );
+	// write gamestate
+	fwrite( &b->state, sizeof(b->state), 1, out );
 
-		elements_written = fwrite( b->winlines, NUM_WINLINE_BYTES, 2, out );
-		if( elements_written != 2 ) {
-			perror("fwrite()");
-			exit( EXIT_FAILURE );
-		}		
-	}
+	elements_written = fwrite( b->winlines, NUM_WINLINE_BYTES, 2, out );
+	if( elements_written != 2 ) {
+		perror("fwrite()");
+		exit( EXIT_FAILURE );
+	}		
 	
 }
 

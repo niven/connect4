@@ -4,7 +4,7 @@ FEATURES
 
 BUGS
 
-
+After changing the writing of boards something is broken as soon as there is a win (well, after gen 7): boards start showing up that are random and/or empty
 
 PERFORMANCE
 

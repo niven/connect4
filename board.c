@@ -208,7 +208,7 @@ board* copy_board( board* src ) {
 	memcpy( dest->squares, src->squares, ROWS*COLS );
 	
 	if( src->winlines != NULL ) {
-		dest->winlines = new_winbits();
+		dest->winlines = new_winbits(); // TODO(performance): no need to init things we are going to overwrite anyway
 //		printf("Copy winlines dest %p, src %p\n", dest->winlines, src->winlines);
 		memcpy( dest->winlines, src->winlines, sizeof(wins) );
 	}
@@ -369,11 +369,11 @@ board* read_board_record_from_buf( char* buf, unsigned long long pos ) {
 	b->state = buf[ pos + sizeof(board63) ];	
 
 	b->winlines = new_winbits();
-	// TODO(performance): why even have 2 of these? just have 1 array?
+
+	// TODO(performance): why even have 2 of these? just have 1 array? (memcpy for both at the same time fails)
 	memcpy( &b->winlines->white, &buf[ pos + sizeof(board63) + 1 ], NUM_WINLINE_BYTES );
 	memcpy( &b->winlines->black, &buf[ pos + sizeof(board63) + 1 + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
 
-	
 	return b;	
 }
 

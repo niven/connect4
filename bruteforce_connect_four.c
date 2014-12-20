@@ -54,10 +54,12 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	struct stat board_file_stat;
 	fstat( fileno(from->table_file), &board_file_stat );
+	size_t boards_in_file = (size_t)board_file_stat.st_size / BOARD_SERIALIZATION_NUM_BYTES;
+	printf("File size: %lld bytes, %lu bytes/board  -> %zu boards\n", board_file_stat.st_size, BOARD_SERIALIZATION_NUM_BYTES, boards_in_file );
+	assert( boards_in_file == from->header->table_row_count );
 	// TODO(research): find out if we can just effecitively mmap any file size
 	assert( board_file_stat.st_size < 1 * 1024 * 1024 * 1024 );
 	char* board_data = mmap( NULL, (size_t)board_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );
-
 	assert( board_data != MAP_FAILED );
 
 	board* start_board = NULL;
@@ -71,14 +73,10 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			printf("Reading board %lu/%lu - %.2f%% (%.0f boards/sec)\n", i, from->header->table_row_count, percentage_done, (double)i/(double)(next_time-start_time));
 			start_time = next_time;
 		} 		
-		
+
 		// TODO(performance): maybe read these in blocks of a few hundred or so
 		// board* start_board_o = read_board( from->table_file, i );
 		start_board = read_board_from_mmap( board_data, i );
-		
-		// render( start_board_o, "fromfile", true );
-		// render( start_board, "frommem", true );
-		// abort();
 		
 		// no need to go on after the game is over
 		// we also don't write them to the file? Should we? I think so!

@@ -4,7 +4,14 @@ FEATURES
 
 BUGS
 
-After changing the writing of boards something is broken as soon as there is a win (well, after gen 7): boards start showing up that are random and/or empty
+How the hell does this work:
+	objects_read = fread( b->winlines, 2*NUM_WINLINE_BYTES, 1, in );
+(b->winlines = struct wins = { char foo[NUM_WINLINE_BYTES], char bar[NUM_WINLINE_BYTES] ] } )
+but
+	memcpy( &b->winlines, &buf[ offset ], 2*NUM_WINLINE_BYTES );
+Doesn't?
+
+Should be educational to find out
 
 PERFORMANCE
 

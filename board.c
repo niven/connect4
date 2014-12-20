@@ -411,7 +411,6 @@ board* read_board_record( FILE* in ) {
 
 		// read state
 		fread( &b->state, sizeof(b->state), 1, in );
-		assert( !is_over(b) );
 
 //		printf("Reading winlines\n");
 		b->winlines = new_winbits();

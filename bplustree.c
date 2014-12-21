@@ -70,7 +70,7 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 void database_store_node( database* db, node* n ) {
 
 	// append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
-	print("writing node %lu (parent %lu) to %s", n->id, n->parent_node_id, db->index_filename );
+	print("writing node %lu (leaf: %s) (parent %lu) to %s", n->id, n->is_leaf ? "true" : "false",  n->parent_node_id, db->index_filename );
 	
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );

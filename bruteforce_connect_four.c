@@ -78,7 +78,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	fstat( fileno(from->table_file), &table_file_stat );
 	size_t board_record_size = (sizeof(wins) + SIZE_BOARD_STATE_BYTES);
 	size_t boards_in_file = (size_t)table_file_stat.st_size / board_record_size;
-	printf("File size: %lld bytes, %lu bytes/board -> %zu boards\n", index_file_stat.st_size, board_record_size, boards_in_file );
+	printf("File size: %lld bytes, %lu bytes/board -> %zu boards\n", table_file_stat.st_size, board_record_size, boards_in_file );
 	assert( boards_in_file == from->header->table_row_count );
 	
 	assert( index_file_stat.st_size < (off_t)gigabyte(1) );
@@ -93,14 +93,14 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	char* board_data = mmap( NULL, (size_t)table_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );
 	assert( board_data != MAP_FAILED );
 
-	size_t node_offset = sizeof( from->header ); // this is where the first node starts
+	size_t node_offset = sizeof( *(from->header) ); // this is where the first node starts
+	printf("Offset for first node: %lu bytes\n", node_offset);
 	node* current_node = (node*)malloc( sizeof(node) );
+	printf("First node %lu\n", current_node->id );
 
-	printf("Reading keys from node %lu\n", current_node->id );
 	board* start_board = NULL;
 	// char scratch[256];
-	time_t start_time = time( NULL );
-	time_t next_time;
+	time_t start_time = time( NULL ), next_time;
 
 	// read every node
 	size_t board_counter = 0;
@@ -108,6 +108,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 		
 		// find a node that is a laef
 		memcpy( current_node, &node_data[node_offset], sizeof(node) );
+		printf("Current node %lu, leaf: %s\n", current_node->id, current_node->is_leaf ? "true" : "false");
 		while( !current_node->is_leaf ) {
 			node_offset += sizeof(node);
 			assert( node_offset < (size_t)index_file_stat.st_size );
@@ -162,13 +163,16 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 					free_board( move_made );
 				}
 			}
-			
+
 			// TODO(bug?): Not sure why this could be NULL
 			if( start_board != NULL ) {
 				free_board( start_board );
 			}
 			
 		}
+		
+		// go to the next node
+		node_offset += sizeof(node);
 		
 	}
 

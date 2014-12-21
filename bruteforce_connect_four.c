@@ -69,17 +69,30 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	printf("Boards in database: %lu\n", from->header->table_row_count );
 	
-	struct stat board_file_stat;
-	fstat( fileno(from->table_file), &board_file_stat );
-	size_t boards_in_file = (size_t)board_file_stat.st_size / BOARD_SERIALIZATION_NUM_BYTES;
-	printf("File size: %lld bytes, %lu bytes/board  -> %zu boards\n", board_file_stat.st_size, BOARD_SERIALIZATION_NUM_BYTES, boards_in_file );
-	assert( boards_in_file == from->header->table_row_count );
+	// Reading a board: go to the first node in the index, skip until you find a leaf node
+	// then iterate over the keys, looking up the offset for the board state+winlines
+	// construct a board and do the thing.
+	// whenever a node is done, go to the next one (and maybe skip until yout hit a leaf)
+	
+	// TODO: also map the board table
+	
+	struct stat index_file_stat;
+	fstat( fileno(from->index_file), &index_file_stat );
+	size_t nodes_in_file = (sizeof( from->header) - (size_t)index_file_stat.st_size) / sizeof(node);
+	printf("File size: %lld bytes, %lu bytes/node -> %zu nodes\n", index_file_stat.st_size, sizeof(node), nodes_in_file );
 
 	// TODO(research): find out if we can just effecitively mmap any file size
-	assert( board_file_stat.st_size < 1 * 1024 * 1024 * 1024 );
-	char* board_data = mmap( NULL, (size_t)board_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );
-	assert( board_data != MAP_FAILED );
+	assert( nodes_in_file.st_size < 1 * 1024 * 1024 * 1024 );
+	char* node_data = mmap( NULL, (size_t)index_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->index_file), 0 );
+	assert( node_data != MAP_FAILED );
 
+	size_t node_offset = sizeof( from->header ); // this is where the first node starts
+	node* current_node = (node*) node_data[node_offset];
+	while( !current_node->is_leaf ) {
+		node_offset += sizeof(node);
+		current_node = (node*) node_data[node_offset];
+	}
+	printf("Reading keys from node %lu\n", current_node->id );
 	board* start_board = NULL;
 	// char scratch[256];
 	time_t start_time = time( NULL );
@@ -92,6 +105,8 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			start_time = next_time;
 		} 		
 
+		// TODO: get the next board63 from the node (a leaf one, otherwise just goto next node)
+		// then lookup the state+winlines from the table
 		start_board = read_board_from_mmap( board_data, i );
 		
 		// no need to go on after the game is over
@@ -136,7 +151,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 	
-	munmap( board_data, (size_t) board_file_stat.st_size );
+	munmap( node_data, (size_t) node_file_stat.st_size );
 	
 	write_counter( &gc, "gencounter.gc" );
 

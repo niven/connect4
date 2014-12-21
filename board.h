@@ -129,7 +129,6 @@ int is_over( board* b );
 
 void write_board( char* filename, board* b );
 
-board* read_board_record( FILE* in );
 board* read_board_record_from_buf( board63 b63, char* buf, unsigned long long pos );
 void write_board_record( board* b, FILE* out );
 

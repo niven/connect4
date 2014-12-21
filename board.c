@@ -374,55 +374,13 @@ board* read_board_record_from_buf( board63 b63, char* buf, unsigned long long po
 	return b;	
 }
 
-board* read_board_record( FILE* in ) {
-	
-//	printf("next_board_record()\n");
-	
-	board63 b63;
-	size_t objects_read = fread( &b63, sizeof(board63), 1, in );
-	if( feof(in) ) {
-		printf("EOF, no more boards\n");
-		return NULL;
-	}
-	if( objects_read != 1 ) {
-		perror("fread()");
-		exit( EXIT_FAILURE );
-	}
-
-//	printf("Read board63\n");
-//	print_board63( &b63 );
-
-	board* b = decode_board63( b63 );
-
-	// read state
-	fread( &b->state, sizeof(b->state), 1, in );
-
-//		printf("Reading winlines\n");
-	b->winlines = new_winbits();
-	objects_read = fread( b->winlines, 2*NUM_WINLINE_BYTES, 1, in );
-	if( objects_read != 1 ) {
-		perror("fread()");
-		exit( EXIT_FAILURE );
-	}	
-
-	return b;
-}
 
 void write_board_record( board* b, FILE* out ) {
 	
-	board63 b63 = encode_board( b );
-//	printf("Write board63\n");
-//	print_board63( b63 );
-	size_t elements_written = fwrite( &b63, sizeof(board63), 1, out );
-	if( elements_written != 1 ) {
-		perror("fwrite()");
-		exit( EXIT_FAILURE );
-	}
-
 	// write gamestate
 	fwrite( &b->state, sizeof(b->state), 1, out );
 
-	elements_written = fwrite( b->winlines, NUM_WINLINE_BYTES, 2, out );
+	size_t elements_written = fwrite( b->winlines, NUM_WINLINE_BYTES, 2, out );
 	if( elements_written != 2 ) {
 		perror("fwrite()");
 		exit( EXIT_FAILURE );
@@ -430,6 +388,7 @@ void write_board_record( board* b, FILE* out ) {
 	
 }
 
+// TODO(cleanup): This can go
 void write_board( char* filename, board* b ) {
 
 	FILE* out;

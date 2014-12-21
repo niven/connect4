@@ -456,24 +456,24 @@ void bpt_insert_node( database* db, node* n, board63 up_key, size_t node_to_inse
 
 	assert( n->id != 0 );
 	check_tree_correctness( db, n );
-
-	size_t k=0;
-	while( k<n->num_keys && n->keys[k] < up_key ) { // TODO(performance): use binsearch
-		k++;
-	}
-	print("insert key 0x%lx at position %zu, node at position %zu", up_key, k, k+1);
+	
+	size_t insert_location;
+	int bsearch_result = binary_search( n->keys, n->num_keys, up_key, &insert_location );
+	assert( bsearch_result == BINSEARCH_FOUND || bsearch_result == BINSEARCH_INSERT );
+	print("insert key 0x%lx at position %zu, node at position %zu", up_key, insert_location, insert_location+1);
+	
 	// move keys over (could be 0 if at end)
-	size_t elements_moving_right = n->num_keys - k;
+	size_t elements_moving_right = n->num_keys - insert_location;
 //	printf("Moving %zu elements\n", elements_moving_right);
 	
 	// move keys right and set the key in the open space
-	memmove( &n->keys[k+1], &n->keys[k], sizeof(board63)*elements_moving_right);
-	n->keys[k] = up_key;
+	memmove( &n->keys[insert_location+1], &n->keys[insert_location], sizeof(board63)*elements_moving_right);
+	n->keys[insert_location] = up_key;
 	
 	// move pointers over (given that sibling is the right part of the split node,
 	// move 1 more than the keys)
-	memmove( &n->pointers[k+2], &n->pointers[k+1], sizeof(pointer)*elements_moving_right );
-	n->pointers[k+1].child_node_id = node_to_insert_id;
+	memmove( &n->pointers[insert_location+2], &n->pointers[insert_location+1], sizeof(pointer)*elements_moving_right );
+	n->pointers[insert_location+1].child_node_id = node_to_insert_id;
 
 	n->num_keys++;
 

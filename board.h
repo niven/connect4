@@ -1,11 +1,14 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__	
 
+// TODO(clarity): explain what this is and what it is for
 #define NUM_BOARD_BYTES 11
 
 #define NUM_WINLINE_BYTES 9
 #define NUM_WINLINES 69
 
+// Size of the state of the board (draw, win, whose turn it is, ...)
+#define SIZE_BOARD_STATE_BYTES (sizeof(char))
 
 #define ROWS 6
 #define COLS 7
@@ -127,7 +130,7 @@ int is_over( board* b );
 void write_board( char* filename, board* b );
 
 board* read_board_record( FILE* in );
-board* read_board_record_from_buf( char* buf, unsigned long long pos );
+board* read_board_record_from_buf( board63 b63, char* buf, unsigned long long pos );
 void write_board_record( board* b, FILE* out );
 
 void print_board63( board63 b );

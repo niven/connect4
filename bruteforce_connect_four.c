@@ -30,13 +30,6 @@ internal void update_counters( gen_counter* gc, board* b ) {
 	// unique boards?
 }
 
-internal board* read_board_from_mmap(char* data, size_t board_index ) {
-	
-	unsigned long long board_pos = (unsigned long long)board_index * BOARD_SERIALIZATION_NUM_BYTES;
-
-	return read_board_record_from_buf( data, board_pos );	
-}
-
 // take the boards of a generation, backtrack to previous gen for the perfect game
 internal void backtrack_perfect_game( int generation ) {
 	
@@ -74,76 +67,109 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	// construct a board and do the thing.
 	// whenever a node is done, go to the next one (and maybe skip until yout hit a leaf)
 	
-	// TODO: also map the board table
-	
+	// Check filesize against what the db thinks
 	struct stat index_file_stat;
 	fstat( fileno(from->index_file), &index_file_stat );
-	size_t nodes_in_file = (sizeof( from->header) - (size_t)index_file_stat.st_size) / sizeof(node);
+	size_t nodes_in_file = ((size_t)index_file_stat.st_size - sizeof(from->header)) / sizeof(node);
 	printf("File size: %lld bytes, %lu bytes/node -> %zu nodes\n", index_file_stat.st_size, sizeof(node), nodes_in_file );
+	assert( nodes_in_file == from->header->node_count );
+	
+	struct stat table_file_stat;
+	fstat( fileno(from->table_file), &table_file_stat );
+	size_t board_record_size = (sizeof(wins) + SIZE_BOARD_STATE_BYTES);
+	size_t boards_in_file = (size_t)table_file_stat.st_size / board_record_size;
+	printf("File size: %lld bytes, %lu bytes/board -> %zu boards\n", index_file_stat.st_size, board_record_size, boards_in_file );
+	assert( boards_in_file == from->header->table_row_count );
+	
+	assert( index_file_stat.st_size < (off_t)gigabyte(1) );
+	assert( table_file_stat.st_size < (off_t)gigabyte(1) );
+
+
+	// mmap the index and the board
 
 	// TODO(research): find out if we can just effecitively mmap any file size
-	assert( nodes_in_file.st_size < 1 * 1024 * 1024 * 1024 );
 	char* node_data = mmap( NULL, (size_t)index_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->index_file), 0 );
 	assert( node_data != MAP_FAILED );
+	char* board_data = mmap( NULL, (size_t)table_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );
+	assert( board_data != MAP_FAILED );
 
 	size_t node_offset = sizeof( from->header ); // this is where the first node starts
-	node* current_node = (node*) node_data[node_offset];
-	while( !current_node->is_leaf ) {
-		node_offset += sizeof(node);
-		current_node = (node*) node_data[node_offset];
-	}
+	node* current_node = (node*)malloc( sizeof(node) );
+
 	printf("Reading keys from node %lu\n", current_node->id );
 	board* start_board = NULL;
 	// char scratch[256];
 	time_t start_time = time( NULL );
 	time_t next_time;
-	for( size_t i=0; i<from->header->table_row_count; i++ ) {
-		
-		if( time( &next_time ) - start_time > 2 ) {
-			double percentage_done = 100.0f * ((double)i / (double)from->header->table_row_count);
-			printf("Reading board %lu/%lu - %.2f%% (%.0f boards/sec)\n", i, from->header->table_row_count, percentage_done, (double)i/(double)(next_time-start_time));
-			start_time = next_time;
-		} 		
 
-		// TODO: get the next board63 from the node (a leaf one, otherwise just goto next node)
-		// then lookup the state+winlines from the table
-		start_board = read_board_from_mmap( board_data, i );
+	// read every node
+	size_t board_counter = 0;
+	while( node_offset < (size_t)index_file_stat.st_size ) {
 		
-		// no need to go on after the game is over
-		if( start_board->state & OVER ) {
-			continue;
+		// find a node that is a laef
+		memcpy( current_node, &node_data[node_offset], sizeof(node) );
+		while( !current_node->is_leaf ) {
+			node_offset += sizeof(node);
+			assert( node_offset < (size_t)index_file_stat.st_size );
+			memcpy( current_node, &node_data[node_offset], sizeof(node) );
 		}
+		printf("Reading boards from node %lu\n", current_node->id );
+		
+		// read every board
+		for( size_t key_index = 0; key_index < current_node->num_keys; key_index++ ) {
+			
+			board_counter++;
+			
+			// show some progress output
+			if( time( &next_time ) - start_time > 2 ) {
+				double percentage_done = 100.0f * ((double)board_counter / (double)from->header->table_row_count);
+				printf("Reading board %lu/%lu - %.2f%% (%.0f boards/sec)\n", board_counter, from->header->table_row_count, percentage_done, (double)board_counter/(double)(next_time-start_time));
+				start_time = next_time;
+			} 		
 
-		// try and make a move in every column
-		for(int col=0; col<COLS; col++) {
+			// read this specific board
+			board63 encoded_board = current_node->keys[key_index];
+			size_t board_data_offset = current_node->pointers[key_index].table_row_index;
+			start_board = read_board_record_from_buf( encoded_board, board_data, board_data_offset );
 
-			board* move_made = drop( start_board, col );
-
-			if( move_made == NULL ) {
-				print("Can't drop in column %d (column full)", col);
-			} else {
-				assert( encode_board( move_made) != 0 ); // the empty board encodes to 0, so no other board should
-				update_counters( &gc, move_made );
-				
-				bool was_insert = database_put( to, move_made );
-
-				if( was_insert ) {
-					gc.unique_boards++;
-					// sprintf( scratch, "Unique board - %lu - %d", i, col );
-					// render( move_made, scratch, false );
-				} else {
-					// sprintf( scratch, "Dupe board - %lu - %d", i, col );
-					// render( move_made, scratch, false );
-				}
-
-				free_board( move_made );
+			// no need to go on after the game is over
+			if( start_board->state & OVER ) {
+				continue;
 			}
-		}
+			
+			// try and make a move in every column
+			for(int col=0; col<COLS; col++) {
 
-		if( start_board != NULL ) {
-			free_board( start_board );
-		}
+				board* move_made = drop( start_board, col );
 
+				if( move_made == NULL ) {
+					print("Can't drop in column %d (column full)", col);
+				} else {
+					assert( encode_board( move_made) != 0 ); // the empty board encodes to 0, so no other board should
+					update_counters( &gc, move_made );
+				
+					bool was_insert = database_put( to, move_made );
+
+					if( was_insert ) {
+						gc.unique_boards++;
+						// sprintf( scratch, "Unique board - %lu - %d", i, col );
+						// render( move_made, scratch, false );
+					} else {
+						// sprintf( scratch, "Dupe board - %lu - %d", i, col );
+						// render( move_made, scratch, false );
+					}
+
+					free_board( move_made );
+				}
+			}
+			
+			// TODO(bug?): Not sure why this could be NULL
+			if( start_board != NULL ) {
+				free_board( start_board );
+			}
+			
+		}
+		
 	}
 
 	database_close( from );
@@ -151,7 +177,8 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 	
-	munmap( node_data, (size_t) node_file_stat.st_size );
+	munmap( node_data, (size_t) index_file_stat.st_size );
+	munmap( board_data, (size_t) table_file_stat.st_size );
 	
 	write_counter( &gc, "gencounter.gc" );
 

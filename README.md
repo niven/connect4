@@ -56,23 +56,24 @@ The bpt is nice and balanced and makes searches easy (and fast, since we do bill
 
 
 So I think work this backwards:
-Start with the last generation (42). These are all draws or wins for Black. (since the first wins for White are at move 7, so White only wins on odd moves, Black on even moves)
+
+Start with the last generation (42). These are all draws or wins for Black. (since the first wins for White are at move 7, so White only wins on odd moves, Black on even moves). So what is there to do here? Nothing. It can just be thrown out. As a good correctness check I'll go over all of them and make sure we end up with only Black Wins or Draws.
 
 Definition: a board can be Good or Bad: Good is a win for White, Bad is a draw or Win for Black.
 
-From the last generation, remove all boards that are Bad (this should be all of them, but good to check)
-Go to the previous generation
+So take gen41: take all wins for White (this is the last chance White has to win) and throw out everything else. Give an id to each of those wins and store them in a hash or something, probably on disk (the Win List). This will be important later, because it will allow me to find out that 2 different moves will lead to the same win so we can discard one of those branches. I think when there are 2 possible wins from a given board I should always go with the lowest branch id, so all code converges on those numbers and I don't end up with 2 branches that lead to the same win but I can't tell. This might not be true.
 
-So here we are at g41, Black moves. We don't care since we will allow Black to make any move they want (so even assume Black could make a draw, or just not take a possible win)
+Anyway, go back to gen40: Black has made a move. Take all of those boards and do the following:
+for each board, generate the next possible moves and see if they are in gen41. If so: store the board in the Good list, otherwise store it in the Bad list.
 
-So go back one more gen g40, White's move.
+now go to gen39. For all boards, take all the winning boards and put them in the Win List. Take all other boards and generate all next moves for Black, and check the Good/Bad lists to see what is up. now take all the boards that in every case lead to an entry in the Good list, and put it in the Good list. (maybe have a list per generation, or put them all together). Mark the other ones as Bad (or Bad list): these lead to Black winning.
 
-Take each board, and generate (yes, again) and check for the presence of those in the next gen. Now there are some outcomes:
-all Good (aka, all there)
-all Bad (aka, none there)
-some Good, some Bad
-Now we essentially always go for a win, so any outcome that is a win is cool.
-Record all board states + the move that delivers a win for White.
+
+
+
+
+
+
 
 
 

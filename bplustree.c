@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/file.h> /* flock */
 
 #include "base.h"
 #include "utils.h"
@@ -10,7 +11,7 @@
 
 global_variable struct bpt_counters counters;
 
-internal void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id );
+internal void bpt_insert_node( database* db, node* n, board63 up_key, size_t node_to_insert_id );
 internal bool bpt_insert_or_update( database* db, node* n, record r );
 internal void bpt_split( database* db, node* node );
 internal void database_open_files( database* db );
@@ -135,10 +136,18 @@ void database_open_files( database* db ) {
 	// we read write to the index: new nodes are appended, but also rewritten when changed
 	FOPEN_CHECK( db->index_file, db->index_filename, "r+" );
 	print("opened index file %s", db->index_filename);
+	if( flock( fileno(db->index_file), LOCK_EX ) != 0 ) {
+		perror("flock()");
+		exit( EXIT_FAILURE );
+	}
 	
 	// When generating boards they are appended, but the db client/generation input also reads
 	FOPEN_CHECK( db->table_file, db->table_filename, "a+" );
 	print("opened table file %s", db->table_filename);
+	if( flock( fileno(db->table_file), LOCK_EX ) != 0 ) {
+		perror("flock()");
+		exit( EXIT_FAILURE );
+	}
 
 }
 
@@ -240,7 +249,7 @@ void database_close( database* db ) {
 }
 
 // TODO(bug): find a good way to do this, and not chase bugs for hours.
-// global_variable key_t stored_keys[4096];
+// global_variable board63 stored_keys[4096];
 // global_variable int num_stored_keys;
 
 bool database_put( database* db, board* b ) {
@@ -286,7 +295,7 @@ bool database_put( database* db, board* b ) {
 
 	if( inserted ) {
 		// assert( num_stored_keys < 4000 ); // THIS BS AGAIN
-		// key_t latest_key = encode_board( b );
+		// board63 latest_key = encode_board( b );
 		// print("Latest key: 0x%lx", latest_key);
 		// for(int i=0; i< num_stored_keys; i++) {
 		// 	print("Stored[%02d]: 0x%lx", i, stored_keys[i]);
@@ -313,7 +322,7 @@ bool database_put( database* db, board* b ) {
 #define BINSEARCH_FOUND 1
 #define BINSEARCH_INSERT 2
 
-internal unsigned char binary_search( key_t* keys, size_t num_keys, key_t target_key, size_t* key_index ) {
+internal unsigned char binary_search( board63* keys, size_t num_keys, board63 target_key, size_t* key_index ) {
 
 	// no data at all
 	if( keys == NULL ) {
@@ -443,7 +452,7 @@ void bpt_dump_cf() {
 	assert( (counters.node_creates + counters.node_loads) == counters.node_frees );
 }
 
-void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert_id ) {
+void bpt_insert_node( database* db, node* n, board63 up_key, size_t node_to_insert_id ) {
 
 	assert( n->id != 0 );
 	check_tree_correctness( db, n );
@@ -458,7 +467,7 @@ void bpt_insert_node( database* db, node* n, key_t up_key, size_t node_to_insert
 //	printf("Moving %zu elements\n", elements_moving_right);
 	
 	// move keys right and set the key in the open space
-	memmove( &n->keys[k+1], &n->keys[k], KEY_SIZE*elements_moving_right);
+	memmove( &n->keys[k+1], &n->keys[k], sizeof(board63)*elements_moving_right);
 	n->keys[k] = up_key;
 	
 	// move pointers over (given that sibling is the right part of the split node,
@@ -577,7 +586,7 @@ void bpt_split( database* db, node* n ) {
 	print("moving %zu keys (%zu nodes/values) right from offset %zu (key = 0x%lx)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
 	node* sibling = new_node( db );	
-	memcpy( &sibling->keys[0], &n->keys[offset], KEY_SIZE*keys_moving_right );
+	memcpy( &sibling->keys[0], &n->keys[offset], sizeof(board63)*keys_moving_right );
 	memcpy( &sibling->pointers[0], &n->pointers[offset], sizeof(pointer)*(keys_moving_right+1) );
 	
 	// housekeeping
@@ -613,7 +622,7 @@ void bpt_split( database* db, node* n ) {
 	// the key that moves up is the split key in the leaf node case, and otherwise
 	// the key we didn't propagate to the sibling node and didn't keep in the node
 	// which is the one we're splitting around... so in both cases this is the same.
-	key_t up_key = n->keys[SPLIT_KEY_INDEX];
+	board63 up_key = n->keys[SPLIT_KEY_INDEX];
 	print("key that moves up: 0x%lx", up_key);
 	// now insert median into our parent, along with sibling
 	// but if parent is NULL, we're at the root and need to make a new one
@@ -703,7 +712,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 		}
 		
 		// now insert at k, but first shift everything after k right
-		memmove( &root->keys[k+1], &root->keys[k], KEY_SIZE*(root->num_keys - k) );
+		memmove( &root->keys[k+1], &root->keys[k], sizeof(board63)*(root->num_keys - k) );
 		memmove( &root->pointers[k+1], &root->pointers[k], sizeof(pointer)*(root->num_keys - k) );
 
 		root->keys[k]  = r.key;
@@ -755,7 +764,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 /*
 	Return the leaf node that should have key in it.
 */
-internal node* bpt_find_node( database* db, node* root, key_t key ) {
+internal node* bpt_find_node( database* db, node* root, board63 key ) {
 	
 	assert( root->id != 0 );
 	
@@ -840,7 +849,7 @@ board* load_row_from_file( FILE* in, off_t offset ) {
 	return read_board_record( in );
 }
 
-board* database_get( database* db, key_t key ) {
+board* database_get( database* db, board63 key ) {
 	
 	print("loading root node ID %lu", db->header->root_node_id );
 	node* root_node = retrieve_node( db, db->header->root_node_id );
@@ -857,7 +866,7 @@ board* database_get( database* db, key_t key ) {
 	return load_row_from_file( db->table_file, offset );
 }
 
-record* bpt_get( database* db, node* root, key_t key ) {
+record* bpt_get( database* db, node* root, board63 key ) {
 
 	assert( root->id != 0 );
 	

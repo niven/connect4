@@ -41,7 +41,7 @@ typedef union pointer {
 } pointer;
 
 typedef struct record {
-	key_t key;
+	board63 key;
 	pointer value;
 } record;
 
@@ -56,7 +56,7 @@ typedef struct node {
 
 	// these are both 1 bigger than they can max be, but that makes
 	// splitting easier (just insert, then split)
-	key_t keys[ORDER];
+	board63 keys[ORDER];
 	pointer pointers[ORDER+1]; // points to a value, or to a node
 
 	bool is_leaf;
@@ -195,7 +195,7 @@ database* database_open( const char* name );
 void database_close( database* db );
 
 bool database_put( database* db, board* b );
-board* database_get( database* db, key_t key );
+board* database_get( database* db, board63 key );
 size_t database_size( database* db );
 
 // internal stuff (operates on nodes)
@@ -206,7 +206,7 @@ node* load_node_from_file( database* db, size_t node_id );
 board* load_row_from_file( FILE* in, off_t offset );
 
 bool bpt_put( node** root, record r );
-record* bpt_get( database* db, node* n, key_t key );
+record* bpt_get( database* db, node* n, board63 key );
 size_t bpt_size( database* db, node* n );
 
 void print_index( database* db );

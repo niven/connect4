@@ -48,14 +48,14 @@ internal inline void bpt_print( database* db, node* start, int indent ) {
 
 }
 
-internal inline key_t max_key( database* db, node* n ) {
+internal inline board63 max_key( database* db, node* n ) {
 	
 	if( n->is_leaf ) {
 		return n->keys[ n->num_keys-1 ];
 	}
 	
 	node* last_node = retrieve_node( db, n->pointers[ n->num_keys ].child_node_id );
-	key_t out = max_key( db, last_node );
+	board63 out = max_key( db, last_node );
 	release_node( db, last_node );
 
 	return out;
@@ -80,7 +80,7 @@ internal void check_tree_correctness( database* db, node* n ) {
 	for(size_t i=0; i<n->num_keys; i++ ) {
 		// for every key, the max
 		node* temp = retrieve_node( db, n->pointers[i].child_node_id ); 
-		key_t max = max_key( db, temp );
+		board63 max = max_key( db, temp );
 		release_node( db, temp );
 		print("key[%lu] = 0x%lx, max from left node = 0x%lx", i, n->keys[i], max );
 		assert( max < n->keys[i] );
@@ -88,7 +88,7 @@ internal void check_tree_correctness( database* db, node* n ) {
 	
 	// check the final one
 	node* temp = retrieve_node( db, n->pointers[ n->num_keys ].child_node_id ); 
-	key_t max = max_key( db, temp );
+	board63 max = max_key( db, temp );
 	release_node( db, temp );
 	print("key[%lu] = 0x%lx, max from right node = 0x%lx", n->num_keys-1, n->keys[ n->num_keys-1], max );
 	assert( n->keys[ n->num_keys-1] <= max );

@@ -29,10 +29,10 @@ typedef unsigned char player;
 // so we convert at read/write time
 
 typedef unsigned long board63;
-typedef board63 key_t;
 
-#define KEY_SIZE (sizeof(key_t))
+// TODO(confusion): two names is maybe confusing
 #define ENCODED_BOARD_SIZE (sizeof(board63))
+
 
 // TODO(correctness): find a way to compile time check ENCODED_BOARD_SIZE == KEY_SIZE just in case
 	

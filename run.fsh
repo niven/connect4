@@ -8,7 +8,7 @@ rm -rf results
 mkdir results
 
 make clean
-make all
+make MODE=NDEBUG all
 
 # create gen 0 (database with single, empty board)
 ./bfcf -d results/num_moves_0 -c e

@@ -244,7 +244,7 @@ int main( int argc, char** argv ) {
 	if( ascii_flag ) {
 
 		database* db = database_open( database_name );
-		key_t key = (key_t)atoi( key_str );
+		board63 key = (board63)atoi( key_str );
 		board* b = NULL;//database_get( db, key );
 		char buf[256];
 		sprintf( buf, "%s - %lu", database_name, key );

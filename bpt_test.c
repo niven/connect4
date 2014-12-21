@@ -87,7 +87,7 @@ internal void test_store_cmdline_seq( char* seq ) {
 		render( next, element, false );
 
 		database_put( db, next );
-		key_t key = encode_board( next );
+		board63 key = encode_board( next );
 		printf(">>>>>>>> inserted key: %lx\n", key);
 		board* retrieved = database_get( db, key );
 		assert( retrieved != NULL );

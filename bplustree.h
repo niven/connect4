@@ -37,7 +37,7 @@ struct bpt_counters {
 // both are the same, but this makes the code much more clear
 typedef union pointer {
 	size_t child_node_id;
-	size_t table_row_index;
+	size_t table_row_index; // TODO(clarity): rename this to board_data_offset or something
 } pointer;
 
 typedef struct record {
@@ -46,6 +46,7 @@ typedef struct record {
 } record;
 
 // node_id 0 is reserved to indicate NULL/empty/no parent
+// TODO: maybe we can put the is_leaf first so we can check for leaf nodes easily in the file (well, wecould use an offset., but still)
 typedef struct node {
 	
 	size_t id;
@@ -203,7 +204,7 @@ node* new_node( database* db );
 void bpt_dump_cf( void );
 
 node* load_node_from_file( database* db, size_t node_id );
-board* load_row_from_file( FILE* in, off_t offset );
+board* load_row_from_file( board63 b63, FILE* in, off_t offset );
 
 bool bpt_put( node** root, record r );
 record* bpt_get( database* db, node* n, board63 key );

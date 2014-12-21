@@ -105,26 +105,26 @@ command parse_command( char* s, params* p ) {
 
 void print_row( FILE* in, size_t row_index ) {
 	
-	off_t filepos = (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
-
-	struct stat s;
-	fstat( fileno(in), &s );
-	if( s.st_size <= filepos ) {
-		printf("No row %lu, file size is %llu\n", row_index, s.st_size );
-		return;
-	}
-
-	if( fseek( in, (long) filepos, SEEK_SET ) ) {
-		perror("fseek()");
-		printf("Most likely no such row: %lu\n", row_index );
-		return;
-	}
-	
-	
-	board* b = read_board_record( in );
-	char buf[200];
-	sprintf( buf, "Row %lu - key 0x%lx", row_index, encode_board( b ) );
-	render( b, buf, false );
+	// off_t filepos = (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
+	//
+	// struct stat s;
+	// fstat( fileno(in), &s );
+	// if( s.st_size <= filepos ) {
+	// 	printf("No row %lu, file size is %llu\n", row_index, s.st_size );
+	// 	return;
+	// }
+	//
+	// if( fseek( in, (long) filepos, SEEK_SET ) ) {
+	// 	perror("fseek()");
+	// 	printf("Most likely no such row: %lu\n", row_index );
+	// 	return;
+	// }
+	//
+	//
+	// board* b = read_board_record( in );
+	// char buf[200];
+	// sprintf( buf, "Row %lu - key 0x%lx", row_index, encode_board( b ) );
+	// render( b, buf, false );
 }
 
 

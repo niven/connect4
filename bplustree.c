@@ -839,14 +839,18 @@ node* load_node_from_file( database* db, size_t node_id ) {
 	return n;
 }
 
-board* load_row_from_file( FILE* in, off_t offset ) {
+board* load_row_from_file( board63 b63, FILE* in, off_t offset ) {
 
 	if( fseek( in, (long) offset, SEEK_SET ) ) {
 		perror("fseek()");
 		return NULL;
 	}
 	
-	return read_board_record( in );
+	char* buf[ SIZE_BOARD_STATE_BYTES + 2*NUM_WINLINE_BYTES ];
+	size_t elements_read = fread( buf, sizeof(buf), 1, in );
+	assert( elements_read == 1 );
+	
+	return read_board_record_from_buf( b63, buf, 0 );
 }
 
 board* database_get( database* db, board63 key ) {
@@ -863,7 +867,7 @@ board* database_get( database* db, board63 key ) {
 	off_t offset = file_offset_from_row( r->value.table_row_index );
 	print("Row offset: %llu", offset);
 
-	return load_row_from_file( db->table_file, offset );
+	return load_row_from_file( key, db->table_file, offset );
 }
 
 record* bpt_get( database* db, node* root, board63 key ) {

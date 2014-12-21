@@ -14,6 +14,10 @@ typedef unsigned char bool;
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
 #define LAST_INDEX(array) (ARRAY_COUNT(array)-1)
 
+#define kilobyte( n ) (1024 * n)
+#define megabyte( n ) (1024 * kilobyte(n))
+#define gigabyte( n ) (1024 * (size_t)megabyte(n))
+#define terabyte( n ) (1024 * gigabyte(n))
 
 #define FOPEN_CHECK( file, name, mode ) \
 file = fopen( name, mode ); \

@@ -1,12 +1,11 @@
 internal void put_node_in_cache( database* db, node* n );
 internal node* retrieve_node( database* db, size_t node_id );
 internal node* get_node_from_cache( database* db, size_t node_id );
-internal void free_node( node* n );
-internal void dump_cache( cache* db );
-internal void clear_cache( cache* db );
+internal void free_node( database* db, node* n );
+internal void clear_cache( database* db, cache* c );
 
 // TODO(rename): maybe flush_cache or something
-void clear_cache( cache* c ) {
+void clear_cache( database* db, cache* c ) {
 	
 	print("Clearing the cache (%lu entries)", c->num_stored);
 	// free all items in the buckets
@@ -16,7 +15,7 @@ void clear_cache( cache* c ) {
 			// only free actual foos
 			if( current->refcount != 0 ) {
 				print("   node %lu", current->ptr.to_node->id );
-				free_node( current->ptr.to_node );
+				free_node( db, current->ptr.to_node );
 			}
 			// free the entry
 			print("   entry, node %lu", current->node_id );
@@ -37,7 +36,7 @@ void clear_cache( cache* c ) {
 	}
 	while( current != NULL ) {
 		print("   free_entry, node %lu", current->node_id );
-		free_node( current->evictable_node );
+		free_node( db, current->evictable_node );
 		free_entry* next = current->next;
 		free( current );
 		counters.cache_free_entry_frees++;
@@ -49,15 +48,15 @@ void clear_cache( cache* c ) {
 }
 
 
+#ifdef VERBOSE	
 void dump_cache( cache* c ) {
 	
 	print("Cache (%lu items):", c->num_stored);
-#ifdef VERBOSE	
 	for(size_t i=0; i<CACHE_BUCKETS; i++ ) {
 		entry* current = c->buckets[i];
 		print("bucket %lu %p", i, current);
 		while( current != NULL ) {
-			print("   entry key=%lu (node %lu) refcount: %lu", current->node_id, current->ptr.to_node->id, current->refcount );
+			print("   entry key=%lu (node %lu) refcount: %lu", current->node_id, current->refcount == 0 ? current->ptr.to_free_entry->node_id : current->ptr.to_node->id, current->refcount );
 			current = current->next;
 		}
 	}
@@ -70,15 +69,21 @@ void dump_cache( cache* c ) {
 			current = current->next;	
 		} while( current != c->free_list );
 	}
-#endif	
 }
+#else
+#define dump_cache( c ) // nothing
+#endif
 
-void free_node( node* n ) {
+
+void free_node( database* db, node* n ) {
 
 	counters.node_frees++;
 	print("node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, counters.node_creates, counters.node_loads, counters.node_frees );
 
 	assert( counters.node_frees <= counters.node_loads + counters.node_creates );
+
+	printf("FREE_NODE: writing node %lu to disk\n", n->id );
+	database_store_node( db, n );
 
 	n->id = 0; // helps finding bugs if someone is still using this
 	free( n );
@@ -90,7 +95,8 @@ void release_node( database* db, node* n ) {
 
 	assert( n != NULL );
 	assert( n->id != 0 );
-
+	assert( n->id < 1000 );
+	
 	cache* c = db->node_cache;
 	size_t node_id = n->id;
 	print("node %lu", node_id );
@@ -131,13 +137,14 @@ void release_node( database* db, node* n ) {
 	
 	// was not in the cache, just free it
 	print("Node %lu was not in the cache, doing a normal free()", node_id);
-	free_node( n );
+	free_node( db, n );
 }
 
 
 void put_node_in_cache( database* db, node* n ) {
 
 	assert( n != NULL );
+	assert( n->id < 1000 );
 
 	cache* c = db->node_cache;
 	print("Putting node %lu (%p) in the cache (load %lu/%lu)", n->id, n, c->num_stored, CACHE_MAX);
@@ -187,7 +194,7 @@ void put_node_in_cache( database* db, node* n ) {
 			assert( entry_to_free != NULL );
 			
 			// free the free_entry, the foo it points to and the entry in the bucket
-			free_node( fe->evictable_node );
+			free_node( db, fe->evictable_node );
 			free( fe );
 			counters.cache_free_entry_frees++;
 			free( entry_to_free );

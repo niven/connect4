@@ -61,9 +61,9 @@ internal inline board63 max_key( database* db, node* n ) {
 	return out;
 }
 
+#ifdef VERBOSE	
 internal void check_tree_correctness( database* db, node* n ) {
 
-#ifdef VERBOSE	
 	print("Checking correctness of node %lu", n->id );
 	
 	// for leaves, check if all keys are ascending
@@ -93,5 +93,7 @@ internal void check_tree_correctness( database* db, node* n ) {
 	print("key[%lu] = 0x%lx, max from right node = 0x%lx", n->num_keys-1, n->keys[ n->num_keys-1], max );
 	assert( n->keys[ n->num_keys-1] <= max );
 	print("node %lu OK", n->id);
-#endif	
 }
+#else
+#define check_tree_correctness( db, n ) // nothing
+#endif	

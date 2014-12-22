@@ -358,7 +358,7 @@ void render( board* b, const char* text, int show_winlines ) {
 	}
 }
 
-board* read_board_record_from_buf( board63 b63, char* buf, unsigned long long pos ) {
+board* read_board_record_from_buf( board63 b63, char* buf, off_t pos ) {
 	
 	board* b = decode_board63( b63 );
 
@@ -368,8 +368,8 @@ board* read_board_record_from_buf( board63 b63, char* buf, unsigned long long po
 	b->winlines = new_winbits();
 
 	// TODO(performance): why even have 2 of these? just have 1 array? (memcpy for both at the same time fails)
-	memcpy( &b->winlines->white, &buf[ pos + SIZE_BOARD_STATE_BYTES ], NUM_WINLINE_BYTES );
-	memcpy( &b->winlines->black, &buf[ pos + SIZE_BOARD_STATE_BYTES + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
+	memcpy( &b->winlines->white, &buf[ (unsigned long long)pos + SIZE_BOARD_STATE_BYTES ], NUM_WINLINE_BYTES );
+	memcpy( &b->winlines->black, &buf[ (unsigned long long)pos + SIZE_BOARD_STATE_BYTES + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
 
 	return b;	
 }

@@ -71,8 +71,8 @@ typedef struct board {
 	wins* winlines;
 } board;
 
-// Size of a serialized board: the key/board + gamestate (1 char) + winlines WHITE + winlines BLACK
-#define BOARD_SERIALIZATION_NUM_BYTES (sizeof(board63) + sizeof(char) + 2*NUM_WINLINE_BYTES)
+// Size of a serialized board: gamestate (1 char) + winlines WHITE + winlines BLACK
+#define BOARD_SERIALIZATION_NUM_BYTES (SIZE_BOARD_STATE_BYTES + 2*NUM_WINLINE_BYTES)
 
 #define WINLINE_HOZ(y) 	{ {0,1,2,3}, {y,y,y,y} }, \
 								{ {1,2,3,4}, {y,y,y,y} }, \
@@ -129,7 +129,7 @@ int is_over( board* b );
 
 void write_board( char* filename, board* b );
 
-board* read_board_record_from_buf( board63 b63, char* buf, unsigned long long pos );
+board* read_board_record_from_buf( board63 b63, char* buf, off_t pos );
 void write_board_record( board* b, FILE* out );
 
 void print_board63( board63 b );

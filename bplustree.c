@@ -17,7 +17,7 @@ internal void bpt_split( database* db, node* node );
 internal void database_open_files( database* db );
 internal void database_set_filenames( database* db, const char* name );
 internal void database_store_node( database* db, node* data );
-internal off_t file_offset_from_row( size_t row_index );
+internal void database_store_row( database* db, board* b );
 internal void read_database_header( database* db );
 internal void write_database_header( database* db );
 
@@ -39,7 +39,7 @@ off_t file_offset_from_node( size_t id ) {
 	
 }
 
-off_t file_offset_from_row( size_t row_index ) {
+off_t file_offset_from_row_index( size_t row_index ) {
 	
 	return (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
 }
@@ -259,7 +259,7 @@ bool database_put( database* db, board* b ) {
 	board63 board_key = encode_board( b );
 	print("key for this board: 0x%lx", board_key );
 	
-	record r = { .key = board_key, .value.table_row_index = db->header->table_row_count };
+	record r = { .key = board_key, .value.board_data_index = db->header->table_row_count };
 
 	counters.key_inserts++;
 
@@ -703,7 +703,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 		// if we're not appending but inserting, ODKU (we can't check on value since we might be at the end
 		// and the value there could be anything)
 		if( k < root->num_keys && root->keys[k] == r.key ) {
-			print("Overwrite of keys[%lu] = %lu (value %lu to %lu)", k, r.key, root->pointers[k].table_row_index, r.value.table_row_index );
+			print("Overwrite of keys[%lu] = %lu (value %lu to %lu)", k, r.key, root->pointers[k].board_data_index, r.value.board_data_index );
 			root->pointers[k] = r.value;
 			
 			return false; // was not inserted but updated (or ignored)
@@ -862,7 +862,7 @@ board* database_get( database* db, board63 key ) {
 		return NULL;
 	}
 	
-	off_t offset = file_offset_from_row( r->value.table_row_index );
+	off_t offset = file_offset_from_row_index( r->value.board_data_index );
 	print("Row offset: %llu", offset);
 
 	return load_row_from_file( key, db->table_file, offset );
@@ -901,7 +901,7 @@ record* bpt_get( database* db, node* root, board63 key ) {
 	}
 	r->key = key;
 	r->value = dest_node->pointers[key_index]; 
-	print("returning record { key = 0x%lx, value.table_row_index = %lu / value.child_node_id = %lu }", r->key, r->value.table_row_index, r->value.child_node_id);
+	print("returning record { key = 0x%lx, value.table_row_index = %lu / value.child_node_id = %lu }", r->key, r->value.board_data_index, r->value.child_node_id);
 
 	if( dest_node->id != root->id ) {
 		print("dest id %lu root id %lu", dest_node->id, root->id);

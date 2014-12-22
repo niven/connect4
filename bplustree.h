@@ -37,7 +37,7 @@ struct bpt_counters {
 // both are the same, but this makes the code much more clear
 typedef union pointer {
 	size_t child_node_id;
-	size_t table_row_index; // TODO(clarity): rename this to board_data_offset or something
+	size_t board_data_index;
 } pointer;
 
 typedef struct record {
@@ -134,8 +134,8 @@ Operations:
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_BUCKETS ((size_t)10)
-#define CACHE_MAX ((size_t)16)
+#define CACHE_BUCKETS ((size_t)4096)
+#define CACHE_MAX ((size_t)8192)
 
 
 // doubly linked list of refcount==0 entries in cache
@@ -216,6 +216,7 @@ void print_index_from( database* db, size_t start_node_id );
 void release_node( database* db, node* n );
 
 off_t file_offset_from_node( size_t id );
+off_t file_offset_from_row_index( size_t row_index );
 
 
 #endif

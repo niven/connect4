@@ -90,7 +90,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	assert( board_data != MAP_FAILED );
 
 	// start at the first node
-	size_t node_counter = 1;
+	size_t node_counter = 0;
 	assert( from->header->node_count >= 1 );
 	node* current_node = (node*)malloc( sizeof(node) );
 
@@ -100,17 +100,18 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	// read every node
 	size_t board_counter = 0;
 	board* start_board = NULL;
-	while( node_counter <= from->header->node_count ) { // node 0 does not exits
+	while( node_counter < from->header->node_count ) {
 		
+		node_counter++; // ensure we start at 1, since node 0 doesn't exist
 		off_t node_offset = file_offset_from_node( node_counter );
 		memcpy( current_node, &node_data[node_offset], sizeof(node) );
-		printf("Current node %lu, leaf: %s\n", current_node->id, current_node->is_leaf ? "true" : "false");
+		// printf("Current node %lu, leaf: %s\n", current_node->id, current_node->is_leaf ? "true" : "false");
 		
 		if( !current_node->is_leaf ) { // skip over nonleaf nodes
 			continue;
 		}
 		
-		printf("Reading %lu boards from node %lu\n", current_node->id, current_node->num_keys );
+		printf("Reading %lu boards from node %lu\n", current_node->num_keys, current_node->id );
 	
 		// read every board
 		for( size_t key_index = 0; key_index < current_node->num_keys; key_index++ ) {
@@ -126,10 +127,10 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 
 			// read this specific board
 			board63 encoded_board = current_node->keys[key_index];
-			size_t board_data_offset = current_node->pointers[key_index].table_row_index;
-			printf("Read form offset %lu\n", board_data_offset);
+			off_t board_data_offset = file_offset_from_row_index( current_node->pointers[key_index].board_data_index );
+			// printf("Read form offset %llu\n", board_data_offset);
 			start_board = read_board_record_from_buf( encoded_board, board_data, board_data_offset );
-			render( start_board, "Start", false );
+			// render( start_board, "Start", false );
 			// no need to go on after the game is over
 			if( start_board->state & OVER ) {
 				continue;
@@ -160,12 +161,12 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			
 		}
 
-		printf("Finished with node %lu\n", current_node->id);
-		
-		node_counter++;
+		// printf("Finished with node %lu\n", current_node->id);
 		
 	}
 
+	assert( board_counter == from->header->table_row_count );
+	
 	database_close( from );
 	database_close( to );
 

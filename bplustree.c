@@ -241,9 +241,9 @@ void database_close( database* db ) {
 	fclose( db->index_file );
 	fclose( db->table_file );
 
+	print("closed %s", db->name);
 	free( db );
 	
-	prints("closed");
 }
 
 // TODO(bug): find a good way to do this, and not chase bugs for hours.

@@ -158,13 +158,18 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			}
 			
 		}
+
+		printf("Finished with node %lu\n", current_node->id);
 		
 		node_counter++;
 		
 	}
+	printf("a\n");
 
 	database_close( from );
+	printf("b\n");
 	database_close( to );
+	printf("c\n");
 	
 	gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 	

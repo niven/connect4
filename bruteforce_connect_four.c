@@ -127,8 +127,9 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			// read this specific board
 			board63 encoded_board = current_node->keys[key_index];
 			size_t board_data_offset = current_node->pointers[key_index].table_row_index;
+			printf("Read form offset %lu\n", board_data_offset);
 			start_board = read_board_record_from_buf( encoded_board, board_data, board_data_offset );
-
+			render( start_board, "Start", false );
 			// no need to go on after the game is over
 			if( start_board->state & OVER ) {
 				continue;
@@ -164,12 +165,11 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 		node_counter++;
 		
 	}
-	printf("a\n");
 
 	database_close( from );
-	printf("b\n");
 	database_close( to );
-	printf("c\n");
+
+	printf("Generated %lu boards\n", gc.unique_boards);
 	
 	gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 	

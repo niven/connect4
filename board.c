@@ -363,13 +363,13 @@ board* read_board_record_from_buf( board63 b63, char* buf, unsigned long long po
 	board* b = decode_board63( b63 );
 
 	// read state
-	b->state = buf[ pos + sizeof(board63) ];	
+	b->state = buf[ pos ];	
 
 	b->winlines = new_winbits();
 
 	// TODO(performance): why even have 2 of these? just have 1 array? (memcpy for both at the same time fails)
-	memcpy( &b->winlines->white, &buf[ pos + sizeof(board63) + 1 ], NUM_WINLINE_BYTES );
-	memcpy( &b->winlines->black, &buf[ pos + sizeof(board63) + 1 + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
+	memcpy( &b->winlines->white, &buf[ pos + SIZE_BOARD_STATE_BYTES ], NUM_WINLINE_BYTES );
+	memcpy( &b->winlines->black, &buf[ pos + SIZE_BOARD_STATE_BYTES + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
 
 	return b;	
 }

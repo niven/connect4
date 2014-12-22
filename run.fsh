@@ -1,6 +1,6 @@
 #!/usr/local/bin/fish
 
-set NUM_GENERATIONS 10
+set NUM_GENERATIONS 11
 
 echo "Generating up to $NUM_GENERATIONS generations."
 
@@ -8,7 +8,7 @@ rm -rf results
 mkdir results
 
 make clean
-make all
+make MODE=NDEBUG all
 
 # create gen 0 (database with single, empty board)
 ./bfcf -d results/num_moves_0 -c e

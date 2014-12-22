@@ -208,7 +208,12 @@ board* copy_board( board* src ) {
 	memcpy( dest->squares, src->squares, ROWS*COLS );
 	
 	if( src->winlines != NULL ) {
-		dest->winlines = new_winbits(); // TODO(performance): no need to init things we are going to overwrite anyway
+		dest->winlines = (wins*)malloc( sizeof(wins) );
+		if( dest->winlines == NULL ) {
+			perror("malloc()");
+			exit( EXIT_FAILURE );
+		}
+
 //		printf("Copy winlines dest %p, src %p\n", dest->winlines, src->winlines);
 		memcpy( dest->winlines, src->winlines, sizeof(wins) );
 	}

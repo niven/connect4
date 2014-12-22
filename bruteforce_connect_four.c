@@ -78,8 +78,8 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	assert( table_file_stat.st_size < (off_t)gigabyte(1) );
 
 	// Check filesize against what the db thinks
-	assert( sizeof(from->header) + (sizeof(node) * from->header->node_count) == (size_t)index_file_stat.st_size );
-	assert( sizeof(board) * from->header->table_row_count == (size_t)table_file_stat.st_size);
+	assert( sizeof(*(from->header)) + (sizeof(node) * from->header->node_count) == (size_t)index_file_stat.st_size );
+	assert( (SIZE_BOARD_STATE_BYTES + 2*NUM_WINLINE_BYTES) * from->header->table_row_count == (size_t)table_file_stat.st_size);
 	
 
 	// mmap the index and the board

@@ -82,7 +82,6 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	assert( sizeof(board) * from->header->table_row_count == (size_t)table_file_stat.st_size);
 	
 
-
 	// mmap the index and the board
 
 	char* node_data = mmap( NULL, (size_t)index_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->index_file), 0 );
@@ -90,29 +89,29 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	char* board_data = mmap( NULL, (size_t)table_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );
 	assert( board_data != MAP_FAILED );
 
-	size_t node_offset = sizeof( *(from->header) ); // this is where the first node starts
-	printf("Offset for first node: %lu bytes\n", node_offset);
+	// start at the first node
+	size_t node_counter = 1;
+	assert( from->header->node_count >= 1 );
 	node* current_node = (node*)malloc( sizeof(node) );
-	printf("First node %lu\n", current_node->id );
 
-	board* start_board = NULL;
-	// char scratch[256];
+	// just a timer to give regular output
 	time_t start_time = time( NULL ), next_time;
 
 	// read every node
 	size_t board_counter = 0;
-	while( node_offset < (size_t)index_file_stat.st_size ) {
+	board* start_board = NULL;
+	while( node_counter <= from->header->node_count ) { // node 0 does not exits
 		
-		// find a node that is a laef
+		off_t node_offset = file_offset_from_node( node_counter );
 		memcpy( current_node, &node_data[node_offset], sizeof(node) );
 		printf("Current node %lu, leaf: %s\n", current_node->id, current_node->is_leaf ? "true" : "false");
-		while( !current_node->is_leaf ) {
-			node_offset += sizeof(node);
-			assert( node_offset < (size_t)index_file_stat.st_size );
-			memcpy( current_node, &node_data[node_offset], sizeof(node) );
-		}
-		printf("Reading boards from node %lu\n", current_node->id );
 		
+		if( !current_node->is_leaf ) { // skip over nonleaf nodes
+			continue;
+		}
+		
+		printf("Reading %lu boards from node %lu\n", current_node->id, current_node->num_keys );
+	
 		// read every board
 		for( size_t key_index = 0; key_index < current_node->num_keys; key_index++ ) {
 			

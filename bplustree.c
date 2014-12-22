@@ -18,7 +18,6 @@ internal void database_open_files( database* db );
 internal void database_set_filenames( database* db, const char* name );
 internal void database_store_node( database* db, node* data );
 internal void database_store_row( database* db, size_t row_index, board* b );
-internal off_t file_offset_from_node( size_t id );
 internal off_t file_offset_from_row( size_t row_index );
 internal void read_database_header( database* db );
 internal void write_database_header( database* db );

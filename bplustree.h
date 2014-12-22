@@ -215,4 +215,7 @@ void print_index_from( database* db, size_t start_node_id );
 
 void release_node( database* db, node* n );
 
+off_t file_offset_from_node( size_t id );
+
+
 #endif

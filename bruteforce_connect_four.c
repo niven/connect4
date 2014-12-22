@@ -146,15 +146,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 					update_counters( &gc, move_made );
 				
 					bool was_insert = database_put( to, move_made );
-
-					if( was_insert ) {
-						gc.unique_boards++;
-						// sprintf( scratch, "Unique board - %lu - %d", i, col );
-						// render( move_made, scratch, false );
-					} else {
-						// sprintf( scratch, "Dupe board - %lu - %d", i, col );
-						// render( move_made, scratch, false );
-					}
+					gc.unique_boards += was_insert;
 
 					free_board( move_made );
 				}

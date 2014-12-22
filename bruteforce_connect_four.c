@@ -96,6 +96,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 
 	// just a timer to give regular output
 	time_t start_time = time( NULL ), next_time;
+	size_t boards_in_interval = 0;
 
 	// read every node
 	size_t board_counter = 0;
@@ -122,8 +123,9 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			// show some progress output
 			if( time( &next_time ) - start_time > 2 ) {
 				double percentage_done = 100.0f * ((double)board_counter / (double)from->header->table_row_count);
-				printf("Reading board %lu/%lu - %.2f%% (%.0f boards/sec)\n", board_counter, from->header->table_row_count, percentage_done, (double)board_counter/(double)(next_time-start_time));
+				printf("Reading board %lu/%lu - %.2f%% (generating %.2f K boards/sec)\n", board_counter, from->header->table_row_count, percentage_done, (double)(boards_in_interval/1000)/(double)(next_time-start_time));
 				start_time = next_time;
+				boards_in_interval = 0;
 			} 		
 
 			// read this specific board
@@ -139,12 +141,13 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			
 			// try and make a move in every column
 			for(int col=0; col<COLS; col++) {
-
+				
 				board* move_made = drop( start_board, col );
 
 				if( move_made == NULL ) {
 					print("Can't drop in column %d (column full)", col);
 				} else {
+					boards_in_interval++;
 					assert( encode_board( move_made) != 0 ); // the empty board encodes to 0, so no other board should
 					// there are multiple ways to win that lead to the same board, but we are counting ways to win, not unique wins.
 					update_counters( &gc, move_made );

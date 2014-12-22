@@ -67,27 +67,24 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	// construct a board and do the thing.
 	// whenever a node is done, go to the next one (and maybe skip until yout hit a leaf)
 	
-	// Check filesize against what the db thinks
 	struct stat index_file_stat;
-	fstat( fileno(from->index_file), &index_file_stat );
-	size_t nodes_in_file = ((size_t)index_file_stat.st_size - sizeof(from->header)) / sizeof(node);
-	printf("File size: %lld bytes, %lu bytes/node -> %zu nodes\n", index_file_stat.st_size, sizeof(node), nodes_in_file );
-	assert( nodes_in_file == from->header->node_count );
-	
 	struct stat table_file_stat;
+
 	fstat( fileno(from->table_file), &table_file_stat );
-	size_t board_record_size = (sizeof(wins) + SIZE_BOARD_STATE_BYTES);
-	size_t boards_in_file = (size_t)table_file_stat.st_size / board_record_size;
-	printf("File size: %lld bytes, %lu bytes/board -> %zu boards\n", table_file_stat.st_size, board_record_size, boards_in_file );
-	assert( boards_in_file == from->header->table_row_count );
-	
+	fstat( fileno(from->index_file), &index_file_stat );
+
+	// TODO(research): find out if we can just effecitively mmap any file size
 	assert( index_file_stat.st_size < (off_t)gigabyte(1) );
 	assert( table_file_stat.st_size < (off_t)gigabyte(1) );
+
+	// Check filesize against what the db thinks
+	assert( sizeof(from->header) + (sizeof(node) * from->header->node_count) == (size_t)index_file_stat.st_size );
+	assert( sizeof(board) * from->header->table_row_count == (size_t)table_file_stat.st_size);
+	
 
 
 	// mmap the index and the board
 
-	// TODO(research): find out if we can just effecitively mmap any file size
 	char* node_data = mmap( NULL, (size_t)index_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->index_file), 0 );
 	assert( node_data != MAP_FAILED );
 	char* board_data = mmap( NULL, (size_t)table_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );

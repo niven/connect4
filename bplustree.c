@@ -207,6 +207,8 @@ database* database_open( const char* name ) {
 		exit( EXIT_FAILURE );
 	}
 	
+	db->name = name;
+	
 	database_set_filenames( db, name );
 
 	// we are opening a file presumably for reading the rows table, and maybe writing

@@ -21,11 +21,12 @@ internal void database_store_row( database* db, board* b );
 internal void read_database_header( database* db );
 internal void write_database_header( database* db );
 
-
 #include "node_cache.c"
 #include "bplustree_utils.c"
 
-
+double database_cache_hit_ratio() {
+	return (double)counters.cache_hits / (double)(counters.cache_hits + counters.cache_misses);
+}
 /************** stuff that deals with the fact we store things on disk ********************/
 
 
@@ -636,11 +637,6 @@ void bpt_split( database* db, node* n ) {
 
 		// database_store_node( db, new_root );
 		release_node( db, new_root );
-		
-		// TODO(performance): we potentially store n+sibling twice in a row here
-		// database_store_node( db, n );
-		printf("store sibling\n");
-		// database_store_node( db, sibling );
 
 	} else {
 		print("inserting key 0x%lx + sibling node %lu into parent %lu", up_key, sibling->id, n->parent_node_id );

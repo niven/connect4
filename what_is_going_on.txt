@@ -152,7 +152,7 @@ Generation	#boards		wins W	wins B	CPU time(s)	filesize
 
 It's too bad I don't have good timings from before using the node cache, but to illustrate, generating move 11 took 553 CPU seconds without the node cache and 44 CPU seconds with the cache, generation 12 went down from 5616 to 147.
 
-
+Currently things drop off in performance after gen 10 or so because we start thrashing nodes heavily.
 
 
 

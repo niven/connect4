@@ -27,6 +27,4 @@ end
 
 echo -e "\nResults:"
 
-for g in (seq $NUM_GENERATIONS)
-	./bfcf -d results/gencounter_$g.gc -g
-end
+./bfcf -d results/ -g

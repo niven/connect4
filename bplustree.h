@@ -222,5 +222,7 @@ void release_node( database* db, node* n );
 off_t file_offset_from_node( size_t id );
 off_t file_offset_from_row_index( size_t row_index );
 
+// TODO(nice): horrible way to expose this
+double database_cache_hit_ratio();
 
 #endif

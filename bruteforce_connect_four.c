@@ -184,6 +184,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	printf("Generated %lu boards\n", gc.unique_boards);
 	
 	gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
+	gc.cache_hit_ratio = database_cache_hit_ratio();
 	
 	munmap( node_data, (size_t) index_file_stat.st_size );
 	munmap( board_data, (size_t) table_file_stat.st_size );
@@ -221,7 +222,7 @@ int main( int argc, char** argv ) {
  		  case 'a': // render board from key
  			 key_str = optarg;
  		    break;
- 		  case 'g': // show generation counter
+ 		  case 'g': // show all generation counters
  			 gc_flag = 1;
  		    break;
 		  case 'n': // next moves for database
@@ -306,8 +307,24 @@ int main( int argc, char** argv ) {
 	
 	if( gc_flag ) {
 
-		gen_counter* g = read_counter( database_name );
-		print_counter( g );
+		char genfilename[256];
+		char idxfilename[256];
+		
+		printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize\n");
+		for( int g=1; g<=42; g++ ) { // just try all possible and break when done
+
+			sprintf(idxfilename, "%s/num_moves_%d.c4_index", database_name, g);
+			struct stat gstat;
+			if( stat( idxfilename, &gstat ) == -1 ) {
+				break;
+			}
+
+			sprintf(genfilename, "%s/gencounter_%d.gc", database_name, g);
+			gen_counter* gc = read_counter( genfilename );
+
+			printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f MB\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0f*gc->cache_hit_ratio, (double)gstat.st_size/(double)megabyte(1) );
+
+		}
 
 	}
 

@@ -159,8 +159,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			
 		}
 		
-		// go to the next node
-		node_offset += sizeof(node);
+		node_counter++;
 		
 	}
 

@@ -17,7 +17,6 @@ internal void bpt_split( database* db, node* node );
 internal void database_open_files( database* db );
 internal void database_set_filenames( database* db, const char* name );
 internal void database_store_node( database* db, node* data );
-internal void database_store_row( database* db, size_t row_index, board* b );
 internal off_t file_offset_from_row( size_t row_index );
 internal void read_database_header( database* db );
 internal void write_database_header( database* db );
@@ -45,9 +44,9 @@ off_t file_offset_from_row( size_t row_index ) {
 	return (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
 }
 
-void database_store_row( database* db, size_t row_index, board* b ) {
+void database_store_row( database* db, board* b ) {
 
-	print("storing board 0x%lx on disk as row %lu", encode_board(b), row_index );
+	print("appending board 0x%lx to file %s", encode_board(b), db->table_filename );
 
 	// we only append to this file and it is opened with "a", this means we shouldn't have to fseek()
 
@@ -60,8 +59,6 @@ void database_store_row( database* db, size_t row_index, board* b ) {
 	// 	exit( EXIT_FAILURE );
 	// }
 
-	print("storing %lu bytes", BOARD_SERIALIZATION_NUM_BYTES );
-	
 	write_board_record( b, db->table_file );
 	
 }
@@ -301,7 +298,7 @@ bool database_put( database* db, board* b ) {
 		// 	assert( stored_keys[i] != latest_key );
 		// }
 		// stored_keys[ num_stored_keys++ ] = latest_key;
-		database_store_row( db, db->header->table_row_count, b );
+		database_store_row( db, b );
 		db->header->table_row_count++;
 	}
 
@@ -849,7 +846,7 @@ board* load_row_from_file( board63 b63, FILE* in, off_t offset ) {
 	size_t elements_read = fread( buf, sizeof(buf), 1, in );
 	assert( elements_read == 1 );
 	
-	return read_board_record_from_buf( b63, buf, 0 );
+	return read_board_record_from_buf( b63, (char*)buf, 0 );
 }
 
 board* database_get( database* db, board63 key ) {

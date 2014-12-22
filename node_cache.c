@@ -82,7 +82,6 @@ void free_node( database* db, node* n ) {
 
 	assert( counters.node_frees <= counters.node_loads + counters.node_creates );
 
-	printf("FREE_NODE: writing node %lu to disk\n", n->id );
 	database_store_node( db, n );
 
 	n->id = 0; // helps finding bugs if someone is still using this

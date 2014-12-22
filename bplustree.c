@@ -66,7 +66,7 @@ void database_store_row( database* db, board* b ) {
 void database_store_node( database* db, node* n ) {
 
 	// append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
-	printf("writing node %lu (leaf: %s) (parent %lu) to %s\n", n->id, n->is_leaf ? "true" : "false",  n->parent_node_id, db->index_filename );
+	print("writing node %lu (leaf: %s) (parent %lu) to %s", n->id, n->is_leaf ? "true" : "false",  n->parent_node_id, db->index_filename );
 	
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );
@@ -418,7 +418,7 @@ node* new_node( database* db ) {
 	// retrieve_node() / release_node()
 	put_node_in_cache( db, out );
 	
-	printf("created node ID: %lu (%p) (cr: %llu/ld: %llu/fr: %llu)\n", out->id, out, counters.node_creates, counters.node_loads, counters.node_frees  );
+	print("created node ID: %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", out->id, out, counters.node_creates, counters.node_loads, counters.node_frees  );
 	return out;
 }
 
@@ -599,22 +599,12 @@ void bpt_split( database* db, node* n ) {
 		for(size_t i=0; i < sibling->num_keys+1; i++ ) {
 			node* s = retrieve_node( db, sibling->pointers[i].child_node_id );
 			s->parent_node_id = sibling->id;
-			printf("store post mod parent pointer\n");
-			// database_store_node( db, s );
 			release_node( db, s );
 		}
 	}
 	
 	// when splitting a node a key and 2 nodes move up
 	n->num_keys = n->num_keys - keys_moving_right - (n->is_leaf ? 0 : 1);
-
-	// database_store_node( db, n );
-	printf("store sibling\n");
-	// database_store_node( db, sibling ); // store it first, in case bpt_insert_node needs to load us
-	// TODO(performance): put this in the cache, but jump through the right cache hoops
-	// printf("Putting %p in cache\n", sibling);
-	// put_node_in_cache( db, sibling );
-	// release_node( db, sibling );
 
 #ifdef VERBOSE
 	print("created sibling node %lu (%p)", sibling->id, sibling);

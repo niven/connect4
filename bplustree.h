@@ -6,7 +6,7 @@
 
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
-#define ORDER 12
+#define ORDER 4
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
@@ -131,11 +131,15 @@ Operations:
 	- load it from disk
 	- Insert
 
+Committing nodes to disk:
+When a node is created or retrieved from disk we put it in the cache, when it has to be evicted we write it to disk.
+Whenever the cache is full and nothing can be evicted, on release it has to written to disk regardless.
+
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_BUCKETS ((size_t)8)
-#define CACHE_MAX ((size_t)8)
+#define CACHE_BUCKETS ((size_t)4)
+#define CACHE_MAX ((size_t)4)
 
 
 // doubly linked list of refcount==0 entries in cache

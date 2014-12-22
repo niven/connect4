@@ -95,7 +95,6 @@ void release_node( database* db, node* n ) {
 
 	assert( n != NULL );
 	assert( n->id != 0 );
-	assert( n->id < 1000 );
 	
 	cache* c = db->node_cache;
 	size_t node_id = n->id;
@@ -130,7 +129,7 @@ void release_node( database* db, node* n ) {
 				c->free_list = new_head;
 			}
 			prints("cache after release");
-			dump_cache( c );
+			// dump_cache( c );
 			return;
 		}
 	}
@@ -144,7 +143,6 @@ void release_node( database* db, node* n ) {
 void put_node_in_cache( database* db, node* n ) {
 
 	assert( n != NULL );
-	assert( n->id < 1000 );
 
 	cache* c = db->node_cache;
 	print("Putting node %lu (%p) in the cache (load %lu/%lu)", n->id, n, c->num_stored, CACHE_MAX);
@@ -204,8 +202,7 @@ void put_node_in_cache( database* db, node* n ) {
 			c->num_stored--; // we'll increment downbelow again
 			// fall out and carry on with inserting 
 		} else {
-			prints("Nothing in the free list.");
-			return;
+			prints("Nothing in the free list.");			
 		}
 
 	}
@@ -239,7 +236,7 @@ node* retrieve_node( database* db, size_t node_id ) {
 		counters.cache_hits++;
 	}
 
-	dump_cache( db->node_cache );
+	// dump_cache( db->node_cache );
 	
 	assert( out->id != 0 );
 	

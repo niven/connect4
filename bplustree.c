@@ -191,7 +191,7 @@ database* database_create( const char* name ) {
 	write_database_header( db );
 
 	// it's empty, but just in case you call create/close or something	
-	database_store_node( db, first_node );
+//	database_store_node( db, first_node );
 	release_node( db, first_node );
 	
 
@@ -412,13 +412,13 @@ node* new_node( database* db ) {
 	
 	// NOTE: Put the new new in the cache because it is likely to be used immediatky,
 	// but more importantly it may be retrieved before whatever calls new_node() calls release_node()
-	// which woul mean it would end up in the cache with a refcount 0 and then be released again.
+	// which would mean it would end up in the cache with a refcount 0 and then be released again.
 	// This way acquire/release is symmetrical:
 	// new_node() / release_node()
 	// retrieve_node() / release_node()
 	put_node_in_cache( db, out );
 	
-	print("created node ID: %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", out->id, out, counters.node_creates, counters.node_loads, counters.node_frees  );
+	printf("created node ID: %lu (%p) (cr: %llu/ld: %llu/fr: %llu)\n", out->id, out, counters.node_creates, counters.node_loads, counters.node_frees  );
 	return out;
 }
 
@@ -489,7 +489,7 @@ void bpt_insert_node( database* db, node* n, board63 up_key, size_t node_to_inse
 		return;
 	} else {
 		prints("did not split");
-		database_store_node( db, n );
+		// database_store_node( db, n );
 	}
 
 }
@@ -600,7 +600,7 @@ void bpt_split( database* db, node* n ) {
 			node* s = retrieve_node( db, sibling->pointers[i].child_node_id );
 			s->parent_node_id = sibling->id;
 			printf("store post mod parent pointer\n");
-			database_store_node( db, s );
+			// database_store_node( db, s );
 			release_node( db, s );
 		}
 	}
@@ -608,9 +608,9 @@ void bpt_split( database* db, node* n ) {
 	// when splitting a node a key and 2 nodes move up
 	n->num_keys = n->num_keys - keys_moving_right - (n->is_leaf ? 0 : 1);
 
-	database_store_node( db, n );
+	// database_store_node( db, n );
 	printf("store sibling\n");
-	database_store_node( db, sibling ); // store it first, in case bpt_insert_node needs to load us
+	// database_store_node( db, sibling ); // store it first, in case bpt_insert_node needs to load us
 	// TODO(performance): put this in the cache, but jump through the right cache hoops
 	// printf("Putting %p in cache\n", sibling);
 	// put_node_in_cache( db, sibling );
@@ -644,13 +644,13 @@ void bpt_split( database* db, node* n ) {
 
 		n->parent_node_id = sibling->parent_node_id = new_root->id;
 
-		database_store_node( db, new_root );
+		// database_store_node( db, new_root );
 		release_node( db, new_root );
 		
 		// TODO(performance): we potentially store n+sibling twice in a row here
-		database_store_node( db, n );
+		// database_store_node( db, n );
 		printf("store sibling\n");
-		database_store_node( db, sibling );
+		// database_store_node( db, sibling );
 
 	} else {
 		print("inserting key 0x%lx + sibling node %lu into parent %lu", up_key, sibling->id, n->parent_node_id );
@@ -682,10 +682,8 @@ void bpt_split( database* db, node* n ) {
 
 /*
 	Insert a record into the B+ Tree.
-	If a key already exists we ODKU (On Duplicate Key Update)
+	If a key already exists we ODKI (On Duplicate Key Ignore)
 	Since this is used as an index so there is no use case for dupe keys.
-	We occasionally update and never delete so this seems more useful.
-	But maybe not Update but Ignore instead
 */
 bool bpt_insert_or_update( database* db, node* root, record r ) {
 
@@ -731,7 +729,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 			print("hit limit, have to split node %lu (%p)", root->id, root);
 			bpt_split( db, root );
 		} else {
-			database_store_node( db, root );
+			// database_store_node( db, root );
 		}
 		
 		return true; // an insert happened
@@ -828,14 +826,14 @@ node* load_node_from_file( database* db, size_t node_id ) {
 	}
 	
 	// TODO(bug): Feel this might cause hard ot find bugs. Maybe a check for filesize and error out on fread fail
-	// (also, no malloc ok check)
 	node* n = (node*) malloc( sizeof(node) );
+	assert( n != NULL );
 	size_t objects_read = fread( n, node_block_bytes, 1, db->index_file );
 	if( objects_read != 1 ) {
 		perror("fread()");
 		free( n );
-		print("unable to load node %lu", node_id);
-		return NULL; // couldn't read a node
+		printf("unable to load node %lu\n", node_id);
+		exit( EXIT_FAILURE );
 	}
 
 	counters.node_loads++;

@@ -100,6 +100,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	// read every node
 	size_t board_counter = 0;
 	board* start_board = NULL;
+
 	while( node_counter < from->header->node_count ) {
 		
 		node_counter++; // ensure we start at 1, since node 0 doesn't exist
@@ -111,7 +112,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			continue;
 		}
 		
-		printf("Reading %lu boards from node %lu\n", current_node->num_keys, current_node->id );
+		// printf("Reading %lu boards from node %lu\n", current_node->num_keys, current_node->id );
 	
 		// read every board
 		for( size_t key_index = 0; key_index < current_node->num_keys; key_index++ ) {
@@ -145,8 +146,15 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 					print("Can't drop in column %d (column full)", col);
 				} else {
 					assert( encode_board( move_made) != 0 ); // the empty board encodes to 0, so no other board should
+					// there are multiple ways to win that lead to the same board, but we are counting ways to win, not unique wins.
 					update_counters( &gc, move_made );
-				
+
+					// if( is_over(move_made) ) {
+					// 	printf("over: %lx\n", encode_board( move_made) );
+					// 	render( move_made, "GAMEOVER", false );
+					// 	render( start_board, "FROM", false );
+					//
+					// }
 					bool was_insert = database_put( to, move_made );
 					gc.unique_boards += was_insert;
 
@@ -164,7 +172,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 		// printf("Finished with node %lu\n", current_node->id);
 		
 	}
-
+	assert( node_counter == from->header->node_count );
 	assert( board_counter == from->header->table_row_count );
 	
 	database_close( from );

@@ -415,6 +415,7 @@ node* new_node( database* db ) {
 	
 	out->num_keys = 0;
 	out->is_leaf = true;
+	out->is_dirty = true; // should start out dirty since it is guaranteed not to be on disk
 	
 	counters.node_creates++;
 	
@@ -830,6 +831,9 @@ node* load_node_from_file( database* db, size_t node_id ) {
 	}
 	
 	assert( !n->is_dirty ); // flag should have been cleared when writing
+
+	// TODO(remove): just to keep a working thing
+	n->is_dirty = true; // force always writing
 
 	counters.node_loads++;
 

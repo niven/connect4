@@ -78,7 +78,7 @@ void dump_cache( cache* c ) {
 void free_node( database* db, node* n ) {
 
 	counters.node_frees++;
-	print("node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, counters.node_creates, counters.node_loads, counters.node_frees );
+	print("node %lu (%p) (dirty: %s) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, n->is_dirty ? "true" : "false", counters.node_creates, counters.node_loads, counters.node_frees );
 
 	assert( counters.node_frees <= counters.node_loads + counters.node_creates );
 

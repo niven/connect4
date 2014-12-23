@@ -61,7 +61,7 @@ typedef struct node {
 	pointer pointers[ORDER+1]; // points to a value, or to a node
 
 	bool is_leaf;
-
+	bool is_dirty; // modified since being read from disk
 } node;
 
 /*********************** Node cache types ************************/

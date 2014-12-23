@@ -66,6 +66,11 @@ void database_store_row( database* db, board* b ) {
 
 void database_store_node( database* db, node* n ) {
 
+	if( !n->is_dirty ) {
+		print("node %lu is not modified, don't have to write to disk", n->id );
+		return;
+	}
+
 	// append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
 	print("writing node %lu (leaf: %s) (parent %lu) to %s", n->id, n->is_leaf ? "true" : "false",  n->parent_node_id, db->index_filename );
 	
@@ -79,6 +84,8 @@ void database_store_node( database* db, node* n ) {
 	}
 	
 	print("storing %lu bytes at offset %llu", node_block_bytes, offset );
+	
+	n->is_dirty = false;
 	
 	size_t written = fwrite( n, node_block_bytes, 1, db->index_file );
 	if( written != 1 ) {

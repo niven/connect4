@@ -309,7 +309,7 @@ int main( int argc, char** argv ) {
 
 		char genfilename[256];
 		char idxfilename[256];
-		
+		printf("Node order: %d\tCache buckets: %lu\tCache max: %lu\n", ORDER, CACHE_BUCKETS, CACHE_MAX);
 		printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize\n");
 		for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 

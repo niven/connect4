@@ -484,6 +484,8 @@ void bpt_insert_node( database* db, node* n, board63 up_key, size_t node_to_inse
 
 	n->num_keys++;
 
+	n->is_dirty = true; // inserted a thing
+
 #ifdef VERBOSE
 	prints("after insert:");
 	print_index( db );
@@ -608,13 +610,15 @@ void bpt_split( database* db, node* n ) {
 		for(size_t i=0; i < sibling->num_keys+1; i++ ) {
 			node* s = retrieve_node( db, sibling->pointers[i].child_node_id );
 			s->parent_node_id = sibling->id;
+			s->is_dirty = true; // changed the parent node so have to write this back at some point
 			release_node( db, s );
 		}
 	}
 	
 	// when splitting a node a key and 2 nodes move up
 	n->num_keys = n->num_keys - keys_moving_right - (n->is_leaf ? 0 : 1);
-
+	n->is_dirty = true; // modified the num_keys (the rest is essentially garbage, but no point in clearing it)
+	
 #ifdef VERBOSE
 	print("created sibling node %lu (%p)", sibling->id, sibling);
 	print_index_from( db, sibling->id );
@@ -696,6 +700,8 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 		int bsearch_result = binary_search( root->keys, root->num_keys, r.key, &insert_location);
 		assert( bsearch_result == BINSEARCH_FOUND || bsearch_result == BINSEARCH_INSERT );
 		print("Leaf node - insert location: %lu", insert_location);
+		
+		root->is_dirty = true; // we're inserting something in this node
 		
 		k = insert_location;
 //		printf("Insertion location: keys[%d] = %d (atend = %d)\n", k, root->keys[k], k == root->num_keys );

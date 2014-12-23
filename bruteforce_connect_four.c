@@ -310,7 +310,7 @@ int main( int argc, char** argv ) {
 		char genfilename[256];
 		char idxfilename[256];
 		printf("Node order: %d\tCache buckets: %lu\tCache max: %lu\n", ORDER, CACHE_BUCKETS, CACHE_MAX);
-		printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize\n");
+		printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
 		for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 
 			sprintf(idxfilename, "%s/num_moves_%d.c4_index", database_name, g);
@@ -322,7 +322,7 @@ int main( int argc, char** argv ) {
 			sprintf(genfilename, "%s/gencounter_%d.gc", database_name, g);
 			gen_counter* gc = read_counter( genfilename );
 
-			printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f MB\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0f*gc->cache_hit_ratio, (double)gstat.st_size/(double)megabyte(1) );
+			printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0f*gc->cache_hit_ratio, (double)gstat.st_size/(double)megabyte(1) );
 
 		}
 

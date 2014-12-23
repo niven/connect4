@@ -6,7 +6,7 @@
 
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
-#define ORDER 500
+#define ORDER 64
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
@@ -138,8 +138,8 @@ Whenever the cache is full and nothing can be evicted, on release it has to writ
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_BUCKETS ((size_t)4096)
-#define CACHE_MAX ((size_t)8192* 10)
+#define CACHE_BUCKETS ((size_t) 64 )
+#define CACHE_MAX ((size_t) 128 )
 
 
 // doubly linked list of refcount==0 entries in cache

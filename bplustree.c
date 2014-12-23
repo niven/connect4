@@ -821,6 +821,8 @@ node* load_node_from_file( database* db, size_t node_id ) {
 		printf("unable to load node %lu\n", node_id);
 		exit( EXIT_FAILURE );
 	}
+	
+	assert( !n->is_dirty ); // flag should have been cleared when writing
 
 	counters.node_loads++;
 

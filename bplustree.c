@@ -70,7 +70,7 @@ void database_store_node( database* db, node* n ) {
 		print("node %lu is not modified, don't have to write to disk", n->id );
 		return;
 	}
-
+	counters.any++;
 	// append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
 	print("writing node %lu (leaf: %s) (parent %lu) to %s", n->id, n->is_leaf ? "true" : "false",  n->parent_node_id, db->index_filename );
 	
@@ -86,13 +86,13 @@ void database_store_node( database* db, node* n ) {
 	print("storing %lu bytes at offset %llu", node_block_bytes, offset );
 	
 	n->is_dirty = false;
-	
+
 	size_t written = fwrite( n, node_block_bytes, 1, db->index_file );
 	if( written != 1 ) {
 		perror("fwrite()");
 		exit( EXIT_FAILURE );
 	}
-	
+
 }
 
 
@@ -839,7 +839,7 @@ node* load_node_from_file( database* db, size_t node_id ) {
 	assert( !n->is_dirty ); // flag should have been cleared when writing
 
 	// TODO(remove): just to keep a working thing
-	n->is_dirty = true; // force always writing
+	// n->is_dirty = true; // force always writing
 
 	counters.node_loads++;
 

@@ -1,6 +1,6 @@
 #!/usr/local/bin/fish
 
-set NUM_GENERATIONS 8
+set NUM_GENERATIONS 10
 
 echo "Generating up to $NUM_GENERATIONS generations."
 
@@ -28,3 +28,4 @@ end
 echo -e "\nResults:"
 
 ./bfcf -d results/ -g
+./bfcf -d results/ -g > latest_results.txt

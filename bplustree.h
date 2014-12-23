@@ -21,6 +21,7 @@ struct bpt_counters {
 	uint64_t node_creates;
 	uint64_t node_loads;
 	uint64_t node_frees;
+	uint64_t node_writes;
 	uint64_t key_inserts;
 	uint64_t get_calls;
 	uint64_t insert_calls;

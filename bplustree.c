@@ -70,7 +70,9 @@ void database_store_node( database* db, node* n ) {
 		print("node %lu is not modified, don't have to write to disk", n->id );
 		return;
 	}
-	counters.any++;
+
+	counters.node_writes++;
+	
 	// append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
 	print("writing node %lu (leaf: %s) (parent %lu) to %s", n->id, n->is_leaf ? "true" : "false",  n->parent_node_id, db->index_filename );
 	
@@ -443,6 +445,7 @@ void bpt_dump_cf() {
 	printf("Total cache free entry frees: %llu\n", counters.cache_free_entry_frees);
 	printf("Total node creates: %llu\n", counters.node_creates);
 	printf("Total node loads: %llu\n", counters.node_loads);
+	printf("Total node writes: %llu\n", counters.node_writes);
 	printf("Total node frees: %llu\n", counters.node_frees);
 	printf("Total key inserts: %llu\n", counters.key_inserts);
 	printf("Total get calls: %llu\n", counters.get_calls);

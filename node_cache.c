@@ -191,6 +191,11 @@ void put_node_in_cache( database* db, node* n ) {
 			assert( entry_to_free != NULL );
 			
 			// free the free_entry, the foo it points to and the entry in the bucket
+			if( fe->evictable_node->is_dirty ) {
+				db->cstats.dirty_evicts++;
+			} else {
+				db->cstats.clean_evicts++;				
+			}
 			free_node( db, fe->evictable_node );
 			free( fe );
 			db->cstats.free_entry_frees++;
@@ -198,9 +203,6 @@ void put_node_in_cache( database* db, node* n ) {
 			free( entry_to_free );
 			db->cstats.entry_frees++;
 			
-			// TODO: differentiate
-			db->cstats.dirty_evicts++;
-			db->cstats.clean_evicts++;
 			c->num_stored--; // we'll increment downbelow again
 			// fall out and carry on with inserting 
 		} else {

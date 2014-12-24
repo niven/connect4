@@ -182,7 +182,7 @@ database* database_create( const char* name ) {
 	db->node_cache->num_stored = 0;
 	db->node_cache->free_list = NULL;
 	db->cstats = (struct cache_stats) { .hits = 0 }; // inits the rest to 0 as well
-	printf("FREE ENTRY FREES %llu\n", db->cstats.free_entry_frees );
+
 	// create a new bpt
 	node* first_node = new_node( db ); // get the next node id, and update count
 	db->header->root_node_id = first_node->id;

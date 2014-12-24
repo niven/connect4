@@ -178,20 +178,24 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	assert( node_counter == from->header->node_count );
 	assert( board_counter == from->header->table_row_count );
 	
+	printf("Stats for destination database:\n");
+	print_database_stats( to );
+
 	database_close( from );
 	database_close( to );
 
 	printf("Generated %lu boards\n", gc.unique_boards);
 	
+
 	gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
-	gc.cache_hit_ratio = database_cache_hit_ratio();
+	cache_stats stats = get_database_cache_stats( to );
+	gc.cache_hit_ratio = stats.hit_ratio;
 	
 	munmap( node_data, (size_t) index_file_stat.st_size );
 	munmap( board_data, (size_t) table_file_stat.st_size );
 	
 	write_counter( &gc, "gencounter.gc" );
 
-   bpt_dump_cf();
 }
 
 

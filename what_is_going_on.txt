@@ -129,32 +129,13 @@ Cases:
 
 So the bug was the fact that finding the correct node sometimes hits the path where a key in the keys array is equal to the to-be-inserted key and then instead of going to the node on the right (since that stores all keys >= target) we would go left.
 
-Now actually generating boards without dupes:
-
-Generation	#boards		wins W	wins B	CPU time(s)	filesize
-0				1 (empty)
-1				7
-2				49
-3				238
-4				1,120										0.002776
-5				4,263										0.007622
-6				16,422									0.026431
-7				54,859		1,288						0.109139
-8				184,223					2,823			0.384888
-9				560,721		28,077					1.378829
-10				1,667,674				59,088		16.067594	45 MB
-11				4,627,664	360,029					10.849751	119.422 MB
-== correct till here
-
-12				12,236,101				763,718		133.686852	315 MB
-13				30,929,111	3,570,170				394.499908	796 MB
-14				75,437,595				6,912,472	1125.133039	1700 MB
-15				176,541,259	26,717,899				3120.420834	4114 MB
+Now actually generating boards without dupes: see latest_results.txt
 
 It's too bad I don't have good timings from before using the node cache, but to illustrate, generating move 11 took 553 CPU seconds without the node cache and 44 CPU seconds with the cache, generation 12 went down from 5616 to 147.
 
 Currently things drop off in performance after gen 10 or so because we start thrashing nodes heavily.
 
+Fixing the thrashing by turning the cache into a write-back cache dropped generation 11 to 11 CPU seconds (that's around 1M boards generated per CPU second)
 
 
 

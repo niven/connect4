@@ -6,18 +6,11 @@
 
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
-#define ORDER 64
+#define ORDER 6
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
 struct bpt_counters {
-	uint64_t cache_hits;
-	uint64_t cache_misses;
-	uint64_t cache_evicts;
-	uint64_t cache_entry_allocs;
-	uint64_t cache_entry_frees;
-	uint64_t cache_free_entry_allocs;
-	uint64_t cache_free_entry_frees;
 	uint64_t node_creates;
 	uint64_t node_loads;
 	uint64_t node_frees;
@@ -32,6 +25,18 @@ struct bpt_counters {
 	uint64_t node_key_compares;
 	uint64_t any;
 };
+
+typedef struct cache_stats {
+	double hit_ratio;
+	uint64_t hits;
+	uint64_t misses;
+	uint64_t clean_evicts;
+	uint64_t dirty_evicts;
+	uint64_t entry_allocs;
+	uint64_t entry_frees;
+	uint64_t free_entry_allocs;
+	uint64_t free_entry_frees;
+} cache_stats;
 
 // nodes have pointers to other nodes, or to table rows
 // table rows are just row numbers (and we know the size, thus the offset in the table file)
@@ -136,11 +141,14 @@ Committing nodes to disk:
 When a node is created or retrieved from disk we put it in the cache, when it has to be evicted we write it to disk.
 Whenever the cache is full and nothing can be evicted, on release it has to written to disk regardless.
 
+TODO(performance): keep the free items as dirty/clean and recycle the clean ones to avoid writes, and probably also in Most Frequently Used order maybe.
+TODO(profiling): keep track of count dirty/free nodes in cache, distribution of hits/misses/dirty per node
+
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_BUCKETS ((size_t) 64 )
-#define CACHE_MAX ((size_t) 128 )
+#define CACHE_BUCKETS ((size_t) 8 )
+#define CACHE_MAX ((size_t) 8 )
 
 
 // doubly linked list of refcount==0 entries in cache
@@ -193,6 +201,7 @@ typedef struct database {
 
 	// TODO(performance): find the optimal size for the cache
 	cache* node_cache;
+	cache_stats cstats;
 } database;
 
 // public API (always takes a root)
@@ -204,9 +213,11 @@ bool database_put( database* db, board* b );
 board* database_get( database* db, board63 key );
 size_t database_size( database* db );
 
+void print_database_stats( database* db );
+cache_stats get_database_cache_stats( database* db );
+
 // internal stuff (operates on nodes)
 node* new_node( database* db );
-void bpt_dump_cf( void );
 
 node* load_node_from_file( database* db, size_t node_id );
 board* load_row_from_file( board63 b63, FILE* in, off_t offset );
@@ -222,8 +233,5 @@ void release_node( database* db, node* n );
 
 off_t file_offset_from_node( size_t id );
 off_t file_offset_from_row_index( size_t row_index );
-
-// TODO(nice): horrible way to expose this
-double database_cache_hit_ratio();
 
 #endif

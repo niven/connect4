@@ -21,7 +21,7 @@ void clear_cache( database* db, cache* c ) {
 			print("   entry, node %lu", current->node_id );
 			entry* next = current->next;
 			free( current );
-			counters.cache_entry_frees++;
+			db->cstats.entry_frees++;
 			current = next;
 		}
 		c->buckets[b] = NULL;
@@ -39,7 +39,7 @@ void clear_cache( database* db, cache* c ) {
 		free_node( db, current->evictable_node );
 		free_entry* next = current->next;
 		free( current );
-		counters.cache_free_entry_frees++;
+		db->cstats.free_entry_frees++;		
 		current = next;
 	}
 	
@@ -110,7 +110,7 @@ void release_node( database* db, node* n ) {
 			if( i->refcount == 0 ) {
 				prints("refcount 0, creating a free_entry");
 				free_entry* new_head = (free_entry*) malloc( sizeof(free_entry) );
-				counters.cache_free_entry_allocs++;
+				db->cstats.free_entry_allocs++;
 				new_head->evictable_node = i->ptr.to_node; // keep the actual thing we store
 				i->ptr.to_free_entry = new_head; // replace it with ref to the free_entry
 				new_head->node_id = node_id;
@@ -193,11 +193,14 @@ void put_node_in_cache( database* db, node* n ) {
 			// free the free_entry, the foo it points to and the entry in the bucket
 			free_node( db, fe->evictable_node );
 			free( fe );
-			counters.cache_free_entry_frees++;
-			free( entry_to_free );
-			counters.cache_entry_frees++;
+			db->cstats.free_entry_frees++;
 			
-			counters.cache_evicts++;
+			free( entry_to_free );
+			db->cstats.entry_frees++;
+			
+			// TODO: differentiate
+			db->cstats.dirty_evicts++;
+			db->cstats.clean_evicts++;
 			c->num_stored--; // we'll increment downbelow again
 			// fall out and carry on with inserting 
 		} else {
@@ -209,7 +212,7 @@ void put_node_in_cache( database* db, node* n ) {
 	entry* bucket = c->buckets[b];
 	
 	entry* i = (entry*) malloc( sizeof(entry) );
-	counters.cache_entry_allocs++;
+	db->cstats.entry_allocs++;
 	i->ptr.to_node = n;
 	i->refcount = 1;
 	i->node_id = n->id;
@@ -228,11 +231,11 @@ node* retrieve_node( database* db, size_t node_id ) {
 	
 	node* out = get_node_from_cache( db, node_id );
 	if( out == NULL ) {
-		counters.cache_misses++;
+		db->cstats.misses++;
 		out = load_node_from_file( db, node_id );
 		put_node_in_cache( db, out );
 	} else {
-		counters.cache_hits++;
+		db->cstats.hits++;
 	}
 
 	// dump_cache( db->node_cache );
@@ -269,7 +272,8 @@ node* get_node_from_cache( database* db, size_t node_id ) {
 					c->free_list = discard->next == discard ? NULL : discard->next;
 				}
 				free( discard );
-				counters.cache_free_entry_frees++;
+				db->cstats.free_entry_frees++;
+				
 				discard = NULL;
 			}
 			// regular item, or free_entry in between was discarded

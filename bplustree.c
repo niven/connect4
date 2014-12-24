@@ -24,8 +24,11 @@ internal void write_database_header( database* db );
 #include "node_cache.c"
 #include "bplustree_utils.c"
 
-double database_cache_hit_ratio() {
-	return (double)counters.cache_hits / (double)(counters.cache_hits + counters.cache_misses);
+cache_stats get_database_cache_stats( database* db ) {
+
+	db->cstats.hit_ratio = (double)db->cstats.hits / (double)(db->cstats.hits + db->cstats.misses);
+	
+	return db->cstats;
 }
 /************** stuff that deals with the fact we store things on disk ********************/
 
@@ -178,8 +181,8 @@ database* database_create( const char* name ) {
 	memset( db->node_cache->buckets, 0, sizeof(db->node_cache->buckets) );
 	db->node_cache->num_stored = 0;
 	db->node_cache->free_list = NULL;
-	
-	
+	db->cstats = (struct cache_stats) { .hits = 0 }; // inits the rest to 0 as well
+	printf("FREE ENTRY FREES %llu\n", db->cstats.free_entry_frees );
 	// create a new bpt
 	node* first_node = new_node( db ); // get the next node id, and update count
 	db->header->root_node_id = first_node->id;
@@ -433,16 +436,20 @@ node* new_node( database* db ) {
 	return out;
 }
 
-void bpt_dump_cf() {
+void print_database_stats( database* db ) {
 	printf("BPT ORDER: %d, Node size: %lu bytes, CACHE_BUCKETS: %lu, CACHE_MAX: %lu (Cache max mem use: %lu MB)\n", ORDER, sizeof(node), CACHE_BUCKETS, CACHE_MAX, (CACHE_MAX * sizeof(node))/ (1024*1024));
-	printf("Total cache hits: %llu\n", counters.cache_hits);
-	printf("Total cache misses: %llu\n", counters.cache_misses);
-	printf("Cache hit ratio: %.2f%%\n", 100.0f * (double)counters.cache_hits / (double)(counters.cache_hits + counters.cache_misses) );
-	printf("Total cache evicts: %llu\n", counters.cache_evicts);
-	printf("Total cache entry allocs: %llu\n", counters.cache_entry_allocs);
-	printf("Total cache entry frees: %llu\n", counters.cache_entry_frees);
-	printf("Total cache free entry allocs: %llu\n", counters.cache_free_entry_allocs);
-	printf("Total cache free entry frees: %llu\n", counters.cache_free_entry_frees);
+
+	cache_stats stats = get_database_cache_stats( db );
+	printf("Total cache hits: %llu\n", stats.hits);
+	printf("Total cache misses: %llu\n", stats.misses);
+	printf("Cache hit ratio: %.2f%%\n", 100.0f * stats.hit_ratio );
+	printf("Total cache dirty evicts: %llu\n", stats.dirty_evicts);
+	printf("Total cache clean evicts: %llu\n", stats.clean_evicts);
+	printf("Total cache entry allocs: %llu\n", stats.entry_allocs);
+	printf("Total cache entry frees: %llu\n", stats.entry_frees);
+	printf("Total cache free entry allocs: %llu\n", stats.free_entry_allocs);
+	printf("Total cache free entry frees: %llu\n", stats.free_entry_frees);
+
 	printf("Total node creates: %llu\n", counters.node_creates);
 	printf("Total node loads: %llu\n", counters.node_loads);
 	printf("Total node writes: %llu\n", counters.node_writes);

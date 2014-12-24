@@ -59,6 +59,8 @@ internal void test_dupes() {
 	
 	free_board( current );
 	
+	print_database_stats( db );
+	
 	database_close( db );
 	
 }
@@ -106,6 +108,8 @@ internal void test_store_cmdline_seq( char* seq ) {
 	}
 	
 	free_board( current );
+
+	print_database_stats( db );
 	
 	database_close( db );
 }
@@ -120,13 +124,10 @@ int main(int argc, char** argv) {
 	// run cmd line stuff OR all tests
 	if( argc == 2 ){
 		test_store_cmdline_seq( argv[1] );
-		bpt_dump_cf();
 		exit( EXIT_SUCCESS );
 	}
 	
 	test_dupes();
 	
-	bpt_dump_cf();
-
 	printf("Done\n");
 }

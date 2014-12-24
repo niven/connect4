@@ -32,6 +32,7 @@ void print_board63( board63 b ) {
 	printf("%s\n", out);
 }
 
+// TODO(better encoding): encoding row based only needs 60 bits for the board, leaving 1 for draw, 1 for W win, 1 for B win meaning we save the state byte and also have a better numerical distribution of the boards across nodes (it packs them better I think leading to less node loading maybe)
 board63 encode_board( board* src ) {
 	
 	board63 dest = 0;

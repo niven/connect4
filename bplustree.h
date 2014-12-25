@@ -6,7 +6,7 @@
 
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
-#define ORDER 240
+#define ORDER 4
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
@@ -36,6 +36,8 @@ typedef struct cache_stats {
 	uint64_t entry_frees;
 	uint64_t free_entry_allocs;
 	uint64_t free_entry_frees;
+	size_t dirty_node_count;
+	size_t clean_node_count;
 } cache_stats;
 
 // nodes have pointers to other nodes, or to table rows

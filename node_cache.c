@@ -193,8 +193,10 @@ void put_node_in_cache( database* db, node* n ) {
 			// free the free_entry, the foo it points to and the entry in the bucket
 			if( fe->evictable_node->is_dirty ) {
 				db->cstats.dirty_evicts++;
+				db->cstats.dirty_node_count--;
 			} else {
 				db->cstats.clean_evicts++;				
+				db->cstats.clean_node_count--;
 			}
 			free_node( db, fe->evictable_node );
 			free( fe );
@@ -220,7 +222,14 @@ void put_node_in_cache( database* db, node* n ) {
 	i->node_id = n->id;
 	i->next = NULL;
 	
+	if( n->is_dirty ) {
+		db->cstats.dirty_node_count++;
+	} else {
+		db->cstats.clean_node_count++;
+	}
+	
 	// put it at the front of the chain
+	// TODO(research): is that the righ place? What does this mean for perf?
 	if( bucket != NULL ) {
 		i->next = bucket;
 	}
@@ -243,6 +252,7 @@ node* retrieve_node( database* db, size_t node_id ) {
 	// dump_cache( db->node_cache );
 	
 	assert( out->id != 0 );
+	printf("Cache contents: %lu dirty / %lu clean\n", db->cstats.dirty_node_count, db->cstats.clean_node_count );
 	
 	return out;
 }

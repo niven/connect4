@@ -178,8 +178,10 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	assert( node_counter == from->header->node_count );
 	assert( board_counter == from->header->table_row_count );
 	
+	// TODO(bug): This is kinda broken: printing stats needs to happen before freeing the db object
+	// But freeing the db causes the stats to possibly being broken.
 	printf("Stats for destination database:\n");
-	print_database_stats( to );
+	// print_database_stats( to );
 
 	database_close( from );
 	database_close( to );

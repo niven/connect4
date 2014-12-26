@@ -57,8 +57,9 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	// drop everywhere we can
 	// write to database_to
 	
+	cache_stats destination_stats = { .hits = 0 }; // inits rest to 0 too
 	database* from = database_open( database_from );
-	database* to = database_create( database_to );
+	database* to = database_create( database_to, &destination_stats );
 	
 	printf("Boards in database: %lu\n", from->header->table_row_count );
 	
@@ -263,7 +264,8 @@ int main( int argc, char** argv ) {
 	if( create_sequence != NULL ) {
 
 		board* current = new_board();
-		database* db = database_create( database_name );
+		cache_stats unused = { .hits = 0 };
+		database* db = database_create( database_name, &unused );
 
 		if( create_sequence[0] == 'e' ) {
 			database_put( db, current );

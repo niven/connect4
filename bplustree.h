@@ -207,7 +207,7 @@ typedef struct database {
 } database;
 
 // public API (always takes a root)
-database* database_create( const char* name );
+database* database_create( const char* name, cache_stats* stats );
 database* database_open( const char* name );
 void database_close( database* db );
 

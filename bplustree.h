@@ -4,6 +4,9 @@
 #include "base.h"
 #include "board.h"
 
+#include <stdint.h>
+#include <sys/types.h>
+
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
 #define ORDER 4

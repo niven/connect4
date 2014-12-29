@@ -9,7 +9,7 @@ void clear_cache( database* db, cache* c ) {
 	
 	print("Clearing the cache (%lu entries)", c->num_stored);
 	// free all items in the buckets
-	for( size_t b=0; b<CACHE_BUCKETS; b++ ) {
+	for( size_t b=0; b<CACHE_SIZE; b++ ) {
 		entry* current = c->buckets[b];
 		while( current != NULL ) {
 			// only free actual foos
@@ -52,7 +52,7 @@ void clear_cache( database* db, cache* c ) {
 void dump_cache( cache* c ) {
 	
 	print("Cache (%lu items):", c->num_stored);
-	for(size_t i=0; i<CACHE_BUCKETS; i++ ) {
+	for(size_t i=0; i<CACHE_SIZE; i++ ) {
 		entry* current = c->buckets[i];
 		print("bucket %lu %p", i, current);
 		while( current != NULL ) {
@@ -99,7 +99,7 @@ void release_node( database* db, node* n ) {
 	size_t node_id = n->id;
 	print("node %lu", node_id );
 
-	size_t b = hash( node_id ) % CACHE_BUCKETS;
+	size_t b = hash( node_id ) % CACHE_SIZE;
 	for( entry* i = c->buckets[b]; i != NULL; i = i->next ) {
 		print("checking bucket[%lu] = %lu", b, i->node_id );
 		if( i->node_id == node_id ) {
@@ -144,9 +144,9 @@ void put_node_in_cache( database* db, node* n ) {
 	assert( n != NULL );
 
 	cache* c = db->node_cache;
-	print("Putting node %lu (%p) in the cache (load %lu/%lu)", n->id, n, c->num_stored, CACHE_MAX);
+	print("Putting node %lu (%p) in the cache (load %lu/%lu)", n->id, n, c->num_stored, CACHE_SIZE);
 
-	if( c->num_stored == CACHE_MAX ) {
+	if( c->num_stored == CACHE_SIZE ) {
 		prints("Cache full");
 		// check the free list
 		if( c->free_list != NULL ) {
@@ -166,7 +166,7 @@ void put_node_in_cache( database* db, node* n ) {
 				c->free_list = fe->next;
 			}
 			// now our free list is ok again
-			size_t b = hash( fe->node_id ) % CACHE_BUCKETS;
+			size_t b = hash( fe->node_id ) % CACHE_SIZE;
 			print("Can evict node %lu from free list (it's in bucket %lu)", fe->node_id, b );
 			
 			// find and remove the entry from the bucket
@@ -212,7 +212,7 @@ void put_node_in_cache( database* db, node* n ) {
 		}
 
 	}
-	size_t b = hash( n->id ) % CACHE_BUCKETS;
+	size_t b = hash( n->id ) % CACHE_SIZE;
 	entry* bucket = c->buckets[b];
 	
 	entry* i = (entry*) malloc( sizeof(entry) );
@@ -250,7 +250,7 @@ node* retrieve_node( database* db, size_t node_id ) {
 	}
 
 	// dump_cache( db->node_cache );
-	assert( db->cstats.dirty_node_count + db->cstats.clean_node_count <= CACHE_MAX );
+	assert( db->cstats.dirty_node_count + db->cstats.clean_node_count <= CACHE_SIZE );
 	
 	assert( out->id != 0 );
 	printf("Cache contents: %lu dirty / %lu clean\n", db->cstats.dirty_node_count, db->cstats.clean_node_count );
@@ -262,7 +262,7 @@ node* get_node_from_cache( database* db, size_t node_id ) {
 	
 	cache* c = db->node_cache;
 	print("node id %lu", node_id );
-	size_t b = hash( node_id ) % CACHE_BUCKETS;
+	size_t b = hash( node_id ) % CACHE_SIZE;
 	for( entry* i = c->buckets[b]; i != NULL; i = i->next ) {
 		print("checking bucket[%lu] = node %lu", b, i->node_id);
 		if( i->node_id == node_id ) {

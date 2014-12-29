@@ -31,6 +31,7 @@ internal void update_counters( gen_counter* gc, board* b ) {
 }
 
 // take the boards of a generation, backtrack to previous gen for the perfect game
+#if 0
 internal void backtrack_perfect_game( int generation ) {
 	
 	/*
@@ -46,6 +47,7 @@ internal void backtrack_perfect_game( int generation ) {
 	*/
 	
 }
+#endif
 
 internal void next_gen( const char* database_from, const char* database_to ) {
 	
@@ -317,7 +319,7 @@ int main( int argc, char** argv ) {
 
 		char genfilename[256];
 		char idxfilename[256];
-		printf("Node order: %d\tCache buckets: %lu\tCache max: %lu\n", ORDER, CACHE_BUCKETS, CACHE_MAX);
+		printf("Node order: %d\tCache size: %lu\n", ORDER, CACHE_SIZE);
 		printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
 		for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 

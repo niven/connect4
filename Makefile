@@ -5,7 +5,7 @@ endif
 
 CC=clang
 DONTCARE_WARNINGS= -Wno-padded -Wno-format-nonliteral
-CFLAGS=-std=c99 -g -Weverything -pedantic ${DONTCARE_WARNINGS} -O3 ${MODEFLAG}
+CFLAGS=-std=c99 -g -Weverything -pedantic -ferror-limit=3 ${DONTCARE_WARNINGS} -O3 ${MODEFLAG}
 CMD=${CC} ${CFLAGS}
 
 all: libs db

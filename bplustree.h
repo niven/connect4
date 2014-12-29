@@ -149,9 +149,7 @@ TODO(profiling): keep track of count dirty/free nodes in cache, distribution of 
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_BUCKETS ((size_t) 8 )
-#define CACHE_MAX ((size_t) 8 )
-
+#define CACHE_SIZE ((size_t) 8 )
 
 // doubly linked list of refcount==0 entries in cache
 typedef struct free_entry {
@@ -174,7 +172,7 @@ typedef struct entry {
 
 // Cache with buckets, number stored and free list (entries with refcount 0)
 typedef struct cache {
-	entry* buckets[CACHE_BUCKETS];
+	entry* buckets[CACHE_SIZE];
 	size_t num_stored;
 	free_entry* free_list;
 } cache;

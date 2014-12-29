@@ -859,6 +859,7 @@ node* load_node_from_file( database* db, size_t node_id ) {
 	return n;
 }
 
+// TODO: move this to board.c
 board* load_row_from_file( board63 b63, FILE* in, off_t offset ) {
 
 	if( fseek( in, (long) offset, SEEK_SET ) ) {
@@ -866,7 +867,7 @@ board* load_row_from_file( board63 b63, FILE* in, off_t offset ) {
 		return NULL;
 	}
 	
-	char* buf[ SIZE_BOARD_STATE_BYTES + 2*NUM_WINLINE_BYTES ];
+	char buf[ BOARD_SERIALIZATION_NUM_BYTES ];
 	size_t elements_read = fread( buf, sizeof(buf), 1, in );
 	assert( elements_read == 1 );
 	
@@ -885,7 +886,7 @@ board* database_get( database* db, board63 key ) {
 	}
 	
 	off_t offset = file_offset_from_row_index( r->value.board_data_index );
-	print("Row offset: %llu", offset);
+	print("Board data offset: %llu", offset);
 
 	return load_row_from_file( key, db->table_file, offset );
 }

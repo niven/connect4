@@ -149,7 +149,7 @@ node* get_node( database* db, size_t node_id ) {
 void print_keys( node* n ) {
 	
 	printf("Node %lu - %lu key(s)%s\n", n->id, n->num_keys, n->is_leaf ? " {leaf}": "" );
-	printf("key                %s\n", n->is_leaf ? "offset in table" : "left node id");
+	printf("key                %s\n", n->is_leaf ? "Table row index" : "Left node id");
 	for(size_t i=0; i<n->num_keys; i++) {
 		printf("0x%017lx  %lu\n", n->keys[i], n->is_leaf ? n->pointers[i].board_data_index : n->pointers[i].child_node_id );
 	}

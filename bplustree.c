@@ -855,7 +855,7 @@ node* load_node_from_file( database* db, size_t node_id ) {
 
 	counters.node_loads++;
 
-	print("retrieved node %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", node_id, n, counters.node_creates, counters.node_loads, counters.node_frees );
+	print("retrieved node %lu", n->id );
 	return n;
 }
 
@@ -922,12 +922,18 @@ record* bpt_get( database* db, node* root, board63 key ) {
 		exit( EXIT_FAILURE );
 	}
 	r->key = key;
-	r->value = dest_node->pointers[key_index]; 
-	print("returning record { key = 0x%lx, value.table_row_index = %lu / value.child_node_id = %lu }", r->key, r->value.board_data_index, r->value.child_node_id);
+	r->value = dest_node->pointers[key_index];
+	if( dest_node->is_leaf ) {
+		print("returning record { key = 0x%lx, value.board_data_index = %lu }", r->key, r->value.board_data_index);
+	} else {
+		print("returning record { key = 0x%lx, value.child_node_id = %lu }", r->key, r->value.child_node_id);
+	}
 
+	// only release the node if it wasn't the root (since we get that passed in we leave it alone)
 	if( dest_node->id != root->id ) {
-		print("dest id %lu root id %lu", dest_node->id, root->id);
 		release_node( db, dest_node );
+	} else {
+		prints("Key was in the root node, not releasing.");
 	}
 	return r;
 	

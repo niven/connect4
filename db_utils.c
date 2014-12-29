@@ -103,31 +103,6 @@ command parse_command( char* s, params* p ) {
 	return UNKNOWN_COMMAND; //dunno
 }
 
-void print_row( FILE* in, size_t row_index ) {
-	
-	// off_t filepos = (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
-	//
-	// struct stat s;
-	// fstat( fileno(in), &s );
-	// if( s.st_size <= filepos ) {
-	// 	printf("No row %lu, file size is %llu\n", row_index, s.st_size );
-	// 	return;
-	// }
-	//
-	// if( fseek( in, (long) filepos, SEEK_SET ) ) {
-	// 	perror("fseek()");
-	// 	printf("Most likely no such row: %lu\n", row_index );
-	// 	return;
-	// }
-	//
-	//
-	// board* b = read_board_record( in );
-	// char buf[200];
-	// sprintf( buf, "Row %lu - key 0x%lx", row_index, encode_board( b ) );
-	// render( b, buf, false );
-}
-
-
 node* get_node( database* db, size_t node_id ) {
 
 	if( node_id == 0 ) {
@@ -188,7 +163,6 @@ int main( int argc, char** argv  ) {
 	params p;
 	database* db = NULL;
 	
-	size_t current_row = 0;
 	size_t node_id = 0;
 	node* current_node = NULL;
 	char prompt[256];
@@ -241,8 +215,13 @@ int main( int argc, char** argv  ) {
 						printf("No database open.\n");
 						break;
 					}
-					current_row = (size_t)atoi( p.param[0] );
-					print_row( db->table_file, current_row );
+					board63 board_key = (board63) strtoul( p.param[0], NULL, 16 );
+					board* result = database_get( db, board_key );
+					if( result != NULL ) { 
+						render( result, p.param[0], false );
+					} else {
+						printf("No such board: %s\n", p.param[0]);
+					}
 				break;
 
 				case NODE:
@@ -254,7 +233,7 @@ int main( int argc, char** argv  ) {
 						free( current_node );
 						current_node = NULL;
 					}
-					node_id = (size_t)atoi( p.param[0] );
+					node_id = strtoul( p.param[0], NULL, 0 );
 					current_node = get_node( db, node_id );
 				break;
 				

@@ -144,7 +144,7 @@ void put_node_in_cache( database* db, node* n ) {
 	assert( n != NULL );
 
 	cache* c = db->node_cache;
-	print("Putting node %lu (%p) in the cache (load %lu/%lu)", n->id, n, c->num_stored, CACHE_SIZE);
+	print("Putting node %lu in the cache (load %lu/%lu)", n->id, c->num_stored, CACHE_SIZE);
 
 	if( c->num_stored == CACHE_SIZE ) {
 		prints("Cache full");

@@ -138,6 +138,65 @@ void release_node( database* db, node* n ) {
 	free_node( db, n );
 }
 
+internal void evict_item( database* db, cache* c, free_entry** free_list ) {
+	
+	// TODO(performance): this is a very (if not the the most common) path when the cache is full, maybe something could be optimized
+	
+	// take the first thing in the free list
+	free_entry* fe = *free_list;
+	// remove it from the free list
+	if( (*free_list)->next == *free_list ) { // just single item
+		*free_list = NULL;
+	} else {
+		// [prev]<->[fe]<->[next]
+		//           ^
+		//           c->free_list
+		fe->prev->next = fe->next;
+		fe->next->prev = fe->prev;
+		*free_list = fe->next;
+	}
+	// now our free list is ok again
+	size_t b = hash( fe->node_id ) % CACHE_SIZE;
+	print("Can evict node %lu from free list (it's in bucket %lu)", fe->node_id, b );
+	
+	// find and remove the entry from the bucket
+	entry* entry_to_free = NULL;
+	if( c->buckets[b]->node_id == fe->node_id ) { // it's the head item
+		prints("Removing the entry from the bucket (it was the head)");
+		entry_to_free = c->buckets[b];
+		c->buckets[b] = c->buckets[b]->next; // just move to the next one
+	} else {
+		entry* current;
+		for(current = c->buckets[b]; current->next->node_id != fe->node_id; current = current->next ) {
+			print("Checking node %lu (next %lu)", current->node_id, current->next->node_id );
+			if( current->node_id == fe->node_id ) {
+				break;
+			}
+			assert( current->next != NULL ); // it has to be in this list
+		}
+		print("Found the bucket entry: node %lu (next node %lu)", current->node_id, current->next->node_id );
+		entry_to_free = current->next;
+		current->next = current->next->next; // skip over it
+	}
+	assert( entry_to_free != NULL );
+	
+	// free the free_entry, the foo it points to and the entry in the bucket
+	if( fe->evictable_node->is_dirty ) {
+		db->cstats.dirty_evicts++;
+		db->cstats.dirty_node_count--;
+	} else {
+		db->cstats.clean_evicts++;				
+		db->cstats.clean_node_count--;
+	}
+	free_node( db, fe->evictable_node );
+	free( fe );
+	db->cstats.free_entry_frees++;
+	
+	free( entry_to_free );
+	db->cstats.entry_frees++;
+	
+	c->num_stored--;
+}
 
 void put_node_in_cache( database* db, node* n ) {
 
@@ -150,63 +209,7 @@ void put_node_in_cache( database* db, node* n ) {
 		prints("Cache full");
 		// check the free list
 		if( c->free_list != NULL ) {
-			// TODO(performance): this is a very (if not the the most common) path when the cache is full, maybe something could be optimized
-			
-			// take the first thing in the free list
-			free_entry* fe = c->free_list;
-			// remove it from the free list
-			if( c->free_list->next == c->free_list ) { // just single item
-				c->free_list = NULL;
-			} else {
-				// [prev]<->[fe]<->[next]
-				//           ^
-				//           c->free_list
-				fe->prev->next = fe->next;
-				fe->next->prev = fe->prev;
-				c->free_list = fe->next;
-			}
-			// now our free list is ok again
-			size_t b = hash( fe->node_id ) % CACHE_SIZE;
-			print("Can evict node %lu from free list (it's in bucket %lu)", fe->node_id, b );
-			
-			// find and remove the entry from the bucket
-			entry* entry_to_free = NULL;
-			if( c->buckets[b]->node_id == fe->node_id ) { // it's the head item
-				prints("Removing the entry from the bucket (it was the head)");
-				entry_to_free = c->buckets[b];
-				c->buckets[b] = c->buckets[b]->next; // just move to the next one
-			} else {
-				entry* current;
-				for(current = c->buckets[b]; current->next->node_id != fe->node_id; current = current->next ) {
-					print("Checking node %lu (next %lu)", current->node_id, current->next->node_id );
-					if( current->node_id == fe->node_id ) {
-						break;
-					}
-					assert( current->next != NULL ); // it has to be in this list
-				}
-				print("Found the bucket entry: node %lu (next node %lu)", current->node_id, current->next->node_id );
-				entry_to_free = current->next;
-				current->next = current->next->next; // skip over it
-			}
-			assert( entry_to_free != NULL );
-			
-			// free the free_entry, the foo it points to and the entry in the bucket
-			if( fe->evictable_node->is_dirty ) {
-				db->cstats.dirty_evicts++;
-				db->cstats.dirty_node_count--;
-			} else {
-				db->cstats.clean_evicts++;				
-				db->cstats.clean_node_count--;
-			}
-			free_node( db, fe->evictable_node );
-			free( fe );
-			db->cstats.free_entry_frees++;
-			
-			free( entry_to_free );
-			db->cstats.entry_frees++;
-			
-			c->num_stored--; // we'll increment downbelow again
-			// fall out and carry on with inserting 
+			evict_item( db, c, &c->free_list );
 		} else {
 			prints("Nothing in the free list.");			
 		}

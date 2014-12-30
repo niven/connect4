@@ -8,7 +8,7 @@ internal void bpt_print_leaf( node* n, int indent ) {
 	for( size_t i=0; i<n->num_keys; i++ ) {
 		printf("0x%lx ", n->keys[i] );
 	}
-	printf("] - (%p) (#keys: %lu, parent id %lu)\n", n, n->num_keys, n->parent_node_id);
+	printf("] - (%p) (#keys: %lu, parent id %lu)\n", (void *)n, n->num_keys, n->parent_node_id);
 
 }
 
@@ -23,7 +23,7 @@ internal inline void bpt_print( database* db, node* start, int indent ) {
 		return;
 	}
 
-	printf("%sN(%lu) (%p) keys: %zu (parent id %lu)\n", ind, start->id, start, start->num_keys, start->parent_node_id);
+	printf("%sN(%lu) (%p) keys: %zu (parent id %lu)\n", ind, start->id, (void *)start, start->num_keys, start->parent_node_id);
 		
 	// print every key/node
 	node* n;

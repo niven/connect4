@@ -442,32 +442,32 @@ void print_database_stats( database* db ) {
 	printf("BPT ORDER: %d, Node size: %lu bytes, CACHE_SIZE: %lu (Cache max mem use: %.2f MB)\n", ORDER, sizeof(node), CACHE_SIZE, cache_memory_used);
 
 	cache_stats stats = get_database_cache_stats( db );
-	printf("Total cache hits: %llu\n", stats.hits);
-	printf("Total cache misses: %llu\n", stats.misses);
+	printf("Total cache hits: %llu\n", (unsigned long long)stats.hits);
+	printf("Total cache misses: %llu\n", (unsigned long long)stats.misses);
 	printf("Cache hit ratio: %.2f%%\n", 100.0f * stats.hit_ratio );
-	printf("Total cache dirty evicts: %llu\n", stats.dirty_evicts);
-	printf("Total cache clean evicts: %llu\n", stats.clean_evicts);
-	printf("Total cache entry allocs: %llu\n", stats.entry_allocs);
-	printf("Total cache entry frees: %llu\n", stats.entry_frees);
-	printf("Total cache free entry allocs: %llu\n", stats.free_entry_allocs);
-	printf("Total cache free entry frees: %llu\n", stats.free_entry_frees);
+	printf("Total cache dirty evicts: %llu\n", (unsigned long long)stats.dirty_evicts);
+	printf("Total cache clean evicts: %llu\n", (unsigned long long)stats.clean_evicts);
+	printf("Total cache entry allocs: %llu\n", (unsigned long long)stats.entry_allocs);
+	printf("Total cache entry frees: %llu\n", (unsigned long long)stats.entry_frees);
+	printf("Total cache free entry allocs: %llu\n", (unsigned long long)stats.free_entry_allocs);
+	printf("Total cache free entry frees: %llu\n", (unsigned long long)stats.free_entry_frees);
 
-	printf("Total node creates: %llu\n", counters.node_creates);
-	printf("Total node loads: %llu\n", counters.node_loads);
-	printf("Total node writes: %llu\n", counters.node_writes);
-	printf("Total node frees: %llu\n", counters.node_frees);
-	printf("Total key inserts: %llu\n", counters.key_inserts);
-	printf("Total get calls: %llu\n", counters.get_calls);
-	printf("Total splits: %llu\n", counters.splits);
-	printf("Total insert calls: %llu\n", counters.insert_calls);
-	printf("Total parent_inserts: %llu\n", counters.parent_inserts);
-	printf("Total generic key compares: %llu\n", counters.key_compares);
-	printf("Total leaf key compares: %llu\n", counters.leaf_key_compares);
-	printf("Total node key compares: %llu\n", counters.node_key_compares);
+	printf("Total node creates: %llu\n", (unsigned long long)counters.node_creates);
+	printf("Total node loads: %llu\n", (unsigned long long)counters.node_loads);
+	printf("Total node writes: %llu\n", (unsigned long long)counters.node_writes);
+	printf("Total node frees: %llu\n", (unsigned long long)counters.node_frees);
+	printf("Total key inserts: %llu\n", (unsigned long long)counters.key_inserts);
+	printf("Total get calls: %llu\n", (unsigned long long)counters.get_calls);
+	printf("Total splits: %llu\n", (unsigned long long)counters.splits);
+	printf("Total insert calls: %llu\n", (unsigned long long)counters.insert_calls);
+	printf("Total parent_inserts: %llu\n", (unsigned long long)counters.parent_inserts);
+	printf("Total generic key compares: %llu\n", (unsigned long long)counters.key_compares);
+	printf("Total leaf key compares: %llu\n", (unsigned long long)counters.leaf_key_compares);
+	printf("Total node key compares: %llu\n", (unsigned long long)counters.node_key_compares);
 	if( counters.key_inserts > 0 ) {
-		printf("Key compares (leaf+node) per key insert: %llu\n", counters.key_compares / counters.key_inserts );
+		printf("Key compares (leaf+node) per key insert: %llu\n", (unsigned long long) counters.key_compares / counters.key_inserts );
 	}
-	printf("Anycounter: %llu\n", counters.any);
+	printf("Anycounter: %llu\n", (unsigned long long)counters.any);
 	assert( (counters.node_creates + counters.node_loads) == counters.node_frees );
 }
 
@@ -942,8 +942,13 @@ record* bpt_get( database* db, node* root, board63 key ) {
 
 
 void print_index_from( database* db, size_t start_node_id ) {
+	int print;
 #ifdef VERBOSE		
-
+	print = 1;
+#else
+	print = 0;
+#endif
+	if (print) {
 	
 	node* start = retrieve_node( db, start_node_id );
 	if( start->is_leaf ) {
@@ -956,8 +961,7 @@ void print_index_from( database* db, size_t start_node_id ) {
 		printf("+---------------------- END NODE %lu --------------------------+\n", start->id);	
 	}
 	release_node( db, start );
-
-#endif
+	}
 }
 
 void print_index( database* db ) {	

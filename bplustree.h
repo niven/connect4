@@ -146,8 +146,9 @@ Committing nodes to disk:
 When a node is created or retrieved from disk we put it in the cache, when it has to be evicted we write it to disk.
 Whenever the cache is full and nothing can be evicted, on release it has to written to disk regardless.
 
-TODO(performance): keep the free items as dirty/clean and recycle the clean ones to avoid writes, and probably also in Most Frequently Used order maybe.
-TODO(profiling): keep track of count dirty/free nodes in cache, distribution of hits/misses/dirty per node
+TODO(performance): keep the free items as dirty/clean and recycle the clean ones to avoid writes, and probably also in Most Frequently Used order maybe,
+							or maybe even use the is_dirty flag as a counter (mabe things that are very dirty are hot? Dunno)
+TODO(profiling): distribution of hits/misses/dirty per node
 
 */
 

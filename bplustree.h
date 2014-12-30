@@ -169,9 +169,12 @@ typedef struct entry {
 		node* to_node;
 		free_entry* to_free_entry;
 	} ptr;
+	
+	struct entry* next;
+	// TODO(space): maybe node id could be 32 bits? refcount certainly is and that would save 8 bytes
+	// maybe even some kind of size_t node_id:54, size_t refcount:10 kind of thing
 	size_t node_id;
 	size_t refcount;
-	struct entry* next;
 } entry;
 
 // Cache with buckets, number stored and free list (entries with refcount 0)

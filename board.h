@@ -1,6 +1,8 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__	
 
+#include <sys/types.h>
+
 // TODO(clarity): explain what this is and what it is for
 #define NUM_BOARD_BYTES 11
 

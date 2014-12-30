@@ -1,11 +1,13 @@
 #include <assert.h>
 #include <ctype.h>
+#include <getopt.h>
 #include <math.h> /* ceil() */
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <strings.h>
 #include <sys/mman.h>
 #include <sys/stat.h>

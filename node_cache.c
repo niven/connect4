@@ -256,7 +256,7 @@ node* retrieve_node( database* db, size_t node_id ) {
 	assert( db->cstats.dirty_node_count + db->cstats.clean_node_count <= CACHE_SIZE );
 	
 	assert( out->id != 0 );
-	printf("Cache contents: %lu dirty / %lu clean\n", db->cstats.dirty_node_count, db->cstats.clean_node_count );
+	print("Cache contents: %lu dirty / %lu clean", db->cstats.dirty_node_count, db->cstats.clean_node_count );
 	
 	return out;
 }

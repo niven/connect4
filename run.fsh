@@ -18,7 +18,6 @@ for g in (seq $NUM_GENERATIONS)
 	set prev (math $g - 1)
 
 	./bfcf -d results/num_moves_$prev -n results/num_moves_$g
-	and ./bfcf -d gencounter.gc -g
 	and mv gencounter.gc results/gencounter_$g.gc
 	
 	# save diskspace by not keeping old stuff

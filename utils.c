@@ -6,10 +6,26 @@
 #include "base.h"
 #include "utils.h"
 
-// MurmurHash3 integer finalizer MOD cache buckets
-size_t hash(size_t i) {
+// MurmurHash3 integer finalizer MOD cache buckets (32/64 bit versions)
+#ifdef BUILD_32_BITS
 
-	assert( sizeof(size_t) <= 8 ); // check 64 bits
+size_t hash( size_t i ) {
+	
+	size_t h = i;
+	h ^= h >> 16;
+	h *= 0x85ebca6b;
+	h ^= h >> 13;
+	h *= 0xc2b2ae35;
+	h ^= h >> 16;
+	
+	return h;
+}
+
+#else
+
+size_t hash( size_t i ) {
+
+	assert( sizeof(size_t) == 8 ); // check 64 bits
 
 	size_t h = i;
 	h ^= h >> 33;
@@ -20,7 +36,7 @@ size_t hash(size_t i) {
 
 	return h;
 }
-
+#endif
 
 // GCD for only positive ints and not caring about m==n==0 returning 0
 size_t gcd(size_t m, size_t n) {

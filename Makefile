@@ -3,9 +3,15 @@ else
 	MODEFLAG=-D${MODE}
 endif
 
+ifeq (${ARCH},32)
+	ARCHFLAGS=-m32 -DBUILD_32_BITS
+else
+endif
+
+
 CC=clang
 DONTCARE_WARNINGS= -Wno-padded -Wno-format-nonliteral
-CFLAGS=-std=c99 -g -Weverything -pedantic -ferror-limit=3 ${DONTCARE_WARNINGS} -O3 ${MODEFLAG}
+CFLAGS=-std=c99 -g -Weverything -pedantic -ferror-limit=3 ${DONTCARE_WARNINGS} -O3 ${MODEFLAG} ${ARCHFLAGS}
 CMD=${CC} ${CFLAGS}
 
 all: libs db

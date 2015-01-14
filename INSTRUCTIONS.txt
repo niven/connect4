@@ -1,5 +1,7 @@
 Because I keep forgetting.
 
+Build for 32bit: make ARCH=32
+
 broken I think:
 run.fsh - Does 'the stuff'. Currently this is creating all possible boards so we can get some counts
 

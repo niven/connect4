@@ -211,8 +211,17 @@ typedef struct database {
 	cache_stats cstats;
 } database;
 
+typedef struct database_cursor {
+	
+	size_t current;
+	size_t num_records;
+	
+	// internal
+	size_t node_id;
+} database_cursor;
+
 // public API (always takes a root)
-database* database_create( const char* name, cache_stats* stats );
+database* database_create( const char* name );
 database* database_open( const char* name );
 void database_close( database* db );
 
@@ -222,6 +231,9 @@ size_t database_size( database* db );
 
 void print_database_stats( database* db );
 cache_stats get_database_cache_stats( database* db );
+
+void database_init_cursor( database* db, database_cursor* cursor );
+board63 database_get_record( database* db, database_cursor* cursor );
 
 // internal stuff (operates on nodes)
 node* new_node( database* db );

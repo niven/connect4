@@ -160,8 +160,7 @@ void database_open_files( database* db ) {
 
 }
 
-database* database_create( const char* name, cache_stats* stats ) {
-
+database* database_create( const char* name ) {
 
 	database* db = (database*) malloc( sizeof(database) );
 	if( db == NULL ) {
@@ -181,7 +180,6 @@ database* database_create( const char* name, cache_stats* stats ) {
 	memset( db->node_cache->buckets, 0, sizeof(db->node_cache->buckets) );
 	db->node_cache->num_stored = 0;
 	db->node_cache->free_list = NULL;
-	db->cstats = *stats;
 
 	// create a new bpt
 	node* first_node = new_node( db ); // get the next node id, and update count

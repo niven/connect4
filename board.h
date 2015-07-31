@@ -119,6 +119,7 @@ void print_winlines(wins* w);
 wins* new_winbits( void );
 
 board* drop( board* src, int x );
+int multidrop( board* b, board63* next_boards );
 void pass_turn( board* b );
 
 
@@ -137,7 +138,7 @@ void write_board_record( board* b, FILE* out );
 void print_board63( board63 b );
 board63 encode_board( board* src );
 board* decode_board63( board63 src );
-
+int is_end_state( board63 b );
 
 
 #endif

@@ -51,6 +51,44 @@ internal void backtrack_perfect_game( int generation ) {
 }
 #endif
 
+internal void next_gen_next_gen( const char* database_from, const char* database_to ) {
+
+	database* from = database_open( database_from );
+	database* to = database_create( database_to );
+	
+	// do all 7 moves in 1 drop, avoiding mallocing a brazillian new boards
+	board63 next_gen[7];
+	
+	// iterate over all boards in the db
+	struct database_cursor cursor;
+	database_init_cursor( from, &cursor );
+	
+	// gen next
+	while( cursor.current < cursor.num_records ) {
+		
+		board63 current_board63 = database_get_record( from, &cursor );
+		
+		if( is_end_state( current_board63 ) ) {
+			continue;
+		}
+		
+		board* current_board = decode_board63( current_board63 );
+		
+		int num_succesful_drops = multidrop( current_board, next_gen );
+		for( int i=0; i<num_succesful_drops; i++ ) {
+			// do stats
+			// store
+			bool was_insert = database_put( to, next_gen[i] );
+			
+		}
+		
+	}
+	
+	database_close( from );
+	database_close( to );
+	
+}
+
 internal void next_gen( const char* database_from, const char* database_to ) {
 	
 	gen_counter gc = { .total_boards = 0 }; // will init the rest to default, which is 0
@@ -61,9 +99,8 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 	// drop everywhere we can
 	// write to database_to
 	
-	cache_stats destination_stats = { .hits = 0 }; // inits rest to 0 too
 	database* from = database_open( database_from );
-	database* to = database_create( database_to, &destination_stats );
+	database* to = database_create( database_to );
 	
 	printf("Boards in database: %lu\n", from->header->table_row_count );
 	
@@ -112,6 +149,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 		node_counter++; // ensure we start at 1, since node 0 doesn't exist
 		off_t node_offset = file_offset_from_node( node_counter );
 		memcpy( current_node, &node_data[node_offset], sizeof(node) );
+		// TODO(optimisation): Why not just point into node_data? It's memmapped after all...
 		// printf("Current node %lu, leaf: %s\n", current_node->id, current_node->is_leaf ? "true" : "false");
 		
 		if( !current_node->is_leaf ) { // skip over nonleaf nodes
@@ -147,6 +185,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 			// try and make a move in every column
 			for(int col=0; col<COLS; col++) {
 				
+				// TODO(performance): I think just having a scratch board is better, that saves a billion mallocs
 				board* move_made = drop( start_board, col );
 
 				if( move_made == NULL ) {
@@ -268,8 +307,7 @@ int main( int argc, char** argv ) {
 	if( create_sequence != NULL ) {
 
 		board* current = new_board();
-		cache_stats unused = { .hits = 0 };
-		database* db = database_create( database_name, &unused );
+		database* db = database_create( database_name );
 
 		if( create_sequence[0] == 'e' ) {
 			database_put( db, current );

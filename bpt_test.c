@@ -35,14 +35,14 @@ internal void test_dupes() {
 	for(size_t i=0; i<COUNT; i++) {
 		board* next = drop( current, drops[i] );
 		render( next, "Board", false );
-		was_insert = database_put( db, next );
+		was_insert = database_store( db, next );
 		assert( was_insert );
 		free_board( next );
 
 		next = drop( current, drops[i] );
 		printf(">>>>>> Checking of dupe board is not inserted\n");
 		render( next, "Dupe board", false );
-		was_insert = database_put( db, next );
+		was_insert = database_store( db, next );
 		assert( !was_insert );
 		
 		free_board( current );
@@ -88,7 +88,7 @@ internal void test_store_cmdline_seq( char* seq ) {
 		}
 		render( next, element, false );
 
-		database_put( db, next );
+		database_store( db, next );
 		board63 key = encode_board( next );
 		printf(">>>>>>>> inserted key: %lx\n", key);
 		board* retrieved = database_get( db, key );

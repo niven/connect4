@@ -217,7 +217,8 @@ typedef struct database_cursor {
 	size_t num_records;
 	
 	// internal
-	size_t node_id;
+	char* node_data; // mmapped data
+	off_t index_file_size; // how much data
 } database_cursor;
 
 // public API (always takes a root)
@@ -225,7 +226,8 @@ database* database_create( const char* name );
 database* database_open( const char* name );
 void database_close( database* db );
 
-bool database_put( database* db, board* b );
+bool database_store( database* db, board* b );
+bool database_put( database* db, board63 key );
 board* database_get( database* db, board63 key );
 size_t database_size( database* db );
 
@@ -233,6 +235,8 @@ void print_database_stats( database* db );
 cache_stats get_database_cache_stats( database* db );
 
 void database_init_cursor( database* db, database_cursor* cursor );
+void database_dispose_cursor( database_cursor* cursor );
+
 board63 database_get_record( database* db, database_cursor* cursor );
 
 // internal stuff (operates on nodes)

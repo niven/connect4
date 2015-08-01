@@ -64,6 +64,7 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 	database_init_cursor( from, &cursor );
 	
 	// gen next
+	size_t num_unique_boards = 0;
 	while( cursor.current < cursor.num_records ) {
 		
 		board63 current_board63 = database_get_record( from, &cursor );
@@ -79,10 +80,14 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 			// do stats
 			// store
 			bool was_insert = database_put( to, next_gen[i] );
-			
+			if( was_insert ) {
+				num_unique_boards++;
+			}
 		}
 		
 	}
+	
+	database_dispose_cursor( &cursor );
 	
 	database_close( from );
 	database_close( to );
@@ -202,7 +207,7 @@ internal void next_gen( const char* database_from, const char* database_to ) {
 					// 	render( start_board, "FROM", false );
 					//
 					// }
-					bool was_insert = database_put( to, move_made );
+					bool was_insert = database_store( to, move_made );
 					gc.unique_boards += was_insert;
 
 					free_board( move_made );
@@ -249,6 +254,7 @@ int main( int argc, char** argv ) {
 
 	char* create_sequence = NULL;
 	char* generate = NULL;
+	char* dest_db = NULL;
 	int ascii_flag = 0;
 	int read_flag = 0;
 	int gc_flag = 0;
@@ -260,7 +266,7 @@ int main( int argc, char** argv ) {
 
 
 
-	while( (c = getopt (argc, argv, "gc:a:d:rn:") ) != -1 ) {
+	while( (c = getopt (argc, argv, "gc:a:d:rn:x") ) != -1 ) {
 
 		switch( c ) {
  		  case 'c': // create from drop sequence
@@ -275,9 +281,12 @@ int main( int argc, char** argv ) {
  		  case 'g': // show all generation counters
  			 gc_flag = 1;
  		    break;
-		  case 'n': // next moves for database
- 			 generate = optarg;
- 		    break;
+  		  case 'n': // next moves for database
+   			 generate = optarg;
+   		    break;
+  		  case 'x': // next moves for database
+   			 dest_db = optarg;
+   		    break;
   		  case 'r': // read filename
   			 read_flag = 1;
   		    break;
@@ -310,7 +319,7 @@ int main( int argc, char** argv ) {
 		database* db = database_create( database_name );
 
 		if( create_sequence[0] == 'e' ) {
-			database_put( db, current );
+			database_store( db, current );
 			free_board( current );
 			database_close( db );
 			exit( EXIT_SUCCESS );
@@ -325,7 +334,7 @@ int main( int argc, char** argv ) {
 				fprintf( stderr, "Illegal drop in column %d\n", col_index );
 				abort();
 			}
-			database_put( db, next );
+			database_store( db, next );
 			render( next, create_sequence, false );
 			//print_winlines( next->winlines );
 
@@ -337,9 +346,11 @@ int main( int argc, char** argv ) {
 		database_close( db );
 	}
 	
-	if( generate != NULL ) {
-		
+	if( generate != NULL ) {		
 		next_gen( database_name, generate );
+	}
+	if( dest_db != NULL ) {		
+		next_gen_next_gen( database_name, dest_db );
 	}
 
 	if( ascii_flag ) {

@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/file.h> /* flock */
+#include <sys/stat.h> /* stat */
+#include <sys/mman.h> /* memmap */
+
 
 #include "base.h"
 #include "utils.h"
@@ -257,11 +260,48 @@ void database_close( database* db ) {
 	
 }
 
+/*
+	Setup a cursor and mmap the entire index file (the one with all the board63's)
+*/
+void database_init_cursor( database* db, database_cursor* cursor ) {
+	
+	cursor->num_records = db->header->table_row_count;
+
+	cursor->current = 0;
+	cursor->node_data = NULL;
+
+	struct stat index_file_stat;
+	fstat( fileno(db->index_file), &index_file_stat );
+	// remember this so we can unmap the right amount
+	cursor->index_file_size = index_file_stat.st_size;
+
+	// TODO(research): find out if we can just effecitively mmap any file size
+	assert( index_file_stat.st_size < (off_t)gigabyte(1) );
+
+	// Check filesize against what the db thinks
+	assert( sizeof(*(db->header)) + (sizeof(node) * cursor->num_records) == (size_t)cursor->index_file_size );
+	
+	cursor->node_data = mmap( NULL, (size_t)cursor->index_file_size, PROT_READ, MAP_PRIVATE, fileno(db->index_file), 0 );
+	assert( cursor->node_data != MAP_FAILED );
+
+}
+
+void database_dispose_cursor( database_cursor* cursor ) {
+	
+	munmap( cursor->node_data, (size_t) cursor->index_file_size );
+	
+}
+
+board63 database_get_record( database* db, database_cursor* cursor ) {
+	
+	return 0;
+}
+
 // TODO(bug): find a good way to do this, and not chase bugs for hours.
 // global_variable board63 stored_keys[4096];
 // global_variable int num_stored_keys;
 
-bool database_put( database* db, board* b ) {
+bool database_store( database* db, board* b ) {
 
 	// the index knows if we already have this record,
 	// but in order to store it we need to have the offset in the table

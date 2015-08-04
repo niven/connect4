@@ -66,7 +66,7 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 	// gen next
 	size_t num_unique_boards = 0;
 	while( cursor.current < cursor.num_records ) {
-		
+		print("Retrieving record %lu", cursor.current);
 		board63 current_board63 = database_get_record( from, &cursor );
 		
 		if( is_end_state( current_board63 ) ) {
@@ -74,7 +74,7 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 		}
 		
 		board* current_board = decode_board63( current_board63 );
-		
+		render( current_board, "Multidrop for", false);
 		int num_succesful_drops = multidrop( current_board, next_gen );
 		for( int i=0; i<num_succesful_drops; i++ ) {
 			// do stats
@@ -266,7 +266,7 @@ int main( int argc, char** argv ) {
 
 
 
-	while( (c = getopt (argc, argv, "gc:a:d:rn:x") ) != -1 ) {
+	while( (c = getopt (argc, argv, "gc:a:d:rn:x:") ) != -1 ) {
 
 		switch( c ) {
  		  case 'c': // create from drop sequence

@@ -265,6 +265,7 @@ void database_close( database* db ) {
 */
 void database_init_cursor( database* db, database_cursor* cursor ) {
 	
+	print("Creating a cursor for db '%s'", db->name);
 	cursor->num_records = db->header->table_row_count;
 
 	cursor->current = 0;
@@ -277,7 +278,7 @@ void database_init_cursor( database* db, database_cursor* cursor ) {
 
 	// TODO(research): find out if we can just effecitively mmap any file size
 	assert( index_file_stat.st_size < (off_t)gigabyte(1) );
-
+	print("memmap %llu bytes", index_file_stat.st_size);
 	// Check filesize against what the db thinks
 	assert( sizeof(*(db->header)) + (sizeof(node) * cursor->num_records) == (size_t)cursor->index_file_size );
 	
@@ -294,7 +295,13 @@ void database_dispose_cursor( database_cursor* cursor ) {
 
 board63 database_get_record( database* db, database_cursor* cursor ) {
 	
+	cursor->current++;
+	
 	return 0;
+}
+
+bool database_put( database* db, board63 key ) {
+	return true;
 }
 
 // TODO(bug): find a good way to do this, and not chase bugs for hours.

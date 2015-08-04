@@ -301,7 +301,7 @@ internal void update_winlines( board* b, int move_y, int move_x ) {
 
 board* drop( board* src, int x ) {
 	
-	assert( !is_over( src) );
+	assert( !is_over( src ) );
 	
 	assert( x >= 0 );
 	assert( x < COLS );
@@ -333,6 +333,39 @@ board* drop( board* src, int x ) {
 
 	return dest;
 }
+
+int multidrop( board* src, board63* next_boards ) {
+	
+	assert( !is_over( src ) );
+
+	// check if if we can drop in a column for other columns
+	int succesful_drops = 0;
+	for( int x_index=0; x_index<COLS; x_index++ ) {
+		int y_index = -1;
+		for( int y=ROWS-1; y>=0; y-- ) { // seek down along column until we can hit occupied
+			if( src->squares[x_index][y] == EMPTY ) {
+				y_index = y;
+			} else {
+				break;
+			}
+		}
+		if( y_index != -1 ) {
+			print("Can drop at [%d, %d]", x_index, y_index );
+			succesful_drops++;
+			
+			// set it
+			src->squares[x_index][y_index] = current_player( src );
+			// copy it to dest
+			next_boards[succesful_drops] = encode_board( src );
+			// reset the move
+			src->squares[x_index][y_index] = EMPTY;
+		}
+		
+	}
+
+	return succesful_drops;
+}
+
 
 int is_over( board* b ) {
 	return is_draw( b ) || is_win_for( b, WHITE ) || is_win_for( b, BLACK );
@@ -418,4 +451,7 @@ unsigned char is_draw( board* b ) {
 	return (b->state & DRAW) ? 1 : 0;
 }
 
+bool is_end_state( board63 b ) {
+	return false;
+}
 

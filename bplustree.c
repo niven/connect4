@@ -300,8 +300,26 @@ board63 database_get_record( database* db, database_cursor* cursor ) {
 	return 0;
 }
 
+// This is more like store_in_index or something
 bool database_put( database* db, board63 key ) {
-	return true;
+	
+	print("key for this board: 0x%lx", key );
+	record r = { .key = key, .value.board_data_index = db->header->table_row_count };
+	print("loading root node ID %lu", db->header->root_node_id );
+
+	node* root_node = retrieve_node( db, db->header->root_node_id );
+	bool inserted = bpt_insert_or_update( db, root_node, r );
+	print("inserted: %s", inserted ? "true" : "false");
+	release_node( db, root_node );
+	
+	root_node = retrieve_node( db, db->header->root_node_id );
+	print( "after insert: root node id: %lu (%p)", db->header->root_node_id, root_node );
+	check_tree_correctness (db, root_node );
+	release_node( db, root_node );
+
+	print_index( db );
+	prints("done\n");
+	return inserted;		
 }
 
 // TODO(bug): find a good way to do this, and not chase bugs for hours.
@@ -704,6 +722,8 @@ void bpt_split( database* db, node* n ) {
 
 		n->parent_node_id = sibling->parent_node_id = new_root->id;
 
+		// update the root_node_id since this is the only place we create a new one
+		db->header->root_node_id = new_root->id;
 		// database_store_node( db, new_root );
 		release_node( db, new_root );
 

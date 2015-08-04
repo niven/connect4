@@ -76,6 +76,7 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 		board* current_board = decode_board63( current_board63 );
 		render( current_board, "Multidrop for", false);
 		int num_succesful_drops = multidrop( current_board, next_gen );
+		print("Got %d drops", num_succesful_drops);
 		for( int i=0; i<num_succesful_drops; i++ ) {
 			// do stats
 			// store

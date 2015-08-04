@@ -351,14 +351,13 @@ int multidrop( board* src, board63* next_boards ) {
 		}
 		if( y_index != -1 ) {
 			print("Can drop at [%d, %d]", x_index, y_index );
-			succesful_drops++;
-			
 			// set it
 			src->squares[x_index][y_index] = current_player( src );
 			// copy it to dest
 			next_boards[succesful_drops] = encode_board( src );
 			// reset the move
 			src->squares[x_index][y_index] = EMPTY;
+			succesful_drops++;
 		}
 		
 	}

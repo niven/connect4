@@ -132,12 +132,12 @@ int is_over( board* b );
 
 void write_board( char* filename, board* b );
 
-board* read_board_record_from_buf( board63 b63, char* buf, off_t pos );
+void read_board_record_from_buf( board63 b63, char* buf, off_t pos, board* dest );
 void write_board_record( board* b, FILE* out );
 
 void print_board63( board63 b );
 board63 encode_board( board* src );
-board* decode_board63( board63 src );
+void decode_board63( board63 src, board* dest );
 bool is_end_state( board63 b );
 
 

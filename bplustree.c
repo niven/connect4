@@ -905,21 +905,22 @@ node* load_node_from_file( database* db, size_t node_id ) {
 }
 
 // TODO: move this to board.c
-board* load_row_from_file( board63 b63, FILE* in, off_t offset ) {
+bool load_row_from_file( board63 b63, FILE* in, off_t offset, board* b ) {
 
 	if( fseek( in, (long) offset, SEEK_SET ) ) {
 		perror("fseek()");
-		return NULL;
+		return false;
 	}
 	
 	char buf[ BOARD_SERIALIZATION_NUM_BYTES ];
 	size_t elements_read = fread( buf, sizeof(buf), 1, in );
 	assert( elements_read == 1 );
 	
-	return read_board_record_from_buf( b63, (char*)buf, 0 );
+	
+	read_board_record_from_buf( b63, (char*)buf, 0, b );
 }
 
-board* database_get( database* db, board63 key ) {
+bool database_get( database* db, board63 key, board* b ) {
 	
 	print("loading root node ID %lu", db->header->root_node_id );
 	node* root_node = retrieve_node( db, db->header->root_node_id );
@@ -927,13 +928,13 @@ board* database_get( database* db, board63 key ) {
 	release_node( db, root_node );
 	
 	if( r == NULL ) {
-		return NULL;
+		return false;
 	}
 	
 	off_t offset = file_offset_from_row_index( r->value.board_data_index );
 	print("Board data offset: %llu", offset);
 
-	return load_row_from_file( key, db->table_file, offset );
+	load_row_from_file( key, db->table_file, offset, b );
 }
 
 record* bpt_get( database* db, node* root, board63 key ) {

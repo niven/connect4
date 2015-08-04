@@ -395,9 +395,9 @@ void render( board* b, const char* text, int show_winlines ) {
 	}
 }
 
-board* read_board_record_from_buf( board63 b63, char* buf, off_t pos ) {
+void read_board_record_from_buf( board63 b63, char* buf, off_t pos, board* b ) {
 	
-	board* b = decode_board63( b63 );
+	decode_board63( b63, &b );
 
 	// read state
 	b->state = buf[ pos ];	
@@ -408,7 +408,6 @@ board* read_board_record_from_buf( board63 b63, char* buf, off_t pos ) {
 	memcpy( &b->winlines->white, &buf[ (unsigned long long)pos + SIZE_BOARD_STATE_BYTES ], NUM_WINLINE_BYTES );
 	memcpy( &b->winlines->black, &buf[ (unsigned long long)pos + SIZE_BOARD_STATE_BYTES + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
 
-	return b;	
 }
 
 

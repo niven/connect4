@@ -228,7 +228,7 @@ void database_close( database* db );
 
 bool database_store( database* db, board* b );
 bool database_put( database* db, board63 key );
-board* database_get( database* db, board63 key );
+bool database_get( database* db, board63 key, board* b );
 size_t database_size( database* db );
 
 void print_database_stats( database* db );
@@ -243,7 +243,7 @@ board63 database_get_record( database* db, database_cursor* cursor );
 node* new_node( database* db );
 
 node* load_node_from_file( database* db, size_t node_id );
-board* load_row_from_file( board63 b63, FILE* in, off_t offset );
+bool load_row_from_file( board63 b63, FILE* in, off_t offset, board* b );
 
 bool bpt_put( node** root, record r );
 record* bpt_get( database* db, node* n, board63 key );

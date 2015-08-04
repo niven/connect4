@@ -51,6 +51,11 @@ internal void backtrack_perfect_game( int generation ) {
 }
 #endif
 
+// cpu timing
+// clock_t cpu_time_start = clock();
+// gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
+
+
 internal void next_gen_next_gen( const char* database_from, const char* database_to ) {
 
 	database* from = database_open( database_from );
@@ -73,9 +78,10 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 			continue;
 		}
 		
-		board* current_board = decode_board63( current_board63 );
-		render( current_board, "Multidrop for", false);
-		int num_succesful_drops = multidrop( current_board, next_gen );
+		board current_board;
+		decode_board63( current_board63, &current_board );
+		render( &current_board, "Multidrop for", false);
+		int num_succesful_drops = multidrop( &current_board, next_gen );
 		print("Got %d drops", num_succesful_drops);
 		for( int i=0; i<num_succesful_drops; i++ ) {
 			// do stats
@@ -85,7 +91,7 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 				num_unique_boards++;
 			}
 		}
-		free( current_board );
+
 	}
 	
 	database_dispose_cursor( &cursor );
@@ -95,160 +101,6 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 	
 }
 
-internal void next_gen( const char* database_from, const char* database_to ) {
-	
-	gen_counter gc = { .total_boards = 0 }; // will init the rest to default, which is 0
-	
-	clock_t cpu_time_start = clock();
-	// open database_from
-	// read 1 board
-	// drop everywhere we can
-	// write to database_to
-	
-	database* from = database_open( database_from );
-	database* to = database_create( database_to );
-	
-	printf("Boards in database: %lu\n", from->header->table_row_count );
-	
-	// Reading a board: go to the first node in the index, skip until you find a leaf node
-	// then iterate over the keys, looking up the offset for the board state+winlines
-	// construct a board and do the thing.
-	// whenever a node is done, go to the next one (and maybe skip until yout hit a leaf)
-	
-	struct stat index_file_stat;
-	struct stat table_file_stat;
-
-	fstat( fileno(from->table_file), &table_file_stat );
-	fstat( fileno(from->index_file), &index_file_stat );
-
-	// TODO(research): find out if we can just effecitively mmap any file size
-	assert( index_file_stat.st_size < (off_t)gigabyte(1) );
-	assert( table_file_stat.st_size < (off_t)gigabyte(1) );
-
-	// Check filesize against what the db thinks
-	assert( sizeof(*(from->header)) + (sizeof(node) * from->header->node_count) == (size_t)index_file_stat.st_size );
-	assert( (SIZE_BOARD_STATE_BYTES + 2*NUM_WINLINE_BYTES) * from->header->table_row_count == (size_t)table_file_stat.st_size);
-	
-
-	// mmap the index and the board
-
-	char* node_data = mmap( NULL, (size_t)index_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->index_file), 0 );
-	assert( node_data != MAP_FAILED );
-	char* board_data = mmap( NULL, (size_t)table_file_stat.st_size, PROT_READ, MAP_PRIVATE, fileno(from->table_file), 0 );
-	assert( board_data != MAP_FAILED );
-
-	// start at the first node
-	size_t node_counter = 0;
-	assert( from->header->node_count >= 1 );
-	node* current_node = (node*)malloc( sizeof(node) );
-
-	// just a timer to give regular output
-	time_t start_time = time( NULL ), next_time;
-	size_t boards_in_interval = 0;
-
-	// read every node
-	size_t board_counter = 0;
-	board* start_board = NULL;
-
-	while( node_counter < from->header->node_count ) {
-		
-		node_counter++; // ensure we start at 1, since node 0 doesn't exist
-		off_t node_offset = file_offset_from_node( node_counter );
-		memcpy( current_node, &node_data[node_offset], sizeof(node) );
-		// TODO(optimisation): Why not just point into node_data? It's memmapped after all...
-		// printf("Current node %lu, leaf: %s\n", current_node->id, current_node->is_leaf ? "true" : "false");
-		
-		if( !current_node->is_leaf ) { // skip over nonleaf nodes
-			continue;
-		}
-		
-		// printf("Reading %lu boards from node %lu\n", current_node->num_keys, current_node->id );
-	
-		// read every board
-		for( size_t key_index = 0; key_index < current_node->num_keys; key_index++ ) {
-			
-			board_counter++;
-			
-			// show some progress output
-			if( time( &next_time ) - start_time > 2 ) {
-				double percentage_done = 100.0f * ((double)board_counter / (double)from->header->table_row_count);
-				printf("Reading board %lu/%lu - %.2f%% (generating %.2f K boards/sec)\n", board_counter, from->header->table_row_count, percentage_done, (double)(boards_in_interval/1000)/(double)(next_time-start_time));
-				start_time = next_time;
-				boards_in_interval = 0;
-			} 		
-
-			// read this specific board
-			board63 encoded_board = current_node->keys[key_index];
-			off_t board_data_offset = file_offset_from_row_index( current_node->pointers[key_index].board_data_index );
-			// printf("Read form offset %llu\n", board_data_offset);
-			start_board = read_board_record_from_buf( encoded_board, board_data, board_data_offset );
-			// render( start_board, "Start", false );
-			// no need to go on after the game is over
-			if( start_board->state & OVER ) {
-				continue;
-			}
-			
-			// try and make a move in every column
-			for(int col=0; col<COLS; col++) {
-				
-				// TODO(performance): I think just having a scratch board is better, that saves a billion mallocs
-				board* move_made = drop( start_board, col );
-
-				if( move_made == NULL ) {
-					print("Can't drop in column %d (column full)", col);
-				} else {
-					boards_in_interval++;
-					assert( encode_board( move_made) != 0 ); // the empty board encodes to 0, so no other board should
-					// there are multiple ways to win that lead to the same board, but we are counting ways to win, not unique wins.
-					update_counters( &gc, move_made );
-
-					// if( is_over(move_made) ) {
-					// 	printf("over: %lx\n", encode_board( move_made) );
-					// 	render( move_made, "GAMEOVER", false );
-					// 	render( start_board, "FROM", false );
-					//
-					// }
-					bool was_insert = database_store( to, move_made );
-					gc.unique_boards += was_insert;
-
-					free_board( move_made );
-				}
-			}
-
-			// TODO(bug?): Not sure why this could be NULL
-			if( start_board != NULL ) {
-				free_board( start_board );
-			}
-			
-		}
-
-		// printf("Finished with node %lu\n", current_node->id);
-		
-	}
-	assert( node_counter == from->header->node_count );
-	assert( board_counter == from->header->table_row_count );
-	
-	// TODO(bug): This is kinda broken: printing stats needs to happen before freeing the db object
-	// But freeing the db causes the stats to possibly being broken.
-	printf("Stats for destination database:\n");
-	// print_database_stats( to );
-
-	database_close( from );
-	database_close( to );
-
-	printf("Generated %lu boards\n", gc.unique_boards);
-	
-
-	gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
-	cache_stats stats = get_database_cache_stats( to );
-	gc.cache_hit_ratio = stats.hit_ratio;
-	
-	munmap( node_data, (size_t) index_file_stat.st_size );
-	munmap( board_data, (size_t) table_file_stat.st_size );
-	
-	write_counter( &gc, "gencounter.gc" );
-
-}
 
 
 int main( int argc, char** argv ) {
@@ -347,9 +199,6 @@ int main( int argc, char** argv ) {
 		database_close( db );
 	}
 	
-	if( generate != NULL ) {		
-		next_gen( database_name, generate );
-	}
 	if( dest_db != NULL ) {		
 		next_gen_next_gen( database_name, dest_db );
 	}

@@ -73,13 +73,8 @@ board63 encode_board( board* src ) {
 	return dest;
 }
 
-board* decode_board63( board63 src ) {
+void decode_board63( board63 src, board* dest ) {
 	
-	board* dest = (board*)malloc( sizeof(board) );
-	if( dest == NULL ) {
-		perror("malloc()");
-		exit( EXIT_FAILURE );
-	}
 	dest->state = 0;
 	dest->winlines = NULL;
 
@@ -105,5 +100,4 @@ board* decode_board63( board63 src ) {
 		}
 	}
 
-	return dest;
 }

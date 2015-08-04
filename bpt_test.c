@@ -91,10 +91,11 @@ internal void test_store_cmdline_seq( char* seq ) {
 		database_store( db, next );
 		board63 key = encode_board( next );
 		printf(">>>>>>>> inserted key: %lx\n", key);
-		board* retrieved = database_get( db, key );
-		assert( retrieved != NULL );
-		render( retrieved, "result from db_get", false);
-		assert( encode_board( retrieved ) == key );
+		board retrieved;
+		bool exists = database_get( db, key, &retrieved );
+		assert( exists );
+		render( &retrieved, "result from db_get", false);
+		assert( encode_board( &retrieved ) == key );
 		
 		
 		free_board( current );

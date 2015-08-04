@@ -85,7 +85,7 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 				num_unique_boards++;
 			}
 		}
-		
+		free( current_board );
 	}
 	
 	database_dispose_cursor( &cursor );

@@ -10,6 +10,10 @@
 #define global_variable static
 
 typedef unsigned char bool;
+typedef uint8_t uint8;
+typedef uint16_t uint16;
+typedef uint32_t uint32;
+typedef uint64_t uint64;
 
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
 #define LAST_INDEX(array) (ARRAY_COUNT(array)-1)

@@ -497,6 +497,6 @@ unsigned char is_draw( board* b ) {
 }
 
 bool is_end_state( board63 b ) {
-	return false;
+	return b & 0x1; // the LSB indicates the game is a draw or win
 }
 

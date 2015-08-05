@@ -29,7 +29,7 @@ typedef unsigned char player;
 // then the next n bits indicate white (1), black (0)
 // full board will mean every column fillcount is 6 (3 bits) + 6 bits = 9 bits for a total of 7x9=63 bits
 // the remaining bit (LSB, so we can read col0 fillcount, values, col1 fillcount values, ...) indicates
-// having winlines follow.
+// the game is over (WIN/DRAW)
 // we use this for storing on disk to save space, but to operate it's nicer to have a normal board
 // so we convert at read/write time
 
@@ -37,10 +37,7 @@ typedef unsigned long board63;
 
 // TODO(confusion): two names is maybe confusing
 #define ENCODED_BOARD_SIZE (sizeof(board63))
-
-
-// TODO(correctness): find a way to compile time check ENCODED_BOARD_SIZE == KEY_SIZE just in case
-	
+		
 // bit fields for winlineIDs for White/Black
 // winlineID 0 is byte 0, LSB 0
 // winlineID 69 is byte 8 (69/8=8) LSB 5 (69%8=5)

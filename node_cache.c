@@ -49,6 +49,7 @@ void clear_cache( database* db, cache* c ) {
 
 
 #ifdef VERBOSE	
+void dump_cache( cache* c );
 void dump_cache( cache* c ) {
 	
 	print("Cache (%lu items):", c->num_stored);

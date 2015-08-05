@@ -52,31 +52,31 @@ winline winlines[NUM_WINLINES] = {
 	// total = 24+21+12+12=69
 };
 
-unsigned int* s2w[42];
+uint8* s2w[42];
 
 void map_squares_to_winlines() {
 	
-	int temp[13];
-	unsigned int wi = 0;
-	for( int i=0; i<42; i++ ) {
-		int x = i % 7;
-		int y = i / 7;
+	uint8 temp[13];
+	uint8 wi = 0;
+	for( uint8 i=0; i<42; i++ ) {
+		uint8 x = i % 7;
+		uint8 y = i / 7;
 		wi = 0;
-		for( int w=0; w<NUM_WINLINES; w++ ) {
-			for( int p=0; p<4; p++ ) {
+		for( uint8 w=0; w<NUM_WINLINES; w++ ) {
+			for( uint8 p=0; p<4; p++ ) {
 				if( winlines[w].x[p] == x && winlines[w].y[p] == y ) {
 					temp[wi] = w;
 					wi++;
 				}
 			}
 		}
-		s2w[i] = (unsigned int*) malloc( sizeof(int) * (wi+1) ); // first int is count
+		s2w[i] = (uint8*) malloc( sizeof(uint8) * (wi+1) ); // first int is count
 		if( s2w[i] == NULL ) {
 			perror("malloc()");
 			abort();
 		}
 		s2w[i][0] = wi; // first el is count
-		memcpy( s2w[i] + 1, temp, sizeof(int)*wi ); // copy indices
+		memcpy( s2w[i] + 1, temp, sizeof(uint8)*wi ); // copy indices
 	}
 	
 }
@@ -334,29 +334,76 @@ board* drop( board* src, int x ) {
 	return dest;
 }
 
+internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x ) {
+	
+	assert( move_y < ROWS );
+	assert( move_x < COLS );
+
+	uint8 state = 0;
+	
+	uint8 square_index = COLS*move_y + move_x;
+	player current = current_player( b );
+	
+	for( uint8 w=1; w<=s2w[square_index][0]; w++ ) {
+		uint8 winline_index = s2w[square_index][w];
+
+		// now check the winline of the move to see if there is a win
+		// print("Check win for %s", current == WHITE ? "White" : "Black");
+		// print_winline( winline_index );
+		uint8 in_line = 0;
+		for( uint8 i=0; i<4; i++ ) {
+			uint8 sx = winlines[winline_index].x[i];
+			uint8 sy = winlines[winline_index].y[i];
+			if( b->squares[sx][sy] == current ) {
+				in_line++;
+			}
+		}
+		// printf("In line in winline %d = %d\n", winline_index, in_line );
+		if( in_line == 4 ) {
+#ifdef VERBOSE
+			char scratch[200];
+			sprintf( scratch, "%s wins on line %d", current == WHITE ? "White" : "Black", winline_index );
+			render( b, scratch, false );
+#endif
+			state |= OVER; // game over
+			state |= current; // record winner
+		}
+	}	
+	
+	return state;
+}
+
 int multidrop( board* src, board63* next_boards ) {
 	
 	assert( !is_over( src ) );
 
 	// check if if we can drop in a column for other columns
 	int succesful_drops = 0;
-	for( int x_index=0; x_index<COLS; x_index++ ) {
-		int y_index = -1;
-		for( int y=ROWS-1; y>=0; y-- ) { // seek down along column until we can hit occupied
+	uint8 old_state;
+	for( uint8 x_index=0; x_index<COLS; x_index++ ) {
+		uint8 y_index = 0;
+		for( uint8 y=0; y < ROWS; y++ ) { // seek down along column until we can hit occupied
 			if( src->squares[x_index][y] == EMPTY ) {
-				y_index = y;
-			} else {
 				break;
+			} else {
+				y_index = y;
 			}
 		}
-		if( y_index != -1 ) {
-			print("Can drop at [%d, %d]", x_index, y_index );
+		if( y_index != ROWS ) {
+			// print("Can drop at [%d, %d]", x_index, y_index );
+			old_state = src->state;
 			// set it
 			src->squares[x_index][y_index] = current_player( src );
+			uint8 state = check_state_after_move( src, y_index, x_index );
+			if( state & OVER ) {
+				src->state = state;
+			}
 			// copy it to dest
 			next_boards[succesful_drops] = encode_board( src );
+
 			// reset the move
 			src->squares[x_index][y_index] = EMPTY;
+			src->state = old_state;
 			succesful_drops++;
 		}
 		
@@ -397,10 +444,10 @@ void render( board* b, const char* text, int show_winlines ) {
 
 void read_board_record_from_buf( board63 b63, char* buf, off_t pos, board* b ) {
 	
-	decode_board63( b63, &b );
+	decode_board63( b63, b );
 
 	// read state
-	b->state = buf[ pos ];	
+	b->state = (uint8)buf[ pos ];	
 
 	b->winlines = new_winbits();
 

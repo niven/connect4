@@ -46,6 +46,7 @@ typedef struct cache_stats {
 // nodes have pointers to other nodes, or to table rows
 // table rows are just row numbers (and we know the size, thus the offset in the table file)
 // both are the same, but this makes the code much more clear
+// TODO(memory): I think these could be uint32 if we are not going to store any board data in another table
 typedef union pointer {
 	size_t child_node_id;
 	size_t board_data_index;

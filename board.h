@@ -69,7 +69,7 @@ typedef struct winline {
 */
 typedef struct board {
 	unsigned char squares[COLS][ROWS];
-	char state; /* WHITE, BLACK, OVER, DRAW */
+	uint8 state; /* WHITE, BLACK, OVER, DRAW */
 	wins* winlines;
 } board;
 
@@ -102,7 +102,7 @@ extern char states[4];
 
 // 42 lists of ints, every one a list of [num_winlines, winline_0, winline_1, ...]
 // To explain what this actually *is*: This maps every square on the board to all winlines it can be part of.
-extern unsigned int* s2w[ ROWS * COLS ];
+extern uint8* s2w[ ROWS * COLS ];
 
 void map_squares_to_winlines( void );
 void free_s2w( void );

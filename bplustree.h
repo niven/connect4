@@ -61,6 +61,7 @@ typedef struct record {
 // TODO: maybe we can put the is_leaf first so we can check for leaf nodes easily in the file (well, wecould use an offset., but still)
 typedef struct node {
 	
+	// TODO(storage): the size_t's can be smaller types
 	size_t id;
 	
 	size_t parent_node_id;
@@ -72,6 +73,7 @@ typedef struct node {
 	board63 keys[ORDER];
 	pointer pointers[ORDER+1]; // points to a value, or to a node
 
+	// TODO(storage): these can be combined
 	bool is_leaf;
 	bool is_dirty; // modified since being read from disk
 } node;

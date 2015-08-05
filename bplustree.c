@@ -137,10 +137,10 @@ void database_set_filenames( database* db, const char* name ) {
 
 	int written = snprintf( db->index_filename, DATABASE_FILENAME_SIZE, "%s%s", name, ".c4_index" );
 	assert( written < DATABASE_FILENAME_SIZE );
-
+#if 0
 	written = snprintf( db->table_filename, DATABASE_FILENAME_SIZE, "%s%s", name, ".c4_table" );
 	assert( written < DATABASE_FILENAME_SIZE );
-	
+#endif
 }
 
 void database_open_files( database* db ) {
@@ -152,7 +152,8 @@ void database_open_files( database* db ) {
 		perror("flock()");
 		exit( EXIT_FAILURE );
 	}
-	
+
+#if 0
 	// When generating boards they are appended, but the db client/generation input also reads
 	FOPEN_CHECK( db->table_file, db->table_filename, "a+" );
 	print("opened table file %s", db->table_filename);
@@ -160,7 +161,7 @@ void database_open_files( database* db ) {
 		perror("flock()");
 		exit( EXIT_FAILURE );
 	}
-
+#endif
 }
 
 database* database_create( const char* name ) {
@@ -194,10 +195,11 @@ database* database_create( const char* name ) {
 	create_empty_file( db->index_filename );
 	print("created index file %s", db->index_filename);
 
+#if 0
 	// create the table file
 	create_empty_file( db->table_filename );
 	print("created table file %s", db->table_filename);
-
+#endif
 	// we are creating a new database file, so we will be only appending to the rows table
 	// and also only appending to the index.
 	database_open_files( db );
@@ -253,8 +255,9 @@ void database_close( database* db ) {
 	free( db->header );
 	
 	fclose( db->index_file );
+#if 0
 	fclose( db->table_file );
-
+#endif
 	print("closed %s", db->name);
 	free( db );
 	

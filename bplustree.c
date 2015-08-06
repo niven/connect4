@@ -51,10 +51,10 @@ off_t file_offset_from_row_index( size_t row_index ) {
 	return (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
 }
 
+#if 0
 void database_store_row( database* db, board* b ) {
 
 	print("appending board 0x%lx to file %s", encode_board(b), db->table_filename );
-
 	// we only append to this file and it is opened with "a", this means we shouldn't have to fseek()
 
 	// off_t offset = file_offset_from_row( row_index );
@@ -67,8 +67,8 @@ void database_store_row( database* db, board* b ) {
 	// }
 
 	write_board_record( b, db->table_file );
-	
 }
+#endif
 
 void database_store_node( database* db, node* n ) {
 
@@ -379,7 +379,7 @@ bool database_store( database* db, board* b ) {
 		// 	assert( stored_keys[i] != latest_key );
 		// }
 		// stored_keys[ num_stored_keys++ ] = latest_key;
-		database_store_row( db, b );
+//		database_store_row( db, b );
 		db->header->table_row_count++;
 	}
 
@@ -927,7 +927,7 @@ node* load_node_from_file( database* db, size_t node_id ) {
 	return n;
 }
 
-// TODO: move this to board.c
+#if 0
 bool load_row_from_file( board63 b63, FILE* in, off_t offset, board* b ) {
 
 	if( fseek( in, (long) offset, SEEK_SET ) ) {
@@ -942,8 +942,9 @@ bool load_row_from_file( board63 b63, FILE* in, off_t offset, board* b ) {
 	
 	read_board_record_from_buf( b63, (char*)buf, 0, b );
 }
+#endif
 
-bool database_get( database* db, board63 key, board* b ) {
+bool database_get( database* db, board63 key ) {
 	
 	print("loading root node ID %lu", db->header->root_node_id );
 	node* root_node = retrieve_node( db, db->header->root_node_id );
@@ -953,11 +954,15 @@ bool database_get( database* db, board63 key, board* b ) {
 	if( r == NULL ) {
 		return false;
 	}
+
 	
+
+#if 0	
 	off_t offset = file_offset_from_row_index( r->value.board_data_index );
 	print("Board data offset: %llu", offset);
 
 	load_row_from_file( key, db->table_file, offset, b );
+#endif
 }
 
 record* bpt_get( database* db, node* root, board63 key ) {

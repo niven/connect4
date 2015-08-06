@@ -47,6 +47,7 @@ typedef struct cache_stats {
 // table rows are just row numbers (and we know the size, thus the offset in the table file)
 // both are the same, but this makes the code much more clear
 // TODO(memory): I think these could be uint32 if we are not going to store any board data in another table
+// TODO: rename to value or something
 typedef union pointer {
 	size_t child_node_id;
 	size_t board_data_index;
@@ -203,10 +204,10 @@ typedef struct database {
 
 	char index_filename[DATABASE_FILENAME_SIZE];
 	FILE* index_file;
-
+#if 0
 	char table_filename[DATABASE_FILENAME_SIZE];
 	FILE* table_file;
-
+#endif
 	database_header* header;
 
 	// TODO(performance): find the optimal size for the cache
@@ -231,7 +232,7 @@ void database_close( database* db );
 
 bool database_store( database* db, board* b );
 bool database_put( database* db, board63 key );
-bool database_get( database* db, board63 key, board* b );
+bool database_get( database* db, board63 key );
 size_t database_size( database* db );
 
 void print_database_stats( database* db );

@@ -217,8 +217,9 @@ int main( int argc, char** argv  ) {
 					}
 					board63 board_key = (board63) strtoul( p.param[0], NULL, 16 );
 					board result;
-					bool exists = database_get( db, board_key, &result );
-					if( exists ) { 
+					bool exists = database_get( db, board_key );
+					if( exists ) {
+						decode_board63( board_key, &result );
 						render( &result, p.param[0], false );
 					} else {
 						printf("No such board: %s\n", p.param[0]);

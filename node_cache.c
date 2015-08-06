@@ -1,6 +1,6 @@
 internal void put_node_in_cache( database* db, node* n );
-internal node* retrieve_node( database* db, size_t node_id );
-internal node* get_node_from_cache( database* db, size_t node_id );
+internal node* retrieve_node( database* db, uint32 node_id );
+internal node* get_node_from_cache( database* db, uint32 node_id );
 internal void free_node( database* db, node* n );
 internal void clear_cache( database* db, cache* c );
 
@@ -9,16 +9,16 @@ void clear_cache( database* db, cache* c ) {
 	
 	print("Clearing the cache (%lu entries)", c->num_stored);
 	// free all items in the buckets
-	for( size_t b=0; b<CACHE_SIZE; b++ ) {
+	for( uint32 b=0; b<CACHE_SIZE; b++ ) {
 		entry* current = c->buckets[b];
 		while( current != NULL ) {
 			// only free actual foos
 			if( current->refcount != 0 ) {
-				print("   node %lu", current->ptr.to_node->id );
+				print("   node %u", current->ptr.to_node->id );
 				free_node( db, current->ptr.to_node );
 			}
 			// free the entry
-			print("   entry, node %lu", current->node_id );
+			print("   entry, node %u", current->node_id );
 			entry* next = current->next;
 			free( current );
 			db->cstats.entry_frees++;
@@ -35,7 +35,7 @@ void clear_cache( database* db, cache* c ) {
 		current->prev->next = NULL;
 	}
 	while( current != NULL ) {
-		print("   free_entry, node %lu", current->node_id );
+		print("   free_entry, node %u", current->node_id );
 		free_node( db, current->evictable_node );
 		free_entry* next = current->next;
 		free( current );
@@ -57,7 +57,7 @@ void dump_cache( cache* c ) {
 		entry* current = c->buckets[i];
 		print("bucket %lu %p", i, current);
 		while( current != NULL ) {
-			print("   entry key=%lu (node %lu) refcount: %lu", current->node_id, current->refcount == 0 ? current->ptr.to_free_entry->node_id : current->ptr.to_node->id, current->refcount );
+			print("   entry key=%u (node %u) refcount: %lu", current->node_id, current->refcount == 0 ? current->ptr.to_free_entry->node_id : current->ptr.to_node->id, current->refcount );
 			current = current->next;
 		}
 	}
@@ -66,7 +66,7 @@ void dump_cache( cache* c ) {
 	free_entry* current = c->free_list;
 	if( current != NULL ){
 		do {
-			print("   free entry: node %lu [next=%lu, prev=%lu]", current->evictable_node->id, current->next->node_id, current->prev->node_id );
+			print("   free entry: node %u [next=%u, prev=%u]", current->evictable_node->id, current->next->node_id, current->prev->node_id );
 			current = current->next;	
 		} while( current != c->free_list );
 	}
@@ -79,7 +79,7 @@ void dump_cache( cache* c ) {
 void free_node( database* db, node* n ) {
 
 	counters.node_frees++;
-	print("node %lu (%p) (dirty: %s) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, n->is_dirty ? "true" : "false", counters.node_creates, counters.node_loads, counters.node_frees );
+	print("node %u (%p) (dirty: %s) (cr: %llu/ld: %llu/fr: %llu)", n->id, n, n->is_dirty ? "true" : "false", counters.node_creates, counters.node_loads, counters.node_frees );
 
 	assert( counters.node_frees <= counters.node_loads + counters.node_creates );
 
@@ -97,12 +97,12 @@ void release_node( database* db, node* n ) {
 	assert( n->id != 0 );
 	
 	cache* c = db->node_cache;
-	size_t node_id = n->id;
-	print("node %lu", node_id );
+	uint32 node_id = n->id;
+	print("node %u", node_id );
 
 	size_t b = hash( node_id ) % CACHE_SIZE;
 	for( entry* i = c->buckets[b]; i != NULL; i = i->next ) {
-		print("checking bucket[%lu] = %lu", b, i->node_id );
+		print("checking bucket[%lu] = %u", b, i->node_id );
 		if( i->node_id == node_id ) {
 			assert( i->refcount > 0 );
 			// TODO(safety): maybe also assert the node* is correct?
@@ -135,7 +135,7 @@ void release_node( database* db, node* n ) {
 	}
 	
 	// was not in the cache, just free it
-	print("Node %lu was not in the cache, doing a normal free()", node_id);
+	print("Node %u was not in the cache, doing a normal free()", node_id);
 	free_node( db, n );
 }
 
@@ -158,7 +158,7 @@ internal void evict_item( database* db, cache* c, free_entry** free_list ) {
 	}
 	// now our free list is ok again
 	size_t b = hash( fe->node_id ) % CACHE_SIZE;
-	print("Can evict node %lu from free list (it's in bucket %lu)", fe->node_id, b );
+	print("Can evict node %u from free list (it's in bucket %lu)", fe->node_id, b );
 	
 	// find and remove the entry from the bucket
 	entry* entry_to_free = NULL;
@@ -169,13 +169,13 @@ internal void evict_item( database* db, cache* c, free_entry** free_list ) {
 	} else {
 		entry* current;
 		for(current = c->buckets[b]; current->next->node_id != fe->node_id; current = current->next ) {
-			print("Checking node %lu (next %lu)", current->node_id, current->next->node_id );
+			print("Checking node %u (next %u)", current->node_id, current->next->node_id );
 			if( current->node_id == fe->node_id ) {
 				break;
 			}
 			assert( current->next != NULL ); // it has to be in this list
 		}
-		print("Found the bucket entry: node %lu (next node %lu)", current->node_id, current->next->node_id );
+		print("Found the bucket entry: node %u (next node %u)", current->node_id, current->next->node_id );
 		entry_to_free = current->next;
 		current->next = current->next->next; // skip over it
 	}
@@ -204,7 +204,7 @@ void put_node_in_cache( database* db, node* n ) {
 	assert( n != NULL );
 
 	cache* c = db->node_cache;
-	print("Putting node %lu in the cache (load %lu/%lu)", n->id, c->num_stored, CACHE_SIZE);
+	print("Putting node %u in the cache (load %lu/%lu)", n->id, c->num_stored, CACHE_SIZE);
 
 	if( c->num_stored == CACHE_SIZE ) {
 		prints("Cache full");
@@ -242,7 +242,7 @@ void put_node_in_cache( database* db, node* n ) {
 	c->num_stored++;
 }
 
-node* retrieve_node( database* db, size_t node_id ) {
+node* retrieve_node( database* db, uint32 node_id ) {
 	
 	node* out = get_node_from_cache( db, node_id );
 	if( out == NULL ) {
@@ -262,18 +262,18 @@ node* retrieve_node( database* db, size_t node_id ) {
 	return out;
 }
 
-node* get_node_from_cache( database* db, size_t node_id ) {
+node* get_node_from_cache( database* db, uint32 node_id ) {
 	
 	cache* c = db->node_cache;
-	print("node id %lu", node_id );
+	print("node id %u", node_id );
 	size_t b = hash( node_id ) % CACHE_SIZE;
 	for( entry* i = c->buckets[b]; i != NULL; i = i->next ) {
-		print("checking bucket[%lu] = node %lu", b, i->node_id);
+		print("checking bucket[%lu] = node %u", b, i->node_id);
 		if( i->node_id == node_id ) {
 			
 			// either a foo, or a pointer to a free_entry
 			if( i->refcount == 0 ) {
-				print("Node %lu is on the free list: unfreeing", i->node_id );
+				print("Node %u is on the free list: unfreeing", i->node_id );
 				// it's one on the free list, means we need to remove it from there
 				free_entry* discard = i->ptr.to_free_entry;
 				assert( discard != NULL );
@@ -299,7 +299,7 @@ node* get_node_from_cache( database* db, size_t node_id ) {
 		}
 	}
 	
-	print("node %lu was not in the cache", node_id);
+	print("node %u was not in the cache", node_id);
 	return NULL;
 	
 }

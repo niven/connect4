@@ -14,7 +14,7 @@
 
 global_variable struct bpt_counters counters;
 
-internal void bpt_insert_node( database* db, node* n, board63 up_key, size_t node_to_insert_id );
+internal void bpt_insert_node( database* db, node* n, board63 up_key, uint32 node_to_insert_id );
 internal bool bpt_insert_or_update( database* db, node* n, record r );
 internal void bpt_split( database* db, node* node );
 internal void database_open_files( database* db );
@@ -73,14 +73,14 @@ void database_store_row( database* db, board* b ) {
 void database_store_node( database* db, node* n ) {
 
 	if( !n->is_dirty ) {
-		print("node %lu is not modified, don't have to write to disk", n->id );
+		print("node %u is not modified, don't have to write to disk", n->id );
 		return;
 	}
 
 	counters.node_writes++;
 	
 	// append_log( db, "database_store_node(): writing node %lu (parent %lu) to %s\n", n->id, n->parent_node_id, db->index_filename );
-	print("writing node %lu (leaf: %s) (parent %lu) to %s", n->id, n->is_leaf ? "true" : "false",  n->parent_node_id, db->index_filename );
+	print("writing node %u (leaf: %s) (parent %u) to %s", n->id, n->is_leaf ? "true" : "false",  n->parent_node_id, db->index_filename );
 	
 	off_t offset = file_offset_from_node( n->id );
 	size_t node_block_bytes = sizeof( node );
@@ -107,7 +107,7 @@ void database_store_node( database* db, node* n ) {
 void write_database_header( database* db ) {
 
 
-	print("nodes: %lu - rows: %lu - root node id: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
+	print("nodes: %u - rows: %llu - root node id: %u", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
 
 	fseek( db->index_file, 0, SEEK_SET );
 
@@ -232,7 +232,7 @@ database* database_open( const char* name ) {
 	
 	// read the root node, node_count and row_count
 	read_database_header( db );
-	print("nodes: %lu, rows: %lu, root node ID: %lu", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
+	print("nodes: %u, rows: %llu, root node ID: %u", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
 
 	db->node_cache = (cache*) malloc( sizeof(cache) );
 	// TODO(correctness): not sure if this needs to be explicitly zero'd or maybe calloc?
@@ -307,8 +307,8 @@ board63 database_get_record( database* db, database_cursor* cursor ) {
 bool database_put( database* db, board63 key ) {
 	
 	print("key for this board: 0x%lx", key );
-	record r = { .key = key, .value.board_data_index = db->header->table_row_count };
-	print("loading root node ID %lu", db->header->root_node_id );
+	record r = { .key = key, .value.board_data = 0xdeadbeef };
+	print("loading root node ID %u", db->header->root_node_id );
 
 	node* root_node = retrieve_node( db, db->header->root_node_id );
 	bool inserted = bpt_insert_or_update( db, root_node, r );
@@ -316,7 +316,7 @@ bool database_put( database* db, board63 key ) {
 	release_node( db, root_node );
 	
 	root_node = retrieve_node( db, db->header->root_node_id );
-	print( "after insert: root node id: %lu (%p)", db->header->root_node_id, root_node );
+	print( "after insert: root node id: %u (%p)", db->header->root_node_id, root_node );
 	check_tree_correctness (db, root_node );
 	release_node( db, root_node );
 
@@ -338,11 +338,11 @@ bool database_store( database* db, board* b ) {
 	board63 board_key = encode_board( b );
 	print("key for this board: 0x%lx", board_key );
 	
-	record r = { .key = board_key, .value.board_data_index = db->header->table_row_count };
+	record r = { .key = board_key, .value.board_data = 0xdeadbeef };
 
 	counters.key_inserts++;
 
-	print("loading root node ID %lu", db->header->root_node_id );
+	print("loading root node ID %u", db->header->root_node_id );
 	print_index( db );
 
 	node* root_node = retrieve_node( db, db->header->root_node_id );
@@ -355,16 +355,16 @@ bool database_store( database* db, board* b ) {
 	// to find the actual root
 	prints("finding possible new root after insert");
 	root_node = retrieve_node( db, db->header->root_node_id );
-	print("Current root node %lu (parent %lu)", root_node->id, root_node->parent_node_id );
+	print("Current root node %u (parent %u)", root_node->id, root_node->parent_node_id );
 	while( root_node->parent_node_id != 0 ) {
-		print("%lu is not the root, moving up to node %lu", root_node->id, root_node->parent_node_id );
+		print("%u is not the root, moving up to node %u", root_node->id, root_node->parent_node_id );
 		node* up = retrieve_node( db, root_node->parent_node_id );
 		release_node( db, root_node );
 		root_node = up;
 	}
 	db->header->root_node_id = root_node->id;
 	
-	print( "after insert: root node id: %lu (%p)", db->header->root_node_id, root_node );
+	print( "after insert: root node id: %u (%p)", db->header->root_node_id, root_node );
 	check_tree_correctness (db, root_node );
 	release_node( db, root_node );
 	
@@ -399,7 +399,7 @@ bool database_store( database* db, board* b ) {
 #define BINSEARCH_FOUND 1
 #define BINSEARCH_INSERT 2
 
-internal unsigned char binary_search( board63* keys, size_t num_keys, board63 target_key, size_t* key_index ) {
+internal unsigned char binary_search( board63* keys, uint32 num_keys, board63 target_key, uint32* key_index ) {
 
 	// no data at all
 	if( keys == NULL ) {
@@ -412,9 +412,9 @@ internal unsigned char binary_search( board63* keys, size_t num_keys, board63 ta
 		return BINSEARCH_INSERT;
 	}
 	
-	size_t span = num_keys;
-	size_t mid = num_keys / 2;
-	size_t large_half;
+	uint32 span = num_keys;
+	uint32 mid = num_keys / 2;
+	uint32 large_half;
 	while( span > 0 ) {
 
 		counters.key_compares++;
@@ -498,7 +498,7 @@ node* new_node( database* db ) {
 	// retrieve_node() / release_node()
 	put_node_in_cache( db, out );
 	
-	print("created node ID: %lu (%p) (cr: %llu/ld: %llu/fr: %llu)", out->id, out, counters.node_creates, counters.node_loads, counters.node_frees  );
+	print("created node ID: %u (%p) (cr: %llu/ld: %llu/fr: %llu)", out->id, out, counters.node_creates, counters.node_loads, counters.node_frees  );
 	return out;
 }
 
@@ -537,18 +537,18 @@ void print_database_stats( database* db ) {
 	assert( (counters.node_creates + counters.node_loads) == counters.node_frees );
 }
 
-void bpt_insert_node( database* db, node* n, board63 up_key, size_t node_to_insert_id ) {
+void bpt_insert_node( database* db, node* n, board63 up_key, uint32 node_to_insert_id ) {
 
 	assert( n->id != 0 );
 	check_tree_correctness( db, n );
 	
-	size_t insert_location;
+	uint32 insert_location;
 	int bsearch_result = binary_search( n->keys, n->num_keys, up_key, &insert_location );
 	assert( bsearch_result == BINSEARCH_FOUND || bsearch_result == BINSEARCH_INSERT );
-	print("insert key 0x%lx at position %zu, node at position %zu", up_key, insert_location, insert_location+1);
+	print("insert key 0x%lx at position %u, node at position %u", up_key, insert_location, insert_location+1);
 	
 	// move keys over (could be 0 if at end)
-	size_t elements_moving_right = n->num_keys - insert_location;
+	uint32 elements_moving_right = n->num_keys - insert_location;
 //	printf("Moving %zu elements\n", elements_moving_right);
 	
 	// move keys right and set the key in the open space
@@ -573,7 +573,7 @@ void bpt_insert_node( database* db, node* n, board63 up_key, size_t node_to_inse
 
 	// we might need to split (again)
 	if( n->num_keys == ORDER ) {
-		print("hit limit, have to split node %lu (%p)", n->id, n);
+		print("hit limit, have to split node %u (%p)", n->id, n);
 		bpt_split( db, n ); // propagate new node up
 		return;
 	} else {
@@ -588,7 +588,7 @@ void bpt_insert_node( database* db, node* n, board63 up_key, size_t node_to_inse
 void bpt_split( database* db, node* n ) {
 	counters.splits++;
 
-	print("node %lu: %s (%p)", n->id, (n->is_leaf ? "leaf" : "node"), n );
+	print("node %u: %s (%p)", n->id, (n->is_leaf ? "leaf" : "node"), n );
 	print_index( db ); // TODO(granularity): function to print starting from a specific node
 	/* 
 	Create a sibling node
@@ -668,9 +668,9 @@ void bpt_split( database* db, node* n ) {
 	// when splitting a !leaf: the middle item goes up (and we don't store that intermediate key)
 	// to in case of an ODD keycount: just floor(order/2) (example: 3 -> 1, 9 -> 4)
 	// in case of an EVEN keycount: the larger half: floor(order/2) (example: 4 -> 2, 10 -> 5)
-	size_t keys_moving_right = n->is_leaf ? ORDER/2 + 1 : ORDER/2;
-	size_t offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
-	print("moving %zu keys (%zu nodes/values) right from offset %zu (key = 0x%lx)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
+	uint32 keys_moving_right = n->is_leaf ? ORDER/2 + 1 : ORDER/2;
+	uint32 offset = n->is_leaf ? SPLIT_KEY_INDEX : SPLIT_NODE_INDEX;
+	print("moving %u keys (%u nodes/values) right from offset %u (key = 0x%lx)", keys_moving_right, keys_moving_right+1, offset, n->keys[offset] );
 
 	node* sibling = new_node( db );	
 	memcpy( &sibling->keys[0], &n->keys[offset], sizeof(board63)*keys_moving_right );
@@ -685,7 +685,7 @@ void bpt_split( database* db, node* n ) {
 	// their parent pointer updated
 	// TODO(performance): keep the subnodes around so update parent pointer doesn't hit the disk
 	if( !n->is_leaf ) {
-		for(size_t i=0; i < sibling->num_keys+1; i++ ) {
+		for(uint32 i=0; i < sibling->num_keys+1; i++ ) {
 			node* s = retrieve_node( db, sibling->pointers[i].child_node_id );
 			s->parent_node_id = sibling->id;
 			s->is_dirty = true; // changed the parent node so have to write this back at some point
@@ -698,9 +698,9 @@ void bpt_split( database* db, node* n ) {
 	n->is_dirty = true; // modified the num_keys (the rest is essentially garbage, but no point in clearing it)
 	
 #ifdef VERBOSE
-	print("created sibling node %lu (%p)", sibling->id, sibling);
+	print("created sibling node %u (%p)", sibling->id, sibling);
 	print_index_from( db, sibling->id );
-	print("node %lu left over (%p)", n->id, n);
+	print("node %u left over (%p)", n->id, n);
 	print_index_from( db, n->id );
 #endif
 	
@@ -713,7 +713,7 @@ void bpt_split( database* db, node* n ) {
 	// but if parent is NULL, we're at the root and need to make a new one
 	if( n->parent_node_id == 0 ) {
 
-		print("no parent, creating new root: ID %lu", db->header->node_count + 1 );
+		print("no parent, creating new root: ID %u", db->header->node_count + 1 );
 		node* new_root = new_node( db );
 
 		new_root->keys[0] = up_key; // since left must all be smaller
@@ -731,7 +731,7 @@ void bpt_split( database* db, node* n ) {
 		release_node( db, new_root );
 
 	} else {
-		print("inserting key 0x%lx + sibling node %lu into parent %lu", up_key, sibling->id, n->parent_node_id );
+		print("inserting key 0x%lx + sibling node %u into parent %u", up_key, sibling->id, n->parent_node_id );
 
 		// so what we have here is (Node)Key(Node) so we need to insert this into the
 		// parent as a package. Parent also has NkNkNkN and we've just replaced a Node
@@ -742,7 +742,7 @@ void bpt_split( database* db, node* n ) {
 		// now this is fairly doable, but it might lead to having to split the parent
 		// as well
 #ifdef VERBOSE
-		print("going to insert into parent node ID %lu", n->parent_node_id);
+		print("going to insert into parent node ID %u", n->parent_node_id);
 		print_index( db );
 #endif		
 		counters.parent_inserts++;
@@ -768,18 +768,18 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	assert( root->id != 0 );
 	
 	counters.insert_calls++;
-	print("node %lu - %p", root->id, root);
+	print("node %u - %p", root->id, root);
 
 //	printf("Insert %d:%d\n", r.key, r.value.value_int );
-	size_t k=0;
-	size_t insert_location = 0;
+	uint32 k=0;
+	uint32 insert_location = 0;
 
 	if( root->is_leaf ) {
 		print_index_from( db, root->id );
 
 		int bsearch_result = binary_search( root->keys, root->num_keys, r.key, &insert_location);
 		assert( bsearch_result == BINSEARCH_FOUND || bsearch_result == BINSEARCH_INSERT );
-		print("Leaf node - insert location: %lu", insert_location);
+		print("Leaf node - insert location: %u", insert_location);
 		
 		root->is_dirty = true; // we're inserting something in this node
 		
@@ -788,7 +788,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 		// if we're not appending but inserting, ODKU (we can't check on value since we might be at the end
 		// and the value there could be anything)
 		if( k < root->num_keys && root->keys[k] == r.key ) {
-			print("Overwrite of keys[%lu] = %lu (value %lu to %lu)", k, r.key, root->pointers[k].board_data_index, r.value.board_data_index );
+			print("Overwrite of keys[%u] = %lu (value %u to %u)", k, r.key, root->pointers[k].board_data, r.value.board_data );
 			root->pointers[k] = r.value;
 			
 			return false; // was not inserted but updated (or ignored)
@@ -806,7 +806,7 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 		// split if full 
 		// TODO(bug?): figure out when to save the root node, or maybe not at all?
 		if( root->num_keys == ORDER ) {
-			print("hit limit, have to split node %lu (%p)", root->id, root);
+			print("hit limit, have to split node %u (%p)", root->id, root);
 			bpt_split( db, root );
 		} else {
 			// database_store_node( db, root );
@@ -829,11 +829,11 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 	// descend a node
 	// TODO(bug?): maybe we don't always pick the right node here?
 	if( insert_location < root->num_keys ) {
-		print("Must be in node to the left of keys[%lu] = 0x%lx (node %lu)", insert_location, root->keys[insert_location], root->pointers[insert_location].child_node_id );
+		print("Must be in node to the left of keys[%u] = 0x%lx (node %u)", insert_location, root->keys[insert_location], root->pointers[insert_location].child_node_id );
 	} else {
-		print("Must be in node to the right of keys[%lu] = 0x%lx (node %lu)", insert_location-1, root->keys[insert_location-1], root->pointers[insert_location].child_node_id );
+		print("Must be in node to the right of keys[%u] = 0x%lx (node %u)", insert_location-1, root->keys[insert_location-1], root->pointers[insert_location].child_node_id );
 	}
-	print("Descending into node %lu", root->pointers[insert_location].child_node_id);
+	print("Descending into node %u", root->pointers[insert_location].child_node_id);
 
 	// TODO(performance): node cache
 	node* target = retrieve_node( db, root->pointers[insert_location].child_node_id );
@@ -855,9 +855,9 @@ internal node* bpt_find_node( database* db, node* root, board63 key ) {
 	
 	while( !current->is_leaf ) {
 
-		print("checking node %lu", current->id);
+		print("checking node %u", current->id);
 		
-		size_t node_index;
+		uint32 node_index;
 		switch( binary_search( current->keys, current->num_keys, key, &node_index) ) {
 			case BINSEARCH_FOUND:
 				node_index++; // if we hit the key, the correct node is to the right of that key
@@ -878,8 +878,8 @@ internal node* bpt_find_node( database* db, node* root, board63 key ) {
 			assert( key >= current->keys[node_index-1] );
 		}
 
-		size_t next_node_id = current->pointers[node_index].child_node_id;
-		print("Moving to child node %lu", next_node_id);
+		uint32 next_node_id = current->pointers[node_index].child_node_id;
+		print("Moving to child node %u", next_node_id);
 		// TODO(elegance): must be a way to do this more elegant and without the if
 		if( current != root ) {
 			release_node( db, current );
@@ -887,13 +887,13 @@ internal node* bpt_find_node( database* db, node* root, board63 key ) {
 		current = retrieve_node( db, next_node_id );
 	}
 	
-	print("returning node %lu", current->id);
+	print("returning node %u", current->id);
 	return current;
 }
 
 // TODO(performance): probably mmap() the file
 // TODO(performance): maybe avoid file locking? OSX doesn't come with __fsetlocking() though (maybe use open() to get O_EXLOCK ?)
-node* load_node_from_file( database* db, size_t node_id ) {
+node* load_node_from_file( database* db, uint32 node_id ) {
 
 	size_t node_block_bytes = sizeof( node );
 	off_t node_block_offset = file_offset_from_node( node_id );
@@ -912,7 +912,7 @@ node* load_node_from_file( database* db, size_t node_id ) {
 	if( objects_read != 1 ) {
 		perror("fread()");
 		free( n );
-		printf("unable to load node %lu\n", node_id);
+		printf("unable to load node %u\n", node_id);
 		exit( EXIT_FAILURE );
 	}
 	
@@ -923,7 +923,7 @@ node* load_node_from_file( database* db, size_t node_id ) {
 
 	counters.node_loads++;
 
-	print("retrieved node %lu", n->id );
+	print("retrieved node %u", n->id );
 	return n;
 }
 
@@ -946,7 +946,7 @@ bool load_row_from_file( board63 b63, FILE* in, off_t offset, board* b ) {
 
 bool database_get( database* db, board63 key ) {
 	
-	print("loading root node ID %lu", db->header->root_node_id );
+	print("loading root node ID %u", db->header->root_node_id );
 	node* root_node = retrieve_node( db, db->header->root_node_id );
 	record* r = bpt_get( db, root_node, key );
 	release_node( db, root_node );
@@ -972,7 +972,7 @@ record* bpt_get( database* db, node* root, board63 key ) {
 	counters.get_calls++;
 	print("key 0x%lx", key);
 	node* dest_node = bpt_find_node( db, root, key );
-	print("Found correct node %lu", dest_node->id);
+	print("Found correct node %u", dest_node->id);
 	//bpt_print( dest_node, 0 );
 	
 	if( dest_node == NULL ) {
@@ -981,7 +981,7 @@ record* bpt_get( database* db, node* root, board63 key ) {
 	}
 	
 	// now we have a leaf that *could* contain our key, but it's sorted
-	size_t key_index;
+	uint32 key_index;
 	if( BINSEARCH_FOUND != binary_search( dest_node->keys, dest_node->num_keys, key, &key_index ) ) {
 		prints("Key not found");
 		if( dest_node->id != root->id ) {
@@ -989,7 +989,7 @@ record* bpt_get( database* db, node* root, board63 key ) {
 		}
 		return NULL;
 	}
-	print("Key index: %lu", key_index);
+	print("Key index: %u", key_index);
 	
 	record* r = (record*)malloc( sizeof(record) );
 	if( r == NULL ) {
@@ -999,9 +999,9 @@ record* bpt_get( database* db, node* root, board63 key ) {
 	r->key = key;
 	r->value = dest_node->pointers[key_index];
 	if( dest_node->is_leaf ) {
-		print("returning record { key = 0x%lx, value.board_data_index = %lu }", r->key, r->value.board_data_index);
+		print("returning record { key = 0x%lx, value.board_data_index = %u }", r->key, r->value.board_data);
 	} else {
-		print("returning record { key = 0x%lx, value.child_node_id = %lu }", r->key, r->value.child_node_id);
+		print("returning record { key = 0x%lx, value.child_node_id = %u }", r->key, r->value.child_node_id);
 	}
 
 	// only release the node if it wasn't the root (since we get that passed in we leave it alone)
@@ -1015,7 +1015,7 @@ record* bpt_get( database* db, node* root, board63 key ) {
 }
 
 
-void print_index_from( database* db, size_t start_node_id ) {
+void print_index_from( database* db, uint32 start_node_id ) {
 	int print;
 #ifdef VERBOSE		
 	print = 1;
@@ -1026,13 +1026,13 @@ void print_index_from( database* db, size_t start_node_id ) {
 	
 	node* start = retrieve_node( db, start_node_id );
 	if( start->is_leaf ) {
-		printf("+---------------------- LEAF NODE %lu ------------------------------+\n", start->id);
+		printf("+---------------------- LEAF NODE %u ------------------------------+\n", start->id);
 		bpt_print_leaf( start, 0 );
-		printf("+---------------------- END LEAF NODE %lu --------------------------+\n", start->id);	
+		printf("+---------------------- END LEAF NODE %u --------------------------+\n", start->id);	
 	} else {
-		printf("+---------------------- NODE %lu ------------------------------+\n", start->id);
+		printf("+---------------------- NODE %u ------------------------------+\n", start->id);
 		bpt_print( db, start, 0 );
-		printf("+---------------------- END NODE %lu --------------------------+\n", start->id);	
+		printf("+---------------------- END NODE %u --------------------------+\n", start->id);	
 	}
 	release_node( db, start );
 	}

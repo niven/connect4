@@ -31,7 +31,7 @@ typedef struct params {
 
 command parse_command( char* s, params* p );
 void print_row( FILE* in, size_t row_index );
-node* get_node( database* db, size_t node_id );
+node* get_node( database* db, uint32 node_id );
 void make_prompt( char* buf, char* db_name, node* cur );
 void print_keys( node* n );
 void open_database( char* name, FILE** table, FILE** index );
@@ -103,7 +103,7 @@ command parse_command( char* s, params* p ) {
 	return UNKNOWN_COMMAND; //dunno
 }
 
-node* get_node( database* db, size_t node_id ) {
+node* get_node( database* db, uint32 node_id ) {
 
 	if( node_id == 0 ) {
 		printf("Node 0 is reserved, node IDs start at 1\n");
@@ -113,9 +113,9 @@ node* get_node( database* db, size_t node_id ) {
 	// TODO(API): do we want load node to just read, or figure out where to read from what? Maybe opp. for diff granularity
 	node* n = load_node_from_file( db, node_id );
 	if( n == NULL ) {
-		printf("Could not load node %lu\n", node_id );
+		printf("Could not load node %u\n", node_id );
 	} else {
-		printf("Node %lu - %lu key(s)%s\n", n->id, n->num_keys, n->is_leaf ? " {leaf}": "" );
+		printf("Node %u - %u key(s)%s\n", n->id, n->num_keys, n->is_leaf ? " {leaf}": "" );
 	}
 	return n;
 }
@@ -123,13 +123,13 @@ node* get_node( database* db, size_t node_id ) {
 // TODO(fix): make these print node ids
 void print_keys( node* n ) {
 	
-	printf("Node %lu - %lu key(s)%s\n", n->id, n->num_keys, n->is_leaf ? " {leaf}": "" );
+	printf("Node %u - %u key(s)%s\n", n->id, n->num_keys, n->is_leaf ? " {leaf}": "" );
 	printf("key                %s\n", n->is_leaf ? "Table row index" : "Left node id");
-	for(size_t i=0; i<n->num_keys; i++) {
-		printf("0x%016lx  %lu\n", n->keys[i], n->is_leaf ? n->pointers[i].board_data_index : n->pointers[i].child_node_id );
+	for(uint32 i=0; i<n->num_keys; i++) {
+		printf("0x%016lx  %u\n", n->keys[i], n->is_leaf ? n->pointers[i].board_data : n->pointers[i].child_node_id );
 	}
 	if( !n->is_leaf ) {
-		printf("Right node id      %lu\n", n->pointers[n->num_keys].child_node_id );
+		printf("Right node id      %u\n", n->pointers[n->num_keys].child_node_id );
 	}
 }
 
@@ -146,7 +146,7 @@ void make_prompt( char* buf, char* db_name, node* cur ) {
 	if( cur != NULL ) {
 		strcat( buf, " [" );
 		char nodeidstr[100];
-		sprintf( nodeidstr, "%lu", cur->id );
+		sprintf( nodeidstr, "%u", cur->id );
 		strcat( buf, nodeidstr );	
 		strcat( buf, "]" );
 	}
@@ -163,14 +163,14 @@ int main( int argc, char** argv  ) {
 	params p;
 	database* db = NULL;
 	
-	size_t node_id = 0;
+	uint32 node_id = 0;
 	node* current_node = NULL;
 	char prompt[256];
 	char db_name[256] = {0};
 	
 	if( argc == 2 ) {
 		db = database_open( argv[1] );
-		printf("Nodes %lu, Rows: %lu, Root Node ID: %lu\n", db->header->node_count, db->header->table_row_count, db->header->root_node_id);
+		printf("Nodes %u, Rows: %llu, Root Node ID: %u\n", db->header->node_count, db->header->table_row_count, db->header->root_node_id);
 	}
 	
 	do {
@@ -235,7 +235,7 @@ int main( int argc, char** argv  ) {
 						free( current_node );
 						current_node = NULL;
 					}
-					node_id = strtoul( p.param[0], NULL, 0 );
+					node_id = (uint32)strtol( p.param[0], NULL, 0 );
 					current_node = get_node( db, node_id );
 				break;
 				

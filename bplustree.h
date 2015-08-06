@@ -49,8 +49,8 @@ typedef struct cache_stats {
 // TODO(memory): I think these could be uint32 if we are not going to store any board data in another table
 // TODO: rename to value or something
 typedef union pointer {
-	size_t child_node_id;
-	size_t board_data_index;
+	uint32 child_node_id;
+	uint32 board_data;
 } pointer;
 
 typedef struct record {
@@ -62,12 +62,11 @@ typedef struct record {
 // TODO: maybe we can put the is_leaf first so we can check for leaf nodes easily in the file (well, wecould use an offset., but still)
 typedef struct node {
 	
-	// TODO(storage): the size_t's can be smaller types
-	size_t id;
+	uint32 id;
 	
-	size_t parent_node_id;
+	uint32 parent_node_id;
 
-	size_t num_keys; // number of entries
+	uint32 num_keys; // number of entries
 
 	// these are both 1 bigger than they can max be, but that makes
 	// splitting easier (just insert, then split)
@@ -162,7 +161,7 @@ TODO(profiling): distribution of hits/misses/dirty per node
 // doubly linked list of refcount==0 entries in cache
 typedef struct free_entry {
 	node* evictable_node;
-	size_t node_id;
+	uint32 node_id;
 	struct free_entry* next;
 	struct free_entry* prev;
 } free_entry;
@@ -177,7 +176,7 @@ typedef struct entry {
 	struct entry* next;
 	// TODO(space): maybe node id could be 32 bits? refcount certainly is and that would save 8 bytes
 	// maybe even some kind of size_t node_id:54, size_t refcount:10 kind of thing
-	size_t node_id;
+	uint32 node_id;
 	size_t refcount;
 } entry;
 
@@ -192,9 +191,10 @@ typedef struct cache {
 
 // TODO(convenience): maybe just put these directly in struct database
 typedef struct database_header {
-	size_t node_count;
-	size_t table_row_count;
-	size_t root_node_id;
+	uint32 root_node_id;
+
+	uint32 node_count;
+	uint64 table_row_count;
 } database_header;
 
 #define DATABASE_FILENAME_SIZE 256
@@ -246,7 +246,7 @@ board63 database_get_record( database* db, database_cursor* cursor );
 // internal stuff (operates on nodes)
 node* new_node( database* db );
 
-node* load_node_from_file( database* db, size_t node_id );
+node* load_node_from_file( database* db, uint32 node_id );
 bool load_row_from_file( board63 b63, FILE* in, off_t offset, board* b );
 
 bool bpt_put( node** root, record r );
@@ -254,7 +254,7 @@ record* bpt_get( database* db, node* n, board63 key );
 size_t bpt_size( database* db, node* n );
 
 void print_index( database* db );
-void print_index_from( database* db, size_t start_node_id );
+void print_index_from( database* db, uint32 start_node_id );
 
 void release_node( database* db, node* n );
 

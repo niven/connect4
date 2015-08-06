@@ -254,6 +254,7 @@ node* retrieve_node( database* db, uint32 node_id ) {
 	}
 
 	// dump_cache( db->node_cache );
+	// TODO(debug): this assert failed ONCE after I changed all the node IDs to uint32
 	assert( db->cstats.dirty_node_count + db->cstats.clean_node_count <= CACHE_SIZE );
 	
 	assert( out->id != 0 );

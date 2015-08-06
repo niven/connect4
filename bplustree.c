@@ -955,7 +955,7 @@ bool database_get( database* db, board63 key ) {
 		return false;
 	}
 
-	
+	return true;
 
 #if 0	
 	off_t offset = file_offset_from_row_index( r->value.board_data_index );

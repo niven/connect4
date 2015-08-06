@@ -131,9 +131,9 @@ int main( int argc, char** argv ) {
  		  case 'a': // render board from key
  			 key_str = optarg;
  		    break;
- 		  case 'g': // show all generation counters
- 			 gc_flag = 1;
- 		    break;
+		  case 'g': // show all generation counters
+			 gc_flag = 1;
+		    break;
   		  case 'n': // next moves for database
    			 generate = optarg;
    		    break;

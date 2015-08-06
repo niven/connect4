@@ -264,40 +264,57 @@ void database_close( database* db ) {
 }
 
 /*
-	Setup a cursor and mmap the entire index file (the one with all the board63's)
+	Setup a cursor to iterate over all items in a database
+	(order is random!)
 */
 void database_init_cursor( database* db, database_cursor* cursor ) {
 	
-	print("Creating a cursor for db '%s'", db->name);
+	print("Creating a cursor for database '%s'", db->name);
+	cursor->db = db;
 	cursor->num_records = db->header->table_row_count;
 
 	cursor->current = 0;
-	cursor->node_data = NULL;
+	cursor->current_node = NULL;
+	cursor->node_count = cursor->db->header->node_count;
+	cursor->current_node_id = 1;
+	print("Records: %lu, nodes: %u", cursor->num_records, cursor->node_count);
+	assert( cursor->current_node_id <= cursor->node_count );
 
+
+	// map the whole file
 	struct stat index_file_stat;
-	fstat( fileno(db->index_file), &index_file_stat );
+	fstat( fileno(cursor->db->index_file), &index_file_stat );
 	// remember this so we can unmap the right amount
 	cursor->index_file_size = index_file_stat.st_size;
+	cursor->data = mmap( NULL, (size_t)cursor->index_file_size, PROT_READ, MAP_PRIVATE, fileno(cursor->db->index_file), 0 );
+	if( cursor->data == MAP_FAILED ) {
+		perror("mmap()");	
+	}
 
-	// TODO(research): find out if we can just effecitively mmap any file size
-	assert( index_file_stat.st_size < (off_t)gigabyte(1) );
-	print("memmap %llu bytes", index_file_stat.st_size);
-	// Check filesize against what the db thinks
-	assert( sizeof(*(db->header)) + (sizeof(node) * cursor->num_records) == (size_t)cursor->index_file_size );
-	
-	cursor->node_data = mmap( NULL, (size_t)cursor->index_file_size, PROT_READ, MAP_PRIVATE, fileno(db->index_file), 0 );
-	assert( cursor->node_data != MAP_FAILED );
+	// index into the memmap
+	off_t node_block_offset = file_offset_from_node( cursor->current_node_id );
+	cursor->current_node = (node*) (cursor->data + node_block_offset);
+	assert( !cursor->current_node->is_dirty ); // flag should have been cleared when writing
+
+	print("loaded node %u", cursor->current_node->id );
 
 }
 
 void database_dispose_cursor( database_cursor* cursor ) {
 	
-	munmap( cursor->node_data, (size_t) cursor->index_file_size );
-	
+	print("Disposing cursor for database '%s'", cursor->db->name );
+	if( cursor->data != NULL ) {
+		munmap( cursor->data, (size_t)cursor->index_file_size );
+		cursor->data = NULL;
+		cursor->current_node = NULL;
+		cursor->current_node_id = 0;
+	}
 }
 
 board63 database_get_record( database* db, database_cursor* cursor ) {
 	
+	print("Current node/index: %u/%u", cursor->current_node->id, cursor->current_in_node );
+	cursor->current_in_node++;
 	cursor->current++;
 	
 	return 0;
@@ -811,7 +828,8 @@ bool bpt_insert_or_update( database* db, node* root, record r ) {
 		} else {
 			// database_store_node( db, root );
 		}
-		
+
+		db->header->table_row_count++;
 		return true; // an insert happened
 	}
 

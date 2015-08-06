@@ -110,6 +110,7 @@ int main( int argc, char** argv ) {
 	char* dest_db = NULL;
 	int ascii_flag = 0;
 	int read_flag = 0;
+	int test_cursor = 0;
 	int gc_flag = 0;
 	char* database_name = NULL;
 	char* key_str = NULL;
@@ -119,7 +120,7 @@ int main( int argc, char** argv ) {
 
 
 
-	while( (c = getopt (argc, argv, "gc:a:d:rn:x:") ) != -1 ) {
+	while( (c = getopt (argc, argv, "gc:a:d:rn:x:t") ) != -1 ) {
 
 		switch( c ) {
  		  case 'c': // create from drop sequence
@@ -134,6 +135,9 @@ int main( int argc, char** argv ) {
 		  case 'g': // show all generation counters
 			 gc_flag = 1;
 		    break;
+  		  case 't':
+  			 test_cursor = 1;
+  		    break;
   		  case 'n': // next moves for database
    			 generate = optarg;
    		    break;
@@ -164,6 +168,21 @@ int main( int argc, char** argv ) {
 
 	if( database_name == NULL ) {
 		fprintf( stderr, "Required database name missing (-d ...)\n");
+	}
+
+	if( test_cursor ) {
+		database* db = database_open( database_name );
+		database_cursor cursor;
+		database_init_cursor( db, &cursor );
+		
+		while( cursor.current < cursor.num_records ) {
+			print("Retrieving record %lu", cursor.current);
+			board63 current_board63 = database_get_record( db, &cursor );
+			print("Board63: 0x%016lx", current_board63);
+		}
+		
+		database_dispose_cursor( &cursor );
+		database_close( db);
 	}
 
 	if( create_sequence != NULL ) {
@@ -241,6 +260,8 @@ int main( int argc, char** argv ) {
 
 	free_s2w();
 	
+	long page_size = sysconf(_SC_PAGE_SIZE);
+	printf("Page size: %lu\n", page_size);
 	printf("Done\n");
 	
 	return 0;

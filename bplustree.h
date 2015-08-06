@@ -9,6 +9,7 @@
 
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
+// sysconf(_SC_PAGE_SIZE)
 #define ORDER 4
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
@@ -221,8 +222,13 @@ typedef struct database_cursor {
 	size_t num_records;
 	
 	// internal
-	char* node_data; // mmapped data
+	char* data; // mmapped
+	node* current_node; // offset into data
+	uint32 current_node_id;
+	uint32 current_in_node;
+	uint32 node_count;
 	off_t index_file_size; // how much data
+	database* db; // which db
 } database_cursor;
 
 // public API (always takes a root)

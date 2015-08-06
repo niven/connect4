@@ -222,7 +222,7 @@ typedef struct database_cursor {
 	size_t num_records;
 	
 	// internal
-	char* data; // mmapped
+	uint64* data; // mmapped
 	node* current_node; // offset into data
 	uint32 current_node_id;
 	uint32 current_in_node;

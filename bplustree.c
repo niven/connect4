@@ -286,14 +286,14 @@ void database_init_cursor( database* db, database_cursor* cursor ) {
 	fstat( fileno(cursor->db->index_file), &index_file_stat );
 	// remember this so we can unmap the right amount
 	cursor->index_file_size = index_file_stat.st_size;
-	cursor->data = mmap( NULL, (size_t)cursor->index_file_size, PROT_READ, MAP_PRIVATE, fileno(cursor->db->index_file), 0 );
+	cursor->data = (uint64*)mmap( NULL, (size_t)cursor->index_file_size, PROT_READ, MAP_PRIVATE, fileno(cursor->db->index_file), 0 );
 	if( cursor->data == MAP_FAILED ) {
 		perror("mmap()");	
 	}
 
 	// index into the memmap
 	off_t node_block_offset = file_offset_from_node( cursor->current_node_id );
-	cursor->current_node = (node*) (cursor->data + node_block_offset);
+	cursor->current_node = (node*) ( cursor->data + node_block_offset/(off_t)sizeof(uint64) );
 	print("loaded node %u", cursor->current_node->id );
 
 }
@@ -316,9 +316,9 @@ board63 database_get_record( database* db, database_cursor* cursor ) {
 		print("Node %u is not a leaf or done, loading node %u", cursor->current_node_id, cursor->current_node_id + 1);
 		cursor->current_node_id++;
 		off_t node_block_offset = file_offset_from_node( cursor->current_node_id );
-		cursor->current_node = (node*) (cursor->data + node_block_offset);
+		cursor->current_node = (node*) ( cursor->data + node_block_offset/(off_t)sizeof(uint64) );
 		cursor->current_in_node = 0;
-		print("Moved to node %u", cursor->current_node->id );
+		print("Moved to node %u, keys: %u", cursor->current_node->id, cursor->current_node->num_keys );
 		assert( cursor->current_node_id <= cursor->node_count );
 	}
 	

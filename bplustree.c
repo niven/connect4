@@ -294,8 +294,6 @@ void database_init_cursor( database* db, database_cursor* cursor ) {
 	// index into the memmap
 	off_t node_block_offset = file_offset_from_node( cursor->current_node_id );
 	cursor->current_node = (node*) (cursor->data + node_block_offset);
-	assert( !cursor->current_node->is_dirty ); // flag should have been cleared when writing
-
 	print("loaded node %u", cursor->current_node->id );
 
 }
@@ -313,11 +311,20 @@ void database_dispose_cursor( database_cursor* cursor ) {
 
 board63 database_get_record( database* db, database_cursor* cursor ) {
 	
-	print("Current node/index: %u/%u", cursor->current_node->id, cursor->current_in_node );
-	cursor->current_in_node++;
+	print("Node %u: record %u/%u", cursor->current_node->id, cursor->current_in_node, cursor->current_node->num_keys);
+	while( !cursor->current_node->is_leaf || cursor->current_in_node >= cursor->current_node->num_keys ) {
+		print("Node %u is not a leaf or done, loading node %u", cursor->current_node_id, cursor->current_node_id + 1);
+		cursor->current_node_id++;
+		off_t node_block_offset = file_offset_from_node( cursor->current_node_id );
+		cursor->current_node = (node*) (cursor->data + node_block_offset);
+		cursor->current_in_node = 0;
+		print("Moved to node %u", cursor->current_node->id );
+		assert( cursor->current_node_id <= cursor->node_count );
+	}
+	
 	cursor->current++;
 	
-	return 0;
+	return cursor->current_node->keys[cursor->current_in_node++];
 }
 
 // This is more like store_in_index or something

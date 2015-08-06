@@ -178,7 +178,11 @@ int main( int argc, char** argv ) {
 		while( cursor.current < cursor.num_records ) {
 			print("Retrieving record %lu", cursor.current);
 			board63 current_board63 = database_get_record( db, &cursor );
-			print("Board63: 0x%016lx", current_board63);
+			char buf[200];
+			sprintf(buf, "Record %lu\tboard63: 0x%016lx", cursor.current, current_board63);
+			board current_board;
+			decode_board63( current_board63, &current_board );
+			render( &current_board, buf, false);
 		}
 		
 		database_dispose_cursor( &cursor );

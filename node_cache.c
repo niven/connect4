@@ -184,9 +184,11 @@ internal void evict_item( database* db, cache* c, free_entry** free_list ) {
 	// free the free_entry, the foo it points to and the entry in the bucket
 	if( fe->evictable_node->is_dirty ) {
 		db->cstats.dirty_evicts++;
+		assert( db->cstats.dirty_node_count > 0 );
 		db->cstats.dirty_node_count--;
 	} else {
 		db->cstats.clean_evicts++;				
+		assert( db->cstats.clean_node_count > 0 );
 		db->cstats.clean_node_count--;
 	}
 	free_node( db, fe->evictable_node );

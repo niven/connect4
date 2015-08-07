@@ -368,7 +368,16 @@ internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x ) {
 			state |= OVER; // game over
 			state |= current; // record winner
 		}
-	}	
+	}
+	
+	// it's a draw if every top of the column is not empty
+	bool is_draw = true;
+	for( uint8 x=0; x<COLS; x++ ) {
+		is_draw = is_draw && (b->squares[x][ROWS-1] != EMPTY);
+	}
+	if( is_draw ) {
+		state |= DRAW;
+	}
 	
 	return state;
 }

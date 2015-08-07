@@ -170,6 +170,8 @@ int main( int argc, char** argv ) {
 		fprintf( stderr, "Required database name missing (-d ...)\n");
 	}
 
+	// ./bfcf -d database -t
+	// dump all keys in the database
 	if( test_cursor ) {
 		database* db = database_open( database_name );
 		database_cursor cursor;
@@ -219,7 +221,8 @@ int main( int argc, char** argv ) {
 		}
 		
 		free_board( next );
-		database_close( db );
+ 		database_close( db );
+		render( next, "Final Board", false );
 	}
 	
 	if( dest_db != NULL ) {		

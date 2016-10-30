@@ -3,7 +3,7 @@ so here's the thing
 the main program takes a board, generates new boards (with associated data)
 and then stores the boards in the database.
 
-The database can be queried to see if a board is alrewady there, and it's on disk and stuff so we can use
+The database can be queried to see if a board is already there, and it's on disk and stuff so we can use
 a database of boards to generate the next generation of boards and eventually end up with a DAG that has all possible
 board states in it, which is a pretty good result.
 
@@ -39,11 +39,11 @@ Gen	Boards
 0		1
 1		7
 2		49
-3		296
-4		1,539
-5		6,261
-6		25,362
-7		84,530
+3		238
+4		1,120
+5		4,263
+6		16,422
+7		54,859
 
 Let's see if we can get the number for gen 3 by thinking about it.
 
@@ -127,7 +127,6 @@ Cases:
  
 34*7 = 238 unique boards
 
-So the bug was the fact that finding the correct node sometimes hits the path where a key in the keys array is equal to the to-be-inserted key and then instead of going to the node on the right (since that stores all keys >= target) we would go left.
 
 Now actually generating boards without dupes: see latest_results.txt
 

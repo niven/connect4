@@ -99,8 +99,8 @@ void decode_board63( board63 src, board* dest ) {
 	}
 
 	if( total_pieces % 2 == 0 ) {
-		dest->state |= BLACK;		
+		dest->state |= WHITE;		
 	} else {
-		dest->state |= WHITE;
+		dest->state |= BLACK;
 	}
 }

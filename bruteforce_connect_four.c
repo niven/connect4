@@ -61,7 +61,6 @@ internal void next_generation( const char* database_from, const char* database_t
 	// cpu timing
 	clock_t cpu_time_start = clock();
 	
-	size_t num_unique_boards = 0;
 	while( cursor.current < cursor.num_records ) {
 		print("Retrieving record %lu", cursor.current);
 		board63 current_board63 = database_get_record( from, &cursor );
@@ -70,17 +69,13 @@ internal void next_generation( const char* database_from, const char* database_t
 			continue;
 		}
 		
-		board temp_board;
 		board current_board;
 		decode_board63( current_board63, &current_board );
-		render( &current_board, "Multidrop", false);
-		int num_succesful_drops = multidrop( &current_board, next_gen );
+		// render( &current_board, "Multidrop", false);
+		uint8 num_succesful_drops = multidrop( &current_board, next_gen );
 		print("Got %d drops", num_succesful_drops);
 		counters.total_boards += num_succesful_drops;
 		for( int i=0; i<num_succesful_drops; i++ ) {
-			decode_board63( next_gen[i], &temp_board );
-			render( &temp_board, "multiresult", false);
-			
 			// do stats
 			// store
 			bool was_insert = database_put( to, next_gen[i] );
@@ -162,8 +157,6 @@ int main( int argc, char** argv ) {
 		printf("Unknown command: %s\n", command);
 	}
 
-	printf("Done.\n");
-	
 	return EXIT_SUCCESS;
 }
 

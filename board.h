@@ -117,7 +117,7 @@ void print_winlines(wins* w);
 wins* new_winbits( void );
 
 board* drop( board* src, int x );
-int multidrop( board* b, board63* next_boards );
+uint8 multidrop( board* b, board63* next_boards );
 void pass_turn( board* b );
 
 

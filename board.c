@@ -424,12 +424,12 @@ internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x ) {
 	return state;
 }
 
-int multidrop( board* src, board63* next_boards ) {
+uint8 multidrop( board* src, board63* next_boards ) {
 	
 	assert( !is_over( src ) );
 
 	// check if if we can drop in a column for all columns
-	int succesful_drops = 0;
+	uint8 succesful_drops = 0;
 	uint8 old_state;
 	for( uint8 x_index=0; x_index<COLS; x_index++ ) {
 		uint8 y_index = ROWS; // set to the invalid value of ROWS

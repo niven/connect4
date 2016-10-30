@@ -157,7 +157,7 @@ TODO(profiling): distribution of hits/misses/dirty per node
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_MEM_LIMIT megabyte(16)
+#define CACHE_MEM_LIMIT megabyte(64)
 #define CACHE_SIZE ((size_t) CACHE_MEM_LIMIT / sizeof(node) )
 
 // doubly linked list of refcount==0 entries in cache

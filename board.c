@@ -409,6 +409,7 @@ internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x ) {
 #endif
 			state |= OVER; // game over
 			state |= current; // record winner
+			return state;
 		}
 	}
 	

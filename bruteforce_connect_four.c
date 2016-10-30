@@ -85,11 +85,21 @@ internal void next_generation( const char* database_from, const char* database_t
 		board current_board;
 		decode_board63( current_board63, &current_board );
 		// render( &current_board, "Multidrop", false);
+		unsigned char player = current_player( &current_board );
+
 		uint8 num_succesful_drops = multidrop( &current_board, next_gen );
 		print("Got %d drops", num_succesful_drops);
 		counters.total_boards += num_succesful_drops;
 		for( int i=0; i<num_succesful_drops; i++ ) {
 			// do stats
+			// TODO(performance): the counting can go when calculating all generations as you never need them
+			if( is_end_state( next_gen[i] ) ) {
+				if( player == WHITE ) {
+					counters.wins_white++;
+				} else {
+					counters.wins_black++;
+				}
+			}
 			// store
 			bool was_insert = database_put( to, next_gen[i] );
 			if( was_insert ) {

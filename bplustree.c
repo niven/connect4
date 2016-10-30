@@ -282,6 +282,7 @@ void database_init_cursor( database* db, database_cursor* cursor ) {
 	cursor->current_node = NULL;
 	cursor->node_count = cursor->db->header->node_count;
 	cursor->current_node_id = 1;
+	cursor->current_in_node = 0;
 	print("Records: %lu, nodes: %u", cursor->num_records, cursor->node_count);
 	assert( cursor->current_node_id <= cursor->node_count );
 
@@ -924,10 +925,10 @@ internal node* bpt_find_node( database* db, node* root, board63 key ) {
 // TODO(performance): probably mmap() the file
 // TODO(performance): maybe avoid file locking? OSX doesn't come with __fsetlocking() though (maybe use open() to get O_EXLOCK ?)
 node* load_node_from_file( database* db, uint32 node_id ) {
-
+print("loading block %lu\n", node_id);	
 	size_t node_block_bytes = sizeof( node );
 	off_t node_block_offset = file_offset_from_node( node_id );
-
+	print("nbo: %lu\n", node_block_offset);
 	// move the file cursor to the initial byte of the row
 	// fseek returns nonzero on failure
 	if( fseek( db->index_file, (long) node_block_offset, SEEK_SET ) ) {

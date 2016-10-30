@@ -100,7 +100,8 @@ internal void next_generation( const char* database_from, const char* database_t
 	}
 
 	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
-	
+	cache_stats cstats = get_database_cache_stats( to );
+	counters.cache_hit_ratio = cstats.hit_ratio;
 	
 	database_dispose_cursor( &cursor );
 	

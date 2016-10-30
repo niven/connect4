@@ -50,8 +50,6 @@ int main( int argc, char** argv ) {
 		exit( EXIT_SUCCESS );
 	}
 	 
-	map_squares_to_winlines(); // could be static but don't like doing it by hand 
-	 
 	board* next = NULL;
 	for( size_t i=0; i<strlen(moves); i++ ) {
 		int col_index = moves[i] - '0';

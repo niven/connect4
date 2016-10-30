@@ -428,16 +428,15 @@ int multidrop( board* src, board63* next_boards ) {
 	
 	assert( !is_over( src ) );
 
-	// check if if we can drop in a column for other columns
+	// check if if we can drop in a column for all columns
 	int succesful_drops = 0;
 	uint8 old_state;
 	for( uint8 x_index=0; x_index<COLS; x_index++ ) {
-		uint8 y_index = 0;
-		for( uint8 y=0; y < ROWS; y++ ) { // seek down along column until we can hit occupied
+		uint8 y_index = ROWS; // set to the invalid value of ROWS
+		for( uint8 y=0; y < ROWS; y++ ) { // seek up along column until we hit an empty
 			if( src->squares[x_index][y] == EMPTY ) {
-				break;
-			} else {
 				y_index = y;
+				break;
 			}
 		}
 		if( y_index != ROWS ) {
@@ -449,7 +448,7 @@ int multidrop( board* src, board63* next_boards ) {
 			if( state & OVER ) {
 				src->state = state;
 			}
-			// copy it to dest
+			// encode the board (this just retains the set locations plus the gameover bit)
 			next_boards[succesful_drops] = encode_board( src );
 
 			// reset the move

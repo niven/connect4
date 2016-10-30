@@ -14,7 +14,7 @@ make MODE=NDEBUG all
  ./store_boards --destination=results/generation_0
 
 for current in (seq $NUM_GENERATIONS)
-	echo "########################## Generation $g ##########################"
+	echo "########################## Generation $current ##########################"
 	set prev (math $current - 1)
 
 	./bfcf --source=results/generation_$prev --destination=results/generation_$current --command=nextgen

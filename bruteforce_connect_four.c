@@ -70,13 +70,17 @@ internal void next_generation( const char* database_from, const char* database_t
 			continue;
 		}
 		
+		board temp_board;
 		board current_board;
 		decode_board63( current_board63, &current_board );
-		render( &current_board, "Multidrop for", false);
+		render( &current_board, "Multidrop", false);
 		int num_succesful_drops = multidrop( &current_board, next_gen );
 		print("Got %d drops", num_succesful_drops);
 		counters.total_boards += num_succesful_drops;
 		for( int i=0; i<num_succesful_drops; i++ ) {
+			decode_board63( next_gen[i], &temp_board );
+			render( &temp_board, "multiresult", false);
+			
 			// do stats
 			// store
 			bool was_insert = database_put( to, next_gen[i] );

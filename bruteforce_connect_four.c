@@ -24,21 +24,19 @@
 internal void print_stats( const char* directory ) {
 	
 	char genfilename[256];
-	char idxfilename[256];
 	printf("Node order: %d\tCache size: %lu\n", ORDER, CACHE_SIZE);
 	printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
 	for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 
-		sprintf(idxfilename, "%s/num_moves_%d.c4_index", directory, g);
-		struct stat gstat;
-		if( stat( idxfilename, &gstat ) == -1 ) {
-			break;
-		}
 
 		sprintf(genfilename, "%s/gencounter_%d.gc", directory, g);
+		struct stat gstat;
+		if( stat( genfilename, &gstat ) == -1 ) {
+			break;
+		}
 		gen_counter* gc = read_counter( genfilename );
 
-		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0f*gc->cache_hit_ratio, (double)gstat.st_size/(double)megabyte(1) );
+		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0f*gc->cache_hit_ratio, (double)gc->database_size/(double)megabyte(1) );
 
 	}
 	
@@ -77,12 +75,13 @@ internal void next_generation( const char* database_from, const char* database_t
 		render( &current_board, "Multidrop for", false);
 		int num_succesful_drops = multidrop( &current_board, next_gen );
 		print("Got %d drops", num_succesful_drops);
+		counters.total_boards += num_succesful_drops;
 		for( int i=0; i<num_succesful_drops; i++ ) {
 			// do stats
 			// store
 			bool was_insert = database_put( to, next_gen[i] );
 			if( was_insert ) {
-				num_unique_boards++;
+				counters.unique_boards++;
 			}
 		}
 
@@ -90,10 +89,21 @@ internal void next_generation( const char* database_from, const char* database_t
 
 	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 	
+	
 	database_dispose_cursor( &cursor );
 	
 	database_close( from );
 	database_close( to );
+
+	struct stat gstat;
+	char index_filename[256];
+	sprintf(index_filename, "%s.c4_index", database_to);
+	
+	int stat_result = stat( index_filename, &gstat);
+	assert( stat_result != -1 );
+	counters.database_size = gstat.st_size;
+	
+	write_counter( &counters, "gencounter.gc" );
 	
 }
 
@@ -148,11 +158,8 @@ int main( int argc, char** argv ) {
 		printf("Unknown command: %s\n", command);
 	}
 
-
-	long page_size = sysconf(_SC_PAGE_SIZE);
-	printf("Page size: %lu\n", page_size);
 	printf("Done.\n");
 	
-	return 0;
+	return EXIT_SUCCESS;
 }
 

@@ -67,7 +67,8 @@ internal void next_generation( const char* database_from, const char* database_t
 	
 	// gen next
 	gen_counter counters;
-	
+	memset( &counters, 0, sizeof(gen_counter) );	
+
 	// cpu timing
 	clock_t cpu_time_start = clock();
 	

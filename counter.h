@@ -3,7 +3,7 @@
 
 typedef struct gen_counter {
 	double cpu_time_used;
-	off_t database_size;
+	unsigned long database_size;
 	double cache_hit_ratio;
 	unsigned long total_boards;
 	unsigned long unique_boards;

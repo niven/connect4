@@ -1,3 +1,6 @@
+// in order to fileno() we need a non-C99 feature
+#define _POSIX_SOURCE
+
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>

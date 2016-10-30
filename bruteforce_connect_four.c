@@ -112,7 +112,7 @@ internal void next_generation( const char* database_from, const char* database_t
 	
 	int stat_result = stat( index_filename, &gstat);
 	assert( stat_result != -1 );
-	counters.database_size = gstat.st_size;
+	counters.database_size = (unsigned long)gstat.st_size;
 	
 	write_counter( &counters, "gencounter.gc" );
 	

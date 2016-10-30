@@ -10,7 +10,7 @@
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
 // sysconf(_SC_PAGE_SIZE)
-#define ORDER 64
+#define ORDER 256
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 
@@ -157,7 +157,8 @@ TODO(profiling): distribution of hits/misses/dirty per node
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_SIZE ((size_t) 8 )
+#define CACHE_MEM_LIMIT megabyte(16)
+#define CACHE_SIZE ((size_t) CACHE_MEM_LIMIT / sizeof(node) )
 
 // doubly linked list of refcount==0 entries in cache
 typedef struct free_entry {

@@ -1,5 +1,7 @@
-// in order to fileno() we need a non-C99 feature
-#define _POSIX_SOURCE 200112L
+#ifdef __linux
+	// in order to fileno() we need a non-C99 feature
+	#define _POSIX_SOURCE 200112L
+#endif
 
 #include <assert.h>
 #include <stdlib.h>

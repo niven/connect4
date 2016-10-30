@@ -404,7 +404,7 @@ bool database_store( database* db, board* b ) {
 		// }
 		// stored_keys[ num_stored_keys++ ] = latest_key;
 //		database_store_row( db, b );
-		db->header->table_row_count++;
+		// db->header->table_row_count++;
 	}
 
 	return inserted;

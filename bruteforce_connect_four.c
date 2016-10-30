@@ -45,7 +45,7 @@ internal void print_stats( const char* directory ) {
 }
 
 
-internal void next_gen_next_gen( const char* database_from, const char* database_to ) {
+internal void next_generation( const char* database_from, const char* database_to ) {
 
 	database* from = database_open( database_from );
 	database* to = database_create( database_to );
@@ -58,6 +58,11 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 	database_init_cursor( from, &cursor );
 	
 	// gen next
+	gen_counter counters;
+	
+	// cpu timing
+	clock_t cpu_time_start = clock();
+	
 	size_t num_unique_boards = 0;
 	while( cursor.current < cursor.num_records ) {
 		print("Retrieving record %lu", cursor.current);
@@ -82,6 +87,8 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 		}
 
 	}
+
+	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 	
 	database_dispose_cursor( &cursor );
 	
@@ -136,7 +143,7 @@ int main( int argc, char** argv ) {
 	if( strcmp("stats", command) == 0 ) {
 		print_stats( source );
 	} else if( strcmp("nextgen", command) == 0 ) {
-		next_gen_next_gen( source, destination );
+		next_generation( source, destination );
 	} else {
 		printf("Unknown command: %s\n", command);
 	}

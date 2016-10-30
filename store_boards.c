@@ -45,6 +45,7 @@ int main( int argc, char** argv ) {
 		prints("Creating database with an empty board");
 		database_store( db, current );
 		free_board( current );
+		printf("Nodes %u, Rows: %llu, Root Node ID: %u\n", db->header->node_count, db->header->table_row_count, db->header->root_node_id);
 		database_close( db );
 		exit( EXIT_SUCCESS );
 	}

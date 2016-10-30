@@ -16,6 +16,7 @@ CMD=${CC} ${CFLAGS}
 
 all: libs db
 	${CMD} bin/utils.o bin/bplustree.o bin/board.o bpt_test.c -o bpt
+	${CMD} bin/utils.o bin/counter.o bin/board.o bin/bplustree.o store_boards.c -o store_boards
 	${CMD} bin/utils.o bin/counter.o bin/board.o bin/bplustree.o bruteforce_connect_four.c -o bfcf
 
 db: libs

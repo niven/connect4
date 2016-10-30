@@ -1,5 +1,9 @@
+#include <stdint.h>
+#include <stdlib.h>
+
 #ifndef __BASE_H__
 #define __BASE_H__
+
 
 #define true 1
 #define false 0

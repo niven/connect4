@@ -6,7 +6,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/mman.h>
@@ -101,43 +100,56 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 	
 }
 
+/* getopt_long stores the option index here. */
+global_variable int option_index = 0;
+
+global_variable int verbose_flag;
+
+global_variable struct option long_options[] = {
+ /* These options set a flag. */
+ {"verbose", no_argument,       &verbose_flag, 1},
+ /* These options don’t set a flag.
+    We distinguish them by their indices. */
+ {"stats",  no_argument,       0, 't'},
+ {"source",  required_argument, 0, 's'},
+ {"destination",  optional_argument, 0, 'd'},
+ {"create",  optional_argument, 0, 'c'},
+ {"render",    optional_argument, 0, 'r'},
+ {0, 0, 0, 0}
+};
 
 
 int main( int argc, char** argv ) {
 
 	char* create_sequence = NULL;
 	char* generate = NULL;
-	char* dest_db = NULL;
-	int ascii_flag = 0;
-	int read_flag = 0;
-	int test_cursor = 0;
-	int gc_flag = 0;
-	char* database_name = NULL;
+	char* source = NULL;
+	char* destination = NULL;
 	char* key_str = NULL;
+	int gc_flag = 0;
+
 	int c;	
 
 	map_squares_to_winlines(); // could be static but don't like doing it by hand
 
-
-
-	while( (c = getopt (argc, argv, "gc:a:d:rn:x:t") ) != -1 ) {
+	while( (c = getopt_long (argc, argv, "tsc:d:r:", long_options, &option_index) ) != -1 ) {
 
 		switch( c ) {
  		  case 'c': // create from drop sequence
  			 create_sequence = optarg;
  		    break;
-  		  case 'd':
-  			 database_name = optarg;
-  		    break;
- 		  case 'a': // render board from key
+		  case 's':
+			 source = optarg;
+		    break;
+ 		  case 'd':
+ 			 destination = optarg;
+ 		    break;
+ 		  case 'r': // render board from key
  			 key_str = optarg;
  		    break;
-		  case 'g': // show all generation counters
+		  case 's': // show all generation counters
 			 gc_flag = 1;
 		    break;
-  		  case 't':
-  			 test_cursor = 1;
-  		    break;
   		  case 'n': // next moves for database
    			 generate = optarg;
    		    break;
@@ -160,35 +172,14 @@ int main( int argc, char** argv ) {
 		}
 	}
 
-	printf ("database = %s, create_sequence = %s, ascii_flag = %d, read_flag = %d, generate to = %s, gc_flag = %d\n", database_name, create_sequence, ascii_flag, read_flag, generate, gc_flag);
+	printf ("database = %s, create_sequence = %s\n", database_name, create_sequence);
 
 	for( int index = optind; index < argc; index++ ) {
 		printf("Non-option argument %s\n", argv[index]);
 	}
 
 	if( database_name == NULL ) {
-		fprintf( stderr, "Required database name missing (-d ...)\n");
-	}
-
-	// ./bfcf -d database -t
-	// dump all keys in the database
-	if( test_cursor ) {
-		database* db = database_open( database_name );
-		database_cursor cursor;
-		database_init_cursor( db, &cursor );
-		
-		while( cursor.current < cursor.num_records ) {
-			print("Retrieving record %lu", cursor.current);
-			board63 current_board63 = database_get_record( db, &cursor );
-			char buf[200];
-			sprintf(buf, "Record %lu\tboard63: 0x%016lx", cursor.current, current_board63);
-			board current_board;
-			decode_board63( current_board63, &current_board );
-			render( &current_board, buf, false);
-		}
-		
-		database_dispose_cursor( &cursor );
-		database_close( db);
+		fprintf( stderr, "Required database name missing [--database name]\n");
 	}
 
 	if( create_sequence != NULL ) {
@@ -220,26 +211,13 @@ int main( int argc, char** argv ) {
 			current = next;
 		}
 		
+		render( next, "Final Board", false );
 		free_board( next );
  		database_close( db );
-		render( next, "Final Board", false );
 	}
 	
 	if( dest_db != NULL ) {		
 		next_gen_next_gen( database_name, dest_db );
-	}
-
-	if( ascii_flag ) {
-
-		database* db = database_open( database_name );
-		board63 key = (board63)atoi( key_str );
-		board* b = NULL;//database_get( db, key );
-		char buf[256];
-		sprintf( buf, "%s - %lu", database_name, key );
-		render( b, buf, true );
-
-		free_board( b );
-		database_close( db );
 	}
 	
 	if( gc_flag ) {

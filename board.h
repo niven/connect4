@@ -1,6 +1,7 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__	
 
+#include <stdio.h>
 #include <sys/types.h>
 
 // TODO(clarity): explain what this is and what it is for
@@ -99,7 +100,7 @@ extern char states[4];
 
 // 42 lists of ints, every one a list of [num_winlines, winline_0, winline_1, ...]
 // To explain what this actually *is*: This maps every square on the board to all winlines it can be part of.
-extern uint8* s2w[ ROWS * COLS ];
+extern uint8 s2w[ ROWS * COLS ][14];
 
 void map_squares_to_winlines( void );
 void free_s2w( void );

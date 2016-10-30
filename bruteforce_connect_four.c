@@ -21,7 +21,7 @@
 #include "bplustree.h"
 
 
-internal void print_stats( const char* database_name ) {
+internal void print_stats( const char* directory ) {
 	
 	char genfilename[256];
 	char idxfilename[256];
@@ -29,13 +29,13 @@ internal void print_stats( const char* database_name ) {
 	printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
 	for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 
-		sprintf(idxfilename, "%s/num_moves_%d.c4_index", database_name, g);
+		sprintf(idxfilename, "%s/num_moves_%d.c4_index", directory, g);
 		struct stat gstat;
 		if( stat( idxfilename, &gstat ) == -1 ) {
 			break;
 		}
 
-		sprintf(genfilename, "%s/gencounter_%d.gc", database_name, g);
+		sprintf(genfilename, "%s/gencounter_%d.gc", directory, g);
 		gen_counter* gc = read_counter( genfilename );
 
 		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0f*gc->cache_hit_ratio, (double)gstat.st_size/(double)megabyte(1) );
@@ -127,6 +127,7 @@ int main( int argc, char** argv ) {
 	}
 
 	assert( command );
+	assert( source );
 
 	if( source == NULL ) {
 		fprintf( stderr, "Required database name missing [--source name]\n");

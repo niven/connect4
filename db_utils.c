@@ -45,11 +45,14 @@ command parse_command( char* s, params* p ) {
 	size_t param_count = 0;
 	for( size_t i=0; i<strlen(s); i++ ) {
 		if( s[i] == ' ' ) { // every param is preceded by space
-			p->count++;
+			param_count++;
 		}
 	}
+	p->count = param_count;
 
-	p->param = (char**) malloc( p->count * sizeof(char*) );
+//	printf("Alloc %d param char*\n", p->count);
+	p->param = (char**) malloc( param_count * sizeof(char*) );
+	
 
 	char* command = strtok( s, " " );
 	char* element = strtok( NULL, " " );
@@ -61,7 +64,6 @@ command parse_command( char* s, params* p ) {
 		param_count++;
 		element = strtok( NULL, " ");
 	}
-	p->count = param_count;
 
 	
 	if( strcmp( command, "quit") == 0 ) {
@@ -111,6 +113,7 @@ node* get_node( database* db, uint32 node_id ) {
 	}
 
 	// TODO(API): do we want load node to just read, or figure out where to read from what? Maybe opp. for diff granularity
+	printf("loading node %d from file\n", node_id);
 	node* n = load_node_from_file( db, node_id );
 	if( n == NULL ) {
 		printf("Could not load node %u\n", node_id );

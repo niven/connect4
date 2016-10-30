@@ -42,6 +42,16 @@ internal void print_stats( const char* directory ) {
 	
 }
 
+internal void display_progress( size_t current, size_t total ) {
+
+	if( total < 100 ) {
+		return;
+	}
+	size_t one_percent = total / 100;
+	if( current % one_percent == 0 ) {
+		printf("%.2f%%\n", 100. * (double)current / (double)total);
+	}
+}
 
 internal void next_generation( const char* database_from, const char* database_to ) {
 
@@ -63,6 +73,8 @@ internal void next_generation( const char* database_from, const char* database_t
 	
 	while( cursor.current < cursor.num_records ) {
 		print("Retrieving record %lu", cursor.current);
+		display_progress( cursor.current, cursor.num_records );
+		
 		board63 current_board63 = database_get_record( from, &cursor );
 		
 		if( is_end_state( current_board63 ) ) {

@@ -21,38 +21,28 @@
 #include "bplustree.h"
 
 
-internal void update_counters( gen_counter* gc, board* b ) {
+internal void print_stats( const char* database_name ) {
 	
-	gc->total_boards++;
-	gc->draws += is_draw( b );
-	gc->wins_white += is_win_for( b, WHITE );
-	gc->wins_black += is_win_for( b, BLACK );
-	
-	// unique boards?
-}
+	char genfilename[256];
+	char idxfilename[256];
+	printf("Node order: %d\tCache size: %lu\n", ORDER, CACHE_SIZE);
+	printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
+	for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 
-// take the boards of a generation, backtrack to previous gen for the perfect game
-#if 0
-internal void backtrack_perfect_game( int generation ) {
-	
-	/*
-		if this is the last gen (42):
-			Check there are only wins for black or draws
+		sprintf(idxfilename, "%s/num_moves_%d.c4_index", database_name, g);
+		struct stat gstat;
+		if( stat( idxfilename, &gstat ) == -1 ) {
+			break;
+		}
 
-		if this is the penultimate gen (41):
-			write a file with all winning boards for white, add a branch id for every board, set #children to 0
-	
-		otherwise:
-			write all good/draw/ongoing boards to a new file, with data: branch id, number of children+1
+		sprintf(genfilename, "%s/gencounter_%d.gc", database_name, g);
+		gen_counter* gc = read_counter( genfilename );
 
-	*/
+		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0f*gc->cache_hit_ratio, (double)gstat.st_size/(double)megabyte(1) );
+
+	}
 	
 }
-#endif
-
-// cpu timing
-// clock_t cpu_time_start = clock();
-// gc.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 
 
 internal void next_gen_next_gen( const char* database_from, const char* database_to ) {
@@ -103,151 +93,57 @@ internal void next_gen_next_gen( const char* database_from, const char* database
 /* getopt_long stores the option index here. */
 global_variable int option_index = 0;
 
-global_variable int verbose_flag;
-
 global_variable struct option long_options[] = {
- /* These options set a flag. */
- {"verbose", no_argument,       &verbose_flag, 1},
- /* These options don’t set a flag.
-    We distinguish them by their indices. */
- {"stats",  no_argument,       0, 't'},
- {"source",  required_argument, 0, 's'},
- {"destination",  optional_argument, 0, 'd'},
- {"create",  optional_argument, 0, 'c'},
- {"render",    optional_argument, 0, 'r'},
- {0, 0, 0, 0}
+	{"command",  		required_argument, 0, 'c'},
+	{"source",  		required_argument, 0, 's'},
+	{"destination",	optional_argument, 0, 'd'},
+	{0, 0, 0, 0}
 };
 
 
 int main( int argc, char** argv ) {
 
-	char* create_sequence = NULL;
-	char* generate = NULL;
+	char* command = NULL;
 	char* source = NULL;
 	char* destination = NULL;
-	char* key_str = NULL;
-	int gc_flag = 0;
 
 	int c;	
 
-	map_squares_to_winlines(); // could be static but don't like doing it by hand
-
-	while( (c = getopt_long (argc, argv, "tsc:d:r:", long_options, &option_index) ) != -1 ) {
+	while( (c = getopt_long (argc, argv, "ts:d:r:", long_options, &option_index) ) != -1 ) {
 
 		switch( c ) {
- 		  case 'c': // create from drop sequence
- 			 create_sequence = optarg;
- 		    break;
 		  case 's':
 			 source = optarg;
 		    break;
  		  case 'd':
  			 destination = optarg;
  		    break;
- 		  case 'r': // render board from key
- 			 key_str = optarg;
- 		    break;
-		  case 's': // show all generation counters
-			 gc_flag = 1;
+		  case 'c':
+			 command = optarg;
 		    break;
-  		  case 'n': // next moves for database
-   			 generate = optarg;
-   		    break;
-  		  case 'x': // next moves for database
-   			 dest_db = optarg;
-   		    break;
-  		  case 'r': // read filename
-  			 read_flag = 1;
-  		    break;
-		  case '?':
-		    if (optopt == 'c')
-		      fprintf (stderr, "Option -%c requires an argument.\n", optopt);
-		    else if (isprint (optopt))
-		      fprintf (stderr, "Unknown option `-%c'.\n", optopt);
-		    else
-		      fprintf(stderr,"Unknown option character `\\x%x'.\n", optopt);
-		    return 1;
 		  default:
 		    abort();
 		}
 	}
 
-	printf ("database = %s, create_sequence = %s\n", database_name, create_sequence);
+	assert( command );
 
-	for( int index = optind; index < argc; index++ ) {
-		printf("Non-option argument %s\n", argv[index]);
+	if( source == NULL ) {
+		fprintf( stderr, "Required database name missing [--source name]\n");
 	}
 
-	if( database_name == NULL ) {
-		fprintf( stderr, "Required database name missing [--database name]\n");
+	if( strcmp("stats", command) == 0 ) {
+		print_stats( source );
+	} else if( strcmp("nextgen", command) == 0 ) {
+		next_gen_next_gen( source, destination );
+	} else {
+		printf("Unknown command: %s\n", command);
 	}
 
-	if( create_sequence != NULL ) {
 
-		board* current = new_board();
-		database* db = database_create( database_name );
-
-		if( create_sequence[0] == 'e' ) {
-			database_store( db, current );
-			free_board( current );
-			database_close( db );
-			exit( EXIT_SUCCESS );
-		}
-		 
-		board* next = NULL;
-		for( size_t i=0; i<strlen(create_sequence); i++ ) {
-			int col_index = create_sequence[i] - '0';
-			printf("Drop in column %d\n", col_index);
-			next = drop( current, col_index );
-			if( next == NULL ) {
-				fprintf( stderr, "Illegal drop in column %d\n", col_index );
-				abort();
-			}
-			database_store( db, next );
-			render( next, create_sequence, false );
-			//print_winlines( next->winlines );
-
-			free_board( current );
-			current = next;
-		}
-		
-		render( next, "Final Board", false );
-		free_board( next );
- 		database_close( db );
-	}
-	
-	if( dest_db != NULL ) {		
-		next_gen_next_gen( database_name, dest_db );
-	}
-	
-	if( gc_flag ) {
-
-		char genfilename[256];
-		char idxfilename[256];
-		printf("Node order: %d\tCache size: %lu\n", ORDER, CACHE_SIZE);
-		printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
-		for( int g=1; g<=42; g++ ) { // just try all possible and break when done
-
-			sprintf(idxfilename, "%s/num_moves_%d.c4_index", database_name, g);
-			struct stat gstat;
-			if( stat( idxfilename, &gstat ) == -1 ) {
-				break;
-			}
-
-			sprintf(genfilename, "%s/gencounter_%d.gc", database_name, g);
-			gen_counter* gc = read_counter( genfilename );
-
-			printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0f*gc->cache_hit_ratio, (double)gstat.st_size/(double)megabyte(1) );
-
-		}
-
-	}
-
-	free_s2w();
-	
 	long page_size = sysconf(_SC_PAGE_SIZE);
 	printf("Page size: %lu\n", page_size);
-	printf("Done\n");
+	printf("Done.\n");
 	
 	return 0;
 }

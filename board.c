@@ -415,14 +415,15 @@ internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x, uin
 	}
 	
 	// it's a draw if every top of the column is not empty
-	bool is_draw = true;
+	// easier: it is NOT a draw (i.e. it is an ongoing game) if there is at least one colum that has an open space
 	for( uint8 x=0; x<COLS; x++ ) {
-		is_draw = is_draw && (b->squares[x][ROWS-1] != EMPTY);
-	}
-	if( is_draw ) {
-		state |= DRAW;
+		if( b->squares[x][ROWS-1] == EMPTY ){ 
+			return state;
+		}
 	}
 	
+	// not a win, not ongoing => DRAW
+	state |= DRAW;
 	return state;
 }
 

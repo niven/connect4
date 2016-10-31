@@ -432,7 +432,6 @@ uint8 multidrop( board* src, board63* next_boards ) {
 
 	// check if if we can drop in a column for all columns
 	uint8 succesful_drops = 0;
-	uint8 old_state;
 	uint8 player = current_player( src );
 	for( uint8 x_index=0; x_index<COLS; x_index++ ) {
 		uint8 y_index = ROWS; // set to the invalid value of ROWS
@@ -446,18 +445,18 @@ uint8 multidrop( board* src, board63* next_boards ) {
 		}
 		if( y_index != ROWS ) {
 			// print("Can drop at [%d, %d]", x_index, y_index );
-			old_state = src->state;
 			// set it
 			src->squares[x_index][y_index] = player;
-			src->state = check_state_after_move( src, y_index, x_index, player ); // set the state, it gets reset after encoding the board
-			
+			uint8 new_state = check_state_after_move( src, y_index, x_index, player ); // set the state, it gets reset after encoding the board
 			// encode the board (this just retains the set locations plus the gameover bit)
 			// TODO(performance): why do we encode/decode? maybe just have 7 board* preallocated we just overwrite?
 			next_boards[succesful_drops] = encode_board( src );
+			if( new_state & OVER ) {	
+				next_boards[succesful_drops] |= 1; // set win bit
+			}
 
 			// reset the move
 			src->squares[x_index][y_index] = EMPTY;
-			src->state = old_state;
 			succesful_drops++;
 		}
 		

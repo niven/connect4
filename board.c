@@ -449,10 +449,8 @@ uint8 multidrop( board* src, board63* next_boards ) {
 			old_state = src->state;
 			// set it
 			src->squares[x_index][y_index] = player;
-			uint8 state = check_state_after_move( src, y_index, x_index, player );
-			if( state & OVER ) {
-				src->state = state;
-			}
+			src->state = check_state_after_move( src, y_index, x_index, player ); // set the state, it gets reset after encoding the board
+			
 			// encode the board (this just retains the set locations plus the gameover bit)
 			// TODO(performance): why do we encode/decode? maybe just have 7 board* preallocated we just overwrite?
 			next_boards[succesful_drops] = encode_board( src );

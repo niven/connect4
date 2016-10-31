@@ -376,7 +376,7 @@ board* drop( board* src, int x ) {
 	return dest;
 }
 
-internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x ) {
+internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x, uint8 player ) {
 	
 	assert( move_y < ROWS );
 	assert( move_x < COLS );
@@ -384,7 +384,6 @@ internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x ) {
 	uint8 state = 0;
 	
 	uint8 square_index = COLS*move_y + move_x;
-	player current = current_player( b );
 	
 	for( uint8 w=1; w<=s2w[square_index][0]; w++ ) {
 		uint8 winline_index = s2w[square_index][w];
@@ -396,7 +395,7 @@ internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x ) {
 		for( uint8 i=0; i<4; i++ ) {
 			uint8 sx = winlines[winline_index].x[i];
 			uint8 sy = winlines[winline_index].y[i];
-			if( b->squares[sx][sy] == current ) {
+			if( b->squares[sx][sy] == player ) {
 				in_line++;
 			}
 		}
@@ -408,7 +407,7 @@ internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x ) {
 			render( b, scratch, false );
 #endif
 			state |= OVER; // game over
-			state |= current; // record winner
+			state |= player; // record winner
 			return state;
 		}
 	}
@@ -432,8 +431,11 @@ uint8 multidrop( board* src, board63* next_boards ) {
 	// check if if we can drop in a column for all columns
 	uint8 succesful_drops = 0;
 	uint8 old_state;
+	uint8 player = current_player( src );
 	for( uint8 x_index=0; x_index<COLS; x_index++ ) {
 		uint8 y_index = ROWS; // set to the invalid value of ROWS
+		
+		// TODO(performance): maybe seeking down will be less work as in later generations there are more spots filled?
 		for( uint8 y=0; y < ROWS; y++ ) { // seek up along column until we hit an empty
 			if( src->squares[x_index][y] == EMPTY ) {
 				y_index = y;
@@ -444,12 +446,13 @@ uint8 multidrop( board* src, board63* next_boards ) {
 			// print("Can drop at [%d, %d]", x_index, y_index );
 			old_state = src->state;
 			// set it
-			src->squares[x_index][y_index] = current_player( src );
-			uint8 state = check_state_after_move( src, y_index, x_index );
+			src->squares[x_index][y_index] = player;
+			uint8 state = check_state_after_move( src, y_index, x_index, player );
 			if( state & OVER ) {
 				src->state = state;
 			}
 			// encode the board (this just retains the set locations plus the gameover bit)
+			// TODO(performance): why do we encode/decode? maybe just have 7 board* preallocated we just overwrite?
 			next_boards[succesful_drops] = encode_board( src );
 
 			// reset the move

@@ -395,7 +395,9 @@ internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x, uin
 		for( uint8 i=0; i<4; i++ ) {
 			uint8 sx = winlines[winline_index].x[i];
 			uint8 sy = winlines[winline_index].y[i];
-			if( b->squares[sx][sy] == player ) {
+			if( b->squares[sx][sy] != player ) {
+				break;
+			} else {
 				in_line++;
 			}
 		}

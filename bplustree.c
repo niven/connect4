@@ -25,7 +25,6 @@ internal void bpt_split( database* db, node* node );
 internal void database_open_files( database* db );
 internal void database_set_filenames( database* db, const char* name );
 internal void database_store_node( database* db, node* data );
-internal void database_store_row( database* db, board* b );
 internal void read_database_header( database* db );
 internal void write_database_header( database* db );
 

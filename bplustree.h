@@ -248,7 +248,7 @@ cache_stats get_database_cache_stats( database* db );
 void database_init_cursor( database* db, database_cursor* cursor );
 void database_dispose_cursor( database_cursor* cursor );
 
-board63 database_get_record( database* db, database_cursor* cursor );
+board63 database_get_record( database_cursor* cursor );
 
 // internal stuff (operates on nodes)
 node* new_node( database* db );

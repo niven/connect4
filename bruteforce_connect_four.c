@@ -76,7 +76,7 @@ internal void next_generation( const char* database_from, const char* database_t
 		print("Retrieving record %lu", cursor.current);
 		display_progress( cursor.current, cursor.num_records );
 		
-		board63 current_board63 = database_get_record( from, &cursor );
+		board63 current_board63 = database_get_record( &cursor );
 		
 		if( is_end_state( current_board63 ) ) {
 			continue;

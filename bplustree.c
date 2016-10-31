@@ -315,7 +315,7 @@ void database_dispose_cursor( database_cursor* cursor ) {
 	}
 }
 
-board63 database_get_record( database* db, database_cursor* cursor ) {
+board63 database_get_record( database_cursor* cursor ) {
 	
 	print("Node %u: record %u/%u", cursor->current_node->id, cursor->current_in_node, cursor->current_node->num_keys);
 	while( !cursor->current_node->is_leaf || cursor->current_in_node >= cursor->current_node->num_keys ) {

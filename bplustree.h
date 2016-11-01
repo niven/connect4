@@ -10,7 +10,7 @@
 // TODO(research): Find out if it is possible to have ORDER=2 behave like a bintree
 // TODO(research): find some optimal ORDER (pref a power of 2, and within a pagesize or something)
 // sysconf(_SC_PAGE_SIZE)
-#define ORDER 256
+#define ORDER 4096
 #define SPLIT_KEY_INDEX ((ORDER-1)/2)
 #define SPLIT_NODE_INDEX (ORDER - ORDER/2)
 

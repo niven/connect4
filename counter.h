@@ -1,5 +1,5 @@
-#ifndef __C4_COUNTER_H__
-#define __C4_COUNTER_H__
+#ifndef BFCF_COUNTER_H
+#define BFCF_COUNTER_H
 
 typedef struct gen_counter {
 	double cpu_time_used;

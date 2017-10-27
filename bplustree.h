@@ -1,5 +1,5 @@
-#ifndef __B_PLUS_TREE__
-#define __B_PLUS_TREE__
+#ifndef BFCF_B_PLUS_TREE
+#define BFCF_B_PLUS_TREE
 
 #include "base.h"
 #include "board.h"

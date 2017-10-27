@@ -1,5 +1,5 @@
-#ifndef __BOARD_H__
-#define __BOARD_H__	
+#ifndef BFCF_BOARD_H
+#define BFCF_BOARD_H
 
 #include <stdio.h>
 #include <sys/types.h>

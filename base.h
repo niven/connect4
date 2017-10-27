@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifndef __BASE_H__
-#define __BASE_H__
+#ifndef BFCF_BASE_H
+#define BFCF_BASE_H
 
 
 #define true 1

@@ -36,7 +36,7 @@ internal void print_stats( const char* directory ) {
 		}
 		gen_counter* gc = read_counter( genfilename );
 
-		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0f*gc->cache_hit_ratio, (double)gc->database_size/(double)megabyte(1) );
+		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0*gc->cache_hit_ratio, (double)gc->database_size/(double)megabyte(1) );
 
 	}
 	

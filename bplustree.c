@@ -539,7 +539,7 @@ void print_database_stats( database* db ) {
 	cache_stats stats = get_database_cache_stats( db );
 	printf("Total cache hits: %llu\n", (unsigned long long)stats.hits);
 	printf("Total cache misses: %llu\n", (unsigned long long)stats.misses);
-	printf("Cache hit ratio: %.2f%%\n", 100.0f * stats.hit_ratio );
+	printf("Cache hit ratio: %.2f%%\n", 100.0 * stats.hit_ratio );
 	printf("Total cache dirty evicts: %llu\n", (unsigned long long)stats.dirty_evicts);
 	printf("Total cache clean evicts: %llu\n", (unsigned long long)stats.clean_evicts);
 	printf("Total cache entry allocs: %llu\n", (unsigned long long)stats.entry_allocs);

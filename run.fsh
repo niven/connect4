@@ -1,6 +1,11 @@
 #!/usr/local/bin/fish
 
-set NUM_GENERATIONS 7
+
+if test -z $argv;
+	set NUM_GENERATIONS 8;
+else;
+	set NUM_GENERATIONS $argv;
+end
 
 echo "Generating up to $NUM_GENERATIONS generations."
 
@@ -11,7 +16,7 @@ make clean
 make MODE=NDEBUG all
 
 # create gen 0 (database with single, empty board)
- ./store_boards --destination=results/generation_0
+./store_boards --destination=results/generation_0
 
 for current in (seq $NUM_GENERATIONS)
 	echo "########################## Generation $current ##########################"

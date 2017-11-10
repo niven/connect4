@@ -55,25 +55,6 @@ off_t file_offset_from_row_index( size_t row_index ) {
 	return (off_t)row_index * (off_t)BOARD_SERIALIZATION_NUM_BYTES;
 }
 
-#if 0
-void database_store_row( database* db, board* b ) {
-
-	print("appending board 0x%lx to file %s", encode_board(b), db->table_filename );
-	// we only append to this file and it is opened with "a", this means we shouldn't have to fseek()
-
-	// off_t offset = file_offset_from_row( row_index );
-	//
-	// // move the file cursor to the initial byte of the row
-	// // fseek returns nonzero on failure
-	// if( fseek( db->table_file, offset, SEEK_SET ) ) {
-	// 	perror("fseek()");
-	// 	exit( EXIT_FAILURE );
-	// }
-
-	write_board_record( b, db->table_file );
-}
-#endif
-
 void database_store_node( database* db, node* n ) {
 
 	if( !n->is_dirty ) {

@@ -149,7 +149,24 @@ void database_open_files( database* db ) {
 #endif
 }
 
-database* database_create( const char* name ) {
+void database_mem_pool_init( database* db ) {
+	
+	
+	print("Reserving space for nodes: %lu bytes\n", CACHE_MEM_LIMIT );
+	printf("YOYO\n");
+}
+
+void database_setup_cache( database* db ) {
+	
+	db->node_cache = (cache*) malloc( sizeof(cache) );
+	// TODO(correctness): not sure if this needs to be explicitly zero'd or maybe calloc?
+	memset( db->node_cache->buckets, 0, sizeof(db->node_cache->buckets) );
+	db->node_cache->num_stored = 0;
+	db->node_cache->free_list = NULL;
+	
+}
+
+void database_create( const char* name ) {
 
 	database* db = (database*) malloc( sizeof(database) );
 	if( db == NULL ) {
@@ -159,44 +176,35 @@ database* database_create( const char* name ) {
 	
 	db->name = name;
 	
-	db->header = (database_header*) malloc( sizeof(database_header) );
-	
-	db->header->table_row_count = 0;
-	db->header->node_count = 0;
-
-	db->node_cache = (cache*) malloc( sizeof(cache) );
-	// TODO(correctness): not sure if this needs to be explicitly zero'd or maybe calloc?
-	memset( db->node_cache->buckets, 0, sizeof(db->node_cache->buckets) );
-	db->node_cache->num_stored = 0;
-	db->node_cache->free_list = NULL;
-
-	// create a new bpt
-	node* first_node = new_node( db ); // get the next node id, and update count
-	db->header->root_node_id = first_node->id;
-	
 	database_set_filenames( db, name );
-
 	// create the index file
 	create_empty_file( db->index_filename );
 	print("created index file %s", db->index_filename);
-
-#if 0
-	// create the table file
-	create_empty_file( db->table_filename );
-	print("created table file %s", db->table_filename);
-#endif
-	// we are creating a new database file, so we will be only appending to the rows table
-	// and also only appending to the index.
 	database_open_files( db );
+
+	db->header = (database_header*) malloc( sizeof(database_header) );
+	db->header->table_row_count = 0;
+	db->header->node_count = 0;
+
+	// create a new bpt with a single (empty) root node
+	database_setup_cache( db );
+	prints("new root node");
+	node* first_node = new_node( db ); // get the next node id, and update count
+	prints("node makde");
+	db->header->root_node_id = first_node->id;
+	prints("free node");
+	clear_cache( db, db->node_cache );
+	prints("free cache");
+	free( db->node_cache );
 	
 	write_database_header( db );
-
-	// it's empty, but just in case you call create/close or something	
-//	database_store_node( db, first_node );
-	release_node( db, first_node );
+	free( db->header );
 	
+	fclose( db->index_file );
 
-	return db;
+	free( db );
+
+	print("created %s", db->name);
 }
 
 database* database_open( const char* name ) {
@@ -219,11 +227,9 @@ database* database_open( const char* name ) {
 	read_database_header( db );
 	print("nodes: %u, rows: %llu, root node ID: %u", db->header->node_count, db->header->table_row_count, db->header->root_node_id );
 
-	db->node_cache = (cache*) malloc( sizeof(cache) );
-	// TODO(correctness): not sure if this needs to be explicitly zero'd or maybe calloc?
-	memset( db->node_cache->buckets, 0, sizeof(db->node_cache->buckets) );
-	db->node_cache->num_stored = 0;
-	db->node_cache->free_list = NULL;
+	database_mem_pool_init( db );
+
+	database_setup_cache( db );
 	
 	return db;	
 }
@@ -240,12 +246,9 @@ void database_close( database* db ) {
 	free( db->header );
 	
 	fclose( db->index_file );
-#if 0
-	fclose( db->table_file );
-#endif
+
 	print("closed %s", db->name);
 	free( db );
-	
 }
 
 /*

@@ -157,7 +157,7 @@ TODO(profiling): distribution of hits/misses/dirty per node
 */
 
 // buckets in the hash that stores the entries and max number of entries in the cache
-#define CACHE_MEM_LIMIT megabyte(64)
+#define CACHE_MEM_LIMIT megabyte(1024)
 #define CACHE_SIZE ((size_t) CACHE_MEM_LIMIT / sizeof(node) )
 
 // doubly linked list of refcount==0 entries in cache
@@ -232,8 +232,12 @@ typedef struct database_cursor {
 	database* db; // which db
 } database_cursor;
 
+// internal use
+void database_mem_pool_init( database* db );
+void database_setup_cache( database* db );
+
 // public API (always takes a root)
-database* database_create( const char* name );
+void database_create( const char* name );
 database* database_open( const char* name );
 void database_close( database* db );
 

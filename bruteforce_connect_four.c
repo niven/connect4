@@ -56,8 +56,9 @@ internal void display_progress( size_t current, size_t total ) {
 internal void next_generation( const char* database_from, const char* database_to ) {
 
 	database* from = database_open( database_from );
-	database* to = database_create( database_to );
-	
+	database_create( database_to );
+	database* to = database_open( database_to );
+		
 	// do all 7 moves in 1 drop, avoiding mallocing a brazillian new boards
 	board63 next_gen[7];
 	

@@ -37,9 +37,9 @@ int main( int argc, char** argv ) {
 	}
 
 	assert( destination );
-	
 	board* current = new_board();
-	database* db = database_create( destination );
+	database_create( destination );
+	database* db = database_open( destination );
 
 	if( moves == NULL ) {
 		prints("Creating database with an empty board");

@@ -25,7 +25,8 @@ internal void test_dupes() {
 
 	test_header( "Intentionally storing dupes (should be ignored)" );
 
-	database* db = database_create( "dupes" );
+	database_create( "dupes" );
+	database* db = database_open( "dupes" );
 
 	board* current = new_board();
 
@@ -68,7 +69,8 @@ internal void test_dupes() {
 
 internal void test_store_cmdline_seq( char* seq ) {
 	
-	database* db = database_create( "test_store_cmdline_seq" );
+	database_create( "test_store_cmdline_seq" );
+	database* db = database_open( "test_store_cmdline_seq" );
 	
 	printf("Sequence: %s\n", seq);
 	char* element = strtok( seq, "," );

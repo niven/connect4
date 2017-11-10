@@ -405,7 +405,7 @@ internal uint8 check_state_after_move( board* b, uint8 move_y, uint8 move_x, uin
 		if( in_line == 4 ) {
 #ifdef VERBOSE
 			char scratch[200];
-			sprintf( scratch, "%s wins on line %d", current == WHITE ? "White" : "Black", winline_index );
+			sprintf( scratch, "%s wins on line %d", player == WHITE ? "White" : "Black", winline_index );
 			render( b, scratch, false );
 #endif
 			state |= OVER; // game over

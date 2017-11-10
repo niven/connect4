@@ -207,7 +207,7 @@ void database_create( const char* name ) {
 	print("created %s", db->name);
 }
 
-database* database_open( const char* name ) {
+database* database_open( const char* name, uint8 mode ) {
 
 	
 	database* db = (database*) malloc( sizeof(database) );

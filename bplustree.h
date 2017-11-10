@@ -238,7 +238,8 @@ void database_setup_cache( database* db );
 
 // public API (always takes a root)
 void database_create( const char* name );
-database* database_open( const char* name );
+enum { DATABASE_READ = 1, DATABASE_WRITE = 2 };
+database* database_open( const char* name, uint8 mode );
 void database_close( database* db );
 
 bool database_store( database* db, board* b );

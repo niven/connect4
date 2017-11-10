@@ -172,7 +172,7 @@ int main( int argc, char** argv  ) {
 	char db_name[256] = {0};
 	
 	if( argc == 2 ) {
-		db = database_open( argv[1] );
+		db = database_open( argv[1], DATABASE_READ );
 		printf("Nodes %u, Rows: %llu, Root Node ID: %u\n", db->header->node_count, db->header->table_row_count, db->header->root_node_id);
 	}
 	
@@ -209,7 +209,7 @@ int main( int argc, char** argv  ) {
 						free( current_node );
 						current_node = NULL;
 					}
-					db = database_open( db_name );
+					db = database_open( db_name, DATABASE_READ );
 
 				break;
 				

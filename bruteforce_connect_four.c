@@ -116,6 +116,8 @@ internal void next_generation( const char* database_from, const char* database_t
 	
 	database_dispose_cursor( &cursor );
 	
+	print_database_stats( to );
+	
 	database_close( from );
 	database_close( to );
 

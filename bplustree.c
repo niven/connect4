@@ -149,11 +149,21 @@ void database_open_files( database* db ) {
 #endif
 }
 
+node* node_get_mem() {
+	node* result;
+	
+	result = (node*) malloc( sizeof(node) );
+	assert( result != NULL );
+	counters.mallocs++;
+	
+	return result;
+}
+
 void database_mem_pool_init( database* db ) {
 	
 	
-	print("Reserving space for nodes: %lu bytes\n", CACHE_MEM_LIMIT );
-	printf("YOYO\n");
+	print("Reserving space for nodes: %lu bytes", CACHE_MEM_LIMIT );
+
 }
 
 void database_setup_cache( database* db ) {
@@ -487,11 +497,8 @@ internal unsigned char binary_search( board63* keys, uint32 num_keys, board63 ta
 // TODO(bug): take db as param, put in node cache
 node* new_node( database* db ) {
 	
-	node* out = (node*)malloc( sizeof(node) );
-	if( out == NULL ) {
-		perror("malloc()");
-		exit( EXIT_FAILURE );
-	}
+	node* out = node_get_mem();
+	// node* out = (node*)malloc( sizeof(node) );
 	
 	out->id = ++db->header->node_count;
 	
@@ -543,6 +550,7 @@ void print_database_stats( database* db ) {
 	printf("Total generic key compares: %llu\n", (unsigned long long)counters.key_compares);
 	printf("Total leaf key compares: %llu\n", (unsigned long long)counters.leaf_key_compares);
 	printf("Total node key compares: %llu\n", (unsigned long long)counters.node_key_compares);
+	printf("Total mallocs: %llu\n", (unsigned long long)counters.mallocs);
 	if( counters.key_inserts > 0 ) {
 		printf("Key compares (leaf+node) per key insert: %llu\n", (unsigned long long) counters.key_compares / counters.key_inserts );
 	}
@@ -905,6 +913,7 @@ internal node* bpt_find_node( database* db, node* root, board63 key ) {
 	return current;
 }
 
+
 // TODO(performance): probably mmap() the file
 // TODO(performance): maybe avoid file locking? OSX doesn't come with __fsetlocking() though (maybe use open() to get O_EXLOCK ?)
 node* load_node_from_file( database* db, uint32 node_id ) {
@@ -920,7 +929,9 @@ print("loading block %lu\n", node_id);
 	}
 	
 	// TODO(bug): Feel this might cause hard ot find bugs. Maybe a check for filesize and error out on fread fail
-	node* n = (node*) malloc( sizeof(node) );
+	// node* n = (node*) malloc( sizeof(node) );
+	node* n = node_get_mem();
+	
 	assert( n != NULL );
 	size_t objects_read = fread( n, node_block_bytes, 1, db->index_file );
 	if( objects_read != 1 ) {

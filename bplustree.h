@@ -27,6 +27,7 @@ struct bpt_counters {
 	uint64_t key_compares;
 	uint64_t leaf_key_compares;
 	uint64_t node_key_compares;
+	uint64_t mallocs;
 	uint64_t any;
 };
 

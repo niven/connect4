@@ -49,7 +49,7 @@ internal void display_progress( size_t current, size_t total ) {
 	}
 	size_t one_percent = total / 100;
 	if( current % one_percent == 0 ) {
-		printf("%.2f%%\n", 100. * (double)current / (double)total);
+		printf("\r%.2f%%", 100. * (double)current / (double)total);
 	}
 }
 

@@ -10,14 +10,14 @@
 #ifdef BUILD_32_BITS
 
 size_t hash( size_t i ) {
-	
+
 	size_t h = i;
 	h ^= h >> 16;
 	h *= 0x85ebca6b;
 	h ^= h >> 13;
 	h *= 0xc2b2ae35;
 	h ^= h >> 16;
-	
+
 	return h;
 }
 
@@ -53,7 +53,7 @@ size_t gcd(size_t m, size_t n) {
 }
 
 FILE* open_and_seek( const char* filename, const char* mode, off_t offset ) {
-	
+
 	FILE* f;
 	FOPEN_CHECK( f, filename, mode );
 
@@ -62,7 +62,7 @@ FILE* open_and_seek( const char* filename, const char* mode, off_t offset ) {
 		perror("fseek()");
 		return NULL;
 	}
-	
+
 	return f;
 }
 

@@ -10,16 +10,16 @@
 typedef enum command {
 
 	ERROR,
-	
+
 	QUIT,
 
 	OPEN_DB,
 	ROW,
 	NODE,
 	KEYS,
-	
+
 	UNKNOWN_COMMAND,
-	
+
 	COMMAND_COUNT
 } command;
 
@@ -37,9 +37,9 @@ void print_keys( node* n );
 void open_database( char* name, FILE** table, FILE** index );
 
 command parse_command( char* s, params* p ) {
-	
+
 //	printf("Parsing: '%s'\n", s);
-	
+
 	// just strtok 'command name' 'param0' 'param1'
 	// commands can figure out what to do
 	size_t param_count = 0;
@@ -52,7 +52,7 @@ command parse_command( char* s, params* p ) {
 
 //	printf("Alloc %d param char*\n", p->count);
 	p->param = (char**) malloc( param_count * sizeof(char*) );
-	
+
 
 	char* command = strtok( s, " " );
 	char* element = strtok( NULL, " " );
@@ -65,15 +65,15 @@ command parse_command( char* s, params* p ) {
 		element = strtok( NULL, " ");
 	}
 
-	
+
 	if( strcmp( command, "quit") == 0 ) {
 		return QUIT;
 	}
-	
+
 	if( strcmp( command, "keys") == 0 ) {
 		return KEYS;
 	}
-	
+
 	if( strcmp( command, "row") == 0 ) {
 
 		if( p->count != 1 ) {
@@ -82,7 +82,7 @@ command parse_command( char* s, params* p ) {
 		}
 		return ROW;
 	}
-	
+
 	if( strcmp( command, "node") == 0 ) {
 
 		if( p->count != 1 ) {
@@ -91,7 +91,7 @@ command parse_command( char* s, params* p ) {
 		}
 		return NODE;
 	}
-	
+
 	if( strcmp( command, "open") == 0 ) {
 
 		if( p->count != 1 ) {
@@ -100,8 +100,8 @@ command parse_command( char* s, params* p ) {
 		}
 		return OPEN_DB;
 	}
-	
-	
+
+
 	return UNKNOWN_COMMAND; //dunno
 }
 
@@ -125,7 +125,7 @@ node* get_node( database* db, uint32 node_id ) {
 
 // TODO(fix): make these print node ids
 void print_keys( node* n ) {
-	
+
 	printf("Node %u - %u key(s)%s\n", n->id, n->num_keys, n->is_leaf ? " {leaf}": "" );
 	printf("key                %s\n", n->is_leaf ? "Table row index" : "Left node id");
 	for(uint32 i=0; i<n->num_keys; i++) {
@@ -137,7 +137,7 @@ void print_keys( node* n ) {
 }
 
 void make_prompt( char* buf, char* db_name, node* cur ) {
-	
+
 	buf[0] = '\0';
 	strcpy( buf, "c4db");
 	if( db_name[0] != '\0' ) {
@@ -150,11 +150,11 @@ void make_prompt( char* buf, char* db_name, node* cur ) {
 		strcat( buf, " [" );
 		char nodeidstr[100];
 		sprintf( nodeidstr, "%u", cur->id );
-		strcat( buf, nodeidstr );	
+		strcat( buf, nodeidstr );
 		strcat( buf, "]" );
 	}
 
-	
+
 	strcat( buf, "> " );
 }
 
@@ -165,36 +165,36 @@ int main( int argc, char** argv  ) {
 	bool keep_running = true;
 	params p;
 	database* db = NULL;
-	
+
 	uint32 node_id = 0;
 	node* current_node = NULL;
 	char prompt[256];
 	char db_name[256] = {0};
-	
+
 	if( argc == 2 ) {
 		db = database_open( argv[1], DATABASE_READ );
 		printf("Nodes %u, Rows: %llu, Root Node ID: %u\n", db->header->node_count, db->header->table_row_count, db->header->root_node_id);
 	}
-	
+
 	do {
 		make_prompt( prompt, db_name, current_node );
 		printf( "%s", prompt );
-		
+
 		if( fgets( buf, 1024, stdin) == NULL ) {
 			perror("fgets()");
 			keep_running = false;
 		} else {
-			
+
 			// strip newline from end of buf
 			buf[ strlen(buf)-1 ] = '\0';
 			command c = parse_command( buf, &p );
-			
+
 			switch( c ) {
-				
+
 				case COMMAND_COUNT:
 					// removes warning
 				break;
-				
+
 				case ERROR:
 					printf( "%s\n", p.error );
 				break;
@@ -212,7 +212,7 @@ int main( int argc, char** argv  ) {
 					db = database_open( db_name, DATABASE_READ );
 
 				break;
-				
+
 				case ROW:
 					if( db == NULL ) {
 						printf("No database open.\n");
@@ -241,7 +241,7 @@ int main( int argc, char** argv  ) {
 					node_id = (uint32)strtol( p.param[0], NULL, 0 );
 					current_node = get_node( db, node_id );
 				break;
-				
+
 				case KEYS:
 					if( current_node == NULL ) {
 						printf("No node selected, set one with 'node [id]'\n");
@@ -250,20 +250,20 @@ int main( int argc, char** argv  ) {
 					// print all keys from the current node
 					print_keys( current_node );
 				break;
-				
+
 				case UNKNOWN_COMMAND:
 					printf("Unknown command: '%s'\n", buf);
 					break;
-					
+
 			}
 
 			p.count = 0;
 			free( p.param );
-			
+
 		}
-		
+
 	} while( keep_running );
-	
+
 	if( db != NULL ) {
 		database_close( db );
 	}

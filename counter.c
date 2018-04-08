@@ -31,7 +31,7 @@ gen_counter* read_counter( const char* filename ) {
 		perror("fread()");
 		exit( EXIT_FAILURE );
 	}
-	
+
 	fclose( in );
 
 	return gc;
@@ -41,12 +41,12 @@ void write_counter( gen_counter* c, const char* filename ) {
 
 	FILE* out;
 	FOPEN_CHECK( out, filename, "wb" );
-	
+
 	size_t bytes_written = fwrite( c, 1, sizeof(gen_counter), out );
 	if( bytes_written != sizeof(gen_counter) ) {
 		perror("fwrite()");
 		exit( EXIT_FAILURE );
 	}
-	
+
 	fclose( out );
 }

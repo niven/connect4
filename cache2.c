@@ -65,24 +65,24 @@ typedef struct entry {
 	node* node;
 	struct entry* next;
 	struct entry* prev;
-	u8 refcount; 
+	u8 refcount;
 } entry;
 typedef struct node_cache {
 	char* mem_pool;
 
 	// store the nodes in buckets determined by just (id % NUM_BUCKETS)
 	entry* bucket[NUM_BUCKETS];
-	
+
 	// we don't want to malloc/free these either. These correspond to the node in the pool
 	// so the 0th node is entries[0] etc etc
 	entry bucket_entries[CACHE_SIZE];
-	
+
 	// we don't want to malloc/free these either. These correspond to the node in the pool
 	// so the 0th node is entries[0] etc etc
 	entry entries[CACHE_SIZE];
-	
+
 	u32 load; // number of nodes in the cache
-	
+
 	// we keep lists of each type of node as well as clean/dirty
 	entry* list[4]; // data/clean, data/dirty, index/clean, index/dirty
 
@@ -133,7 +133,7 @@ entry* dl_list_remove( entry* head, entry* e );
 internal void dl_list_debug( entry* head ) {
 
 	printf("Debug list %p\n", (void*) head );
-	
+
 	if( head != NULL ) {
 		entry* start = head;
 		entry* current = head;
@@ -142,15 +142,15 @@ internal void dl_list_debug( entry* head ) {
 			node_debug( current->node );
 			current = current->next;
 		} while( current != start );
-		
+
 	}
 }
 
 entry* dl_list_insert( entry* head, entry* e ) {
-	
+
 	printf("inserting e:%p n[%02d]:\n", (void*)e, e->node->id);
 	dl_list_debug( head );
-	
+
 	if( head == NULL ) {
 		e->next = e->prev = e;
 	} else {
@@ -159,7 +159,7 @@ entry* dl_list_insert( entry* head, entry* e ) {
 		e->next->prev = e;
 		e->prev->next = e;
 	}
-	
+
 	return e; // new head
 }
 
@@ -185,7 +185,7 @@ entry* dl_list_remove( entry* head, entry* e ) {
 	e->next = NULL;
 	e->prev = NULL;
 
-	return head;	
+	return head;
 }
 
 
@@ -196,21 +196,21 @@ void node_cache_init( node_cache* nc ) {
 	nc->mem_pool = malloc( CACHE_SIZE * sizeof(node) );
 	printf("alloc %lu bytes at %p\n",CACHE_SIZE * sizeof(node), (void*) nc->mem_pool );
 	c.mallocs++;
-	
+
 	nc->load = 0; // number of nodes in the cache
 
 	for( u32 i=0; i<CACHE_SIZE; i++ ) {
 		node* n = node_pointer_from_index( nc, i );
 		n->flags = 0; // clear all flags (we need the USED flag to be cleared)
 	}
-	
+
 	memset( nc->bucket_entries, 0, sizeof(nc->bucket_entries) );
 	memset( nc->entries, 0, sizeof(nc->entries) );
-	
+
 	for( u32 i=0; i<NUM_BUCKETS; i++ ) {
 		nc->bucket[i] = NULL;
 	}
-	
+
 	nc->list[NC_LIST_DATA_CLEAN] = nc->list[NC_LIST_INDEX_CLEAN]= nc->list[NC_LIST_INDEX_DIRTY] = nc->list[NC_LIST_DATA_DIRTY] = NULL;
 }
 
@@ -222,10 +222,10 @@ void node_cache_free( node_cache* nc ) {
 }
 
 void node_cache_debug( node_cache* nc ) {
-	
+
 	printf("Load %d\n", nc->load);
 	for( u32 i=0; i<NUM_BUCKETS; i++ ) {
-		dl_list_debug( nc->bucket[i] );		
+		dl_list_debug( nc->bucket[i] );
 	}
 }
 
@@ -249,11 +249,11 @@ internal u32 bucket_index_from_node( node* n ) {
 // Remove a node from the cache in order: clean data, clean index, dirty data, dirty index
 // Make sure we don't evict ones with refcount > 0 as they are in use
 node* node_cache_evict_node( node_cache* nc ) {
-	
+
 	node* result = NULL;
-	
+
 	u32 evict_order[4] = { NC_LIST_DATA_CLEAN, NC_LIST_INDEX_CLEAN, NC_LIST_DATA_DIRTY, NC_LIST_INDEX_DIRTY };
-	
+
 	for( u32 i=0; i<4; i++ ) {
 		entry* list = nc->list[ evict_order[i] ];
 		printf("Trying to evict from list %d\n", i);
@@ -290,14 +290,14 @@ node* node_cache_evict_node( node_cache* nc ) {
 		printf("[FAIL]: Could not evict any nodes. Maybe all are in use? (refcount > 0)\n");
 	}
 
-DONE:	
+DONE:
 	return result;
 }
 
 internal node* node_cache_allocate_node( node_cache* nc ) {
-	
+
 	node* result = NULL;
-	
+
 	// check for space, common path is that it should be full
 	if( nc->load == CACHE_SIZE ) {
 		printf("**** Cache full\n");
@@ -321,15 +321,15 @@ internal node* node_cache_allocate_node( node_cache* nc ) {
 
 	printf("Allocated node %p\n", (void*)result );
 	result->flags = NODE_FLAG_USED;
-	
+
 	return result;
 }
 
 internal void 	node_cache_add_to_bucket( node_cache* nc, node* n ) {
-	
+
 	u32 node_index = index_from_node_pointer( nc, n );
 	entry* bucket_entry = &nc->bucket_entries[node_index];
-	
+
 	printf("Bucket entry %p\n", (void*)bucket_entry);
 
 	bucket_entry->node = n;
@@ -349,7 +349,7 @@ internal entry* node_cache_add_to_list( node_cache* nc, node* n, u8 list_index )
 	list_entry->node = n;
 	nc->list[list_index] = dl_list_insert( nc->list[list_index], list_entry );
 	dl_list_debug( nc->list[list_index] );
-	
+
 	return list_entry;
 }
 
@@ -398,12 +398,12 @@ void node_cache_release_node( node_cache* nc, node* n, bool has_changes ) {
 
 	entry->refcount--;
 	assert( entry->refcount != UINT8_MAX ); // underflow
-	
+
 }
 
 // get a node from disk or cache. if from disk, store in the cache
 node* node_cache_get_node( node_cache* nc, u32 id ) {
-	
+
 	u32 bucket_index = bucket_index_from_node_id( id );
 	entry* current = nc->bucket[bucket_index];
 	if( current != NULL ) {
@@ -431,19 +431,19 @@ node* node_cache_get_node( node_cache* nc, u32 id ) {
 }
 
 void node_store_on_disk( node* n ) {
-	
+
 	printf("Storing node %d on disk\n", n->id);
 	node_debug( n );
 	c.stores++;
-	
+
 }
 
 void node_load_from_disk( node* n, u32 id ) {
-	
+
 	printf("Loading node %d from disk\n", id);
 	node_debug( n );
 	c.loads++;
-	
+
 }
 
 int main() {
@@ -453,7 +453,7 @@ int main() {
 	node_cache cache;
 	for( int i=0; i<4; i++ ) {
 		node_cache_init( &cache );
-		node_cache_free( &cache );		
+		node_cache_free( &cache );
 	}
 	printf("Mallocs: %d, Frees: %d\n", c.mallocs, c.frees );
 	assert( c.mallocs = c.frees );
@@ -466,7 +466,7 @@ int main() {
 		node_cache_release_node( &cache, n, false );
 	}
 	node_cache_debug( &cache );
-	node_cache_free( &cache );		
+	node_cache_free( &cache );
 
 	printf("Mallocs: %d, Frees: %d, Stores: %d\n", c.mallocs, c.frees, c.stores );
 	for(u8 i=0; i<4; i++) {

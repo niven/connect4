@@ -10,7 +10,7 @@ void print_board63( board63 b ) {
 		printf("%c", (b >> i) & 1 ? '1' : '0' );
 	}
 	printf("\ncnt 0=w 1=b");
-	
+
 	char out[7*(3+1+6+1)+1+1+1]; // = 80
 	memset( out, 'x', 80);
 	int offset = 0; // since we're inserting ':' and '\n'
@@ -25,17 +25,17 @@ void print_board63( board63 b ) {
 		}
 		out[offset+i] = ((b >> (63-i)) & 1) ? '1' : '0'; // there are 63 bits, but the last one is unused out of 64
 	}
-	
-	out[offset+63+0] = '\n';	
+
+	out[offset+63+0] = '\n';
 	out[offset+63+1] = '0' + (b & 0x1);
 	out[offset+63+2] = '\0';
 	printf("%s\n", out);
 }
 
 board63 encode_board( board* src ) {
-	
+
 	board63 dest = 0;
-	
+
 	// encode every column as fillcount + 6 bits
 	// MSB(3) = fillcount of col0 etc for easy binary reading of humans
 	unsigned char pieces = 0;
@@ -58,21 +58,21 @@ board63 encode_board( board* src ) {
 		dest |= temp;
 		// reset
 		pieces = 0;
-		
-		
+
+
 	}
-	
+
 	dest <<= 1; // last bit is state
-	
+
 	if( src->state & OVER ) {
 		dest |= 1; // set the gameover bit
 	}
-	
+
 	return dest;
 }
 
 void decode_board63( board63 src, board* dest ) {
-	
+
 	dest->state = 0;
 	dest->winlines = NULL;
 
@@ -83,7 +83,7 @@ void decode_board63( board63 src, board* dest ) {
 		dest->state |= OVER;
 	}
 	src >>= 1; // skip it
-	
+
 	// fill it backwards
 	int total_pieces = 0;
 	for( int datacol=COLS-1; datacol>=0; datacol-- ) {
@@ -99,7 +99,7 @@ void decode_board63( board63 src, board* dest ) {
 	}
 
 	if( total_pieces % 2 == 0 ) {
-		dest->state |= WHITE;		
+		dest->state |= WHITE;
 	} else {
 		dest->state |= BLACK;
 	}

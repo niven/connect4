@@ -38,11 +38,11 @@ typedef unsigned long board63;
 
 // TODO(confusion): two names is maybe confusing
 #define ENCODED_BOARD_SIZE (sizeof(board63))
-		
+
 // bit fields for winlineIDs for White/Black
 // winlineID 0 is byte 0, LSB 0
 // winlineID 69 is byte 8 (69/8=8) LSB 5 (69%8=5)
-// this means bits 8,7,6 of byte 8 are unused 
+// this means bits 8,7,6 of byte 8 are unused
 // byte 0          1
 // 7,6,5,4,3,2,1,0 14,13,12,11,10,9,8
 typedef struct wins {
@@ -93,7 +93,7 @@ typedef struct board {
 											{ {x+2,x+3,x+4,x+5}, {y+0,y+1,y+2,y+3} }, \
 											{ {x+3,x+4,x+5,x+6}, {y+0,y+1,y+2,y+3} },
 
-			
+
 
 extern winline winlines[NUM_WINLINES];
 extern char states[4];
@@ -123,7 +123,7 @@ void pass_turn( board* b );
 
 void render( board* b, const char* text, int show_winlines );
 
-unsigned char current_player( board* b );	
+unsigned char current_player( board* b );
 unsigned char is_win_for( board* b, unsigned char player );
 unsigned char is_draw( board* b );
 int is_over( board* b );

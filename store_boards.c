@@ -22,16 +22,16 @@ int main( int argc, char** argv ) {
 	char* moves = NULL;
 	char* destination = NULL;
 
-	int c;	
+	int c;
 
 	while( (c = getopt_long (argc, argv, "c:d:", long_options, &option_index) ) != -1 ) {
 
 		switch( c ) {
 			case 'm':
-				moves = optarg;		
+				moves = optarg;
 				break;
 			case 'd':
-				destination = optarg;		
+				destination = optarg;
 				break;
 		}
 	}
@@ -49,7 +49,7 @@ int main( int argc, char** argv ) {
 		database_close( db );
 		exit( EXIT_SUCCESS );
 	}
-	 
+
 	board* next = NULL;
 	for( size_t i=0; i<strlen(moves); i++ ) {
 		int col_index = moves[i] - '0';
@@ -65,13 +65,13 @@ int main( int argc, char** argv ) {
 		free_board( current );
 		current = next;
 	}
-	
+
 	render( next, "Final Board", false );
 	free_board( next );
 	database_close( db );
-	
+
 	printf("Done.\n");
-	
+
 	return 0;
 }
 

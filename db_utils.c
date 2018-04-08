@@ -173,7 +173,7 @@ int main( int argc, char** argv  ) {
 
 	if( argc == 2 ) {
 		db = database_open( argv[1], DATABASE_READ );
-		printf("Nodes %u, Rows: %llu, Root Node ID: %u\n", db->header->node_count, db->header->table_row_count, db->header->root_node_id);
+		printf("Nodes %u, Rows: %llu, Root Node ID: %u\n", db->header->node_count, (unsigned long long)db->header->table_row_count, db->header->root_node_id);
 	}
 
 	do {

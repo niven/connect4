@@ -3,13 +3,27 @@ else
 	MODEFLAG=-D${MODE}
 endif
 
+ifeq (${ARCH},32)
+	ARCHFLAGS=-m32 -DBUILD_32_BITS
+else
+endif
+
+
 CC=gcc
-DONTCARE_WARNINGS= -Wno-padded -Wno-format-nonliteral
-CFLAGS=-std=c99 -g -Wall -Wextra -pedantic ${DONTCARE_WARNINGS} -O3 ${MODEFLAG}
+ifeq (${MODE},NDEBUG)
+MODE_OK_WARNINGS= -Wno-unused-parameter -Wno-unused-variable \
+	-Wno-unused-but-set-variable
+else
+MODE_OK_WARNINGS= -Wno-unused-parameter
+endif
+
+DONTCARE_WARNINGS= -Wno-padded -Wno-format-nonliteral ${MODE_OK_WARNINGS}
+CFLAGS=-std=c99 -g -Wall -Wextra -pedantic -Werror ${DONTCARE_WARNINGS} -O3 ${MODEFLAG} ${ARCHFLAGS}
 CMD=${CC} ${CFLAGS}
 
 all: libs db
 	${CMD} bin/utils.o bin/bplustree.o bin/board.o bpt_test.c -o bpt
+	${CMD} bin/utils.o bin/counter.o bin/board.o bin/bplustree.o store_boards.c -o store_boards
 	${CMD} bin/utils.o bin/counter.o bin/board.o bin/bplustree.o bruteforce_connect_four.c -o bfcf
 
 db: libs
@@ -17,7 +31,7 @@ db: libs
 
 tidy:
 	# removing trailing whitespace
-	sed -i -e 's/[ \t]$$//' *.h *.c
+	sed -i -e 's/[ \t]*$$//' *.h *.c
 
 clean:
 	rm -rf bpt db bfcf *.gc *.o bin/*.o

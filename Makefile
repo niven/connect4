@@ -24,7 +24,7 @@ db: libs
 
 tidy:
 	# removing trailing whitespace
-	sed -i -e 's/[ \t]$$//' *.h *.c
+	sed -i -e 's/[ \t]*$$//' *.h *.c
 
 clean:
 	rm -rf bpt db bfcf *.gc *.o bin/*.o

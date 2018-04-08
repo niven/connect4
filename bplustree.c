@@ -574,7 +574,7 @@ void bpt_insert_node( database* db, node* n, board63 up_key, uint32 node_to_inse
 	assert( n->id != 0 );
 	check_tree_correctness( db, n );
 
-	uint32 insert_location;
+	uint32 insert_location = 0;
 	int bsearch_result = binary_search( n->keys, n->num_keys, up_key, &insert_location );
 	assert( bsearch_result == BINSEARCH_FOUND || bsearch_result == BINSEARCH_INSERT );
 	print("insert key 0x%lx at position %u, node at position %u", up_key, insert_location, insert_location+1);
@@ -890,7 +890,7 @@ internal node* bpt_find_node( database* db, node* root, board63 key ) {
 
 		print("checking node %u", current->id);
 
-		uint32 node_index;
+		uint32 node_index = 0;
 		switch( binary_search( current->keys, current->num_keys, key, &node_index) ) {
 			case BINSEARCH_FOUND:
 				node_index++; // if we hit the key, the correct node is to the right of that key

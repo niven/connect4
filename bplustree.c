@@ -525,7 +525,7 @@ node* new_node( database* db ) {
 void print_database_stats( database* db ) {
 
 	double cache_memory_used = (double)(CACHE_SIZE * ( sizeof(node) + sizeof(entry*) + sizeof(entry) + sizeof(free_entry) ) ) / (double)megabyte(1);
-	printf("BPT ORDER: %d, Node size: %lu bytes, CACHE_SIZE: %lu (Cache max mem use: %.2f MB)\n", ORDER, sizeof(node), CACHE_SIZE, cache_memory_used);
+	printf("BPT ORDER: %d, Node size: %zu bytes, CACHE_SIZE: %zu (Cache max mem use: %.2f MB)\n", ORDER, sizeof(node), CACHE_SIZE, cache_memory_used);
 
 	cache_stats stats = get_database_cache_stats( db );
 	printf("Total cache hits: %llu\n", (unsigned long long)stats.hits);

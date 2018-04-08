@@ -24,7 +24,7 @@
 internal void print_stats( const char* directory ) {
 
 	char genfilename[256];
-	printf("Node order: %d\tCache size: %lu\n", ORDER, CACHE_SIZE);
+	printf("Node order: %d\tCache size: %zu\n", ORDER, CACHE_SIZE);
 	printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
 	for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 

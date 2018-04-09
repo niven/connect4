@@ -61,9 +61,9 @@ sprintf(_verbose_buf, "%s(): " #format, __func__, __VA_ARGS__ ); \
 } while (0)
 
 #else
-	
+
 #define print( format, ... ) // DEBUG OFF
-	
+
 #define prints( string ) // DEBUG OFF
 
 #endif

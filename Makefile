@@ -22,6 +22,9 @@ all: libs db
 db: libs
 	${CMD} bin/utils.o bin/board.o bin/bplustree.o db_utils.c -o db
 
+tidy:
+	# removing trailing whitespace
+	sed -i -e 's/[ \t]*$$//' *.h *.c
 
 clean:
 	rm -rf bpt db bfcf *.gc *.o bin/*.o

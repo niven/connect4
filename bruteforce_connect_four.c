@@ -22,9 +22,9 @@
 
 
 internal void print_stats( const char* directory ) {
-	
+
 	char genfilename[256];
-	printf("Node order: %d\tCache size: %lu\n", ORDER, CACHE_SIZE);
+	printf("Node order: %d\tCache size: %zu\n", ORDER, CACHE_SIZE);
 	printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
 	for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 
@@ -39,7 +39,7 @@ internal void print_stats( const char* directory ) {
 		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0*gc->cache_hit_ratio, (double)gc->database_size/(double)megabyte(1) );
 
 	}
-	
+
 }
 
 internal void display_progress( size_t current, size_t total ) {
@@ -58,31 +58,31 @@ internal void next_generation( const char* database_from, const char* database_t
 	database* from = database_open( database_from, DATABASE_READ );
 	database_create( database_to );
 	database* to = database_open( database_to, DATABASE_WRITE );
-		
+
 	// do all 7 moves in 1 drop, avoiding mallocing a brazillian new boards
 	board63 next_gen[7];
-	
+
 	// iterate over all boards in the db
 	struct database_cursor cursor;
 	database_init_cursor( from, &cursor );
-	
+
 	// gen next
 	gen_counter counters;
-	memset( &counters, 0, sizeof(gen_counter) );	
+	memset( &counters, 0, sizeof(gen_counter) );
 
 	// cpu timing
 	clock_t cpu_time_start = clock();
-	
+
 	while( cursor.current < cursor.num_records ) {
 		print("Retrieving record %lu", cursor.current);
 		display_progress( cursor.current, cursor.num_records );
-		
+
 		board63 current_board63 = database_get_record( &cursor );
-		
+
 		if( is_end_state( current_board63 ) ) {
 			continue;
 		}
-		
+
 		board current_board;
 		decode_board63( current_board63, &current_board );
 		// render( &current_board, "Multidrop", false);
@@ -113,24 +113,24 @@ internal void next_generation( const char* database_from, const char* database_t
 	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 	cache_stats cstats = get_database_cache_stats( to );
 	counters.cache_hit_ratio = cstats.hit_ratio;
-	
+
 	database_dispose_cursor( &cursor );
-	
+
 	print_database_stats( to );
-	
+
 	database_close( from );
 	database_close( to );
 
 	struct stat gstat;
 	char index_filename[256];
 	sprintf(index_filename, "%s.c4_index", database_to);
-	
+
 	int stat_result = stat( index_filename, &gstat);
 	assert( stat_result != -1 );
 	counters.database_size = (unsigned long)gstat.st_size;
-	
+
 	write_counter( &counters, "gencounter.gc" );
-	
+
 }
 
 /* getopt_long stores the option index here. */
@@ -150,7 +150,7 @@ int main( int argc, char** argv ) {
 	char* source = NULL;
 	char* destination = NULL;
 
-	int c;	
+	int c;
 
 	while( (c = getopt_long (argc, argv, "ts:d:r:", long_options, &option_index) ) != -1 ) {
 

@@ -63,9 +63,9 @@ typedef struct record {
 // node_id 0 is reserved to indicate NULL/empty/no parent
 // TODO: maybe we can put the is_leaf first so we can check for leaf nodes easily in the file (well, wecould use an offset., but still)
 typedef struct node {
-	
+
 	uint32 id;
-	
+
 	uint32 parent_node_id;
 
 	uint32 num_keys; // number of entries
@@ -106,7 +106,7 @@ Finding a free entry must then also be O(1), which is why there is a separate fr
 The cache entry holds a pointer to either a node or a free_entry.
 
 Operations:
-(1) Insert, space in the cache: 
+(1) Insert, space in the cache:
 	- hash the key
 	- create an entry
 	- set the node ptr of the entry
@@ -175,7 +175,7 @@ typedef struct entry {
 		node* to_node;
 		free_entry* to_free_entry;
 	} ptr;
-	
+
 	struct entry* next;
 	// TODO(space): maybe node id could be 32 bits? refcount certainly is and that would save 8 bytes
 	// maybe even some kind of size_t node_id:54, size_t refcount:10 kind of thing
@@ -219,10 +219,10 @@ typedef struct database {
 } database;
 
 typedef struct database_cursor {
-	
+
 	size_t current;
 	size_t num_records;
-	
+
 	// internal
 	uint64* data; // mmapped
 	node* current_node; // offset into data

@@ -50,7 +50,7 @@ internal entry map( const char* file ) {
         pagesize,
         PROT_READ,
         MAP_PRIVATE,
-        fd, 
+        fd,
         0 // start of the file
     );
     fclose(fp); // mmap adds a ref

@@ -19,6 +19,10 @@ all: libs db
 	${CMD} bin/utils.o bin/counter.o bin/board.o bin/bplustree.o store_boards.c -o store_boards
 	${CMD} bin/utils.o bin/counter.o bin/board.o bin/bplustree.o bruteforce_connect_four.c -o bfcf
 
+tools:
+	${CMD} -o tools/samples samples.c
+	${CMD} -o tools/merge merge.c
+
 db: libs
 	${CMD} bin/utils.o bin/board.o bin/bplustree.o db_utils.c -o db
 
@@ -27,7 +31,7 @@ tidy:
 	sed -i -e 's/[ \t]*$$//' *.h *.c
 
 clean:
-	rm -rf bpt db bfcf *.gc *.o bin/*.o
+	rm -rf bpt db bfcf *.gc *.o bin/*.o tools/*
 
 libs:
 	${CMD} -c bplustree.c -o bin/bplustree.o

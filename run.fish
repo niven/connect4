@@ -1,4 +1,4 @@
-#!/usr/local/bin/fish
+#!/usr/bin/fish
 
 
 if test -z $argv;
@@ -9,27 +9,29 @@ end
 
 echo "Generating up to $NUM_GENERATIONS generations."
 
-rm -rf results
-mkdir results
-
 make clean
 make MODE=NDEBUG all
 
-# create gen 0 (database with single, empty board)
-./store_boards --destination=results/generation_0
+for current in (seq 1 $NUM_GENERATIONS)
 
-for current in (seq $NUM_GENERATIONS)
+	if test ! -d "./data/$current"
+		mkdir "./data/$current"
+	end
+
+	rm -f "./data/$current/*"
+
 	echo "########################## Generation $current ##########################"
 	set prev (math $current - 1)
 
-	./bfcf --source=results/generation_$prev --destination=results/generation_$current --command=nextgen
-	mv gencounter.gc results/gencounter_$current.gc
+#	./bfcf --source=results/generation_$prev --destination=results/generation_$current --command=nextgen
+#	mv gencounter.gc results/gencounter_$current.gc
 	
 	# save diskspace by not keeping old stuff
-	rm results/generation_$prev.c4_index
+#	rm results/generation_$prev.c4_index
 end
 
 echo -e "\nResults:"
 
-./bfcf --command=stats --source=results
-./bfcf --command=stats --source=results > latest_results.txt
+for current in (seq 1 $NUM_GENERATIONS)
+	cat "./data/$current/stats.txt"
+end

@@ -17,7 +17,7 @@
 
 #include "board.h"
 
-#define BLOCK_SIZE (1 * 1 * 1000)
+#define BLOCK_SIZE (1 * 32 * 1000)
 
 internal void display_progress( size_t current, size_t total ) {
 

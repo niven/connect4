@@ -10,7 +10,7 @@ endif
 
 
 CC=clang
-DONTCARE_WARNINGS= -Wno-padded -Wno-format-nonliteral
+DONTCARE_WARNINGS= -Wno-padded -Wno-format-nonliteral -Wno-vla
 CFLAGS=-std=c99 -g -Weverything -pedantic -ferror-limit=3 ${DONTCARE_WARNINGS} -O3 ${MODEFLAG} ${ARCHFLAGS}
 CMD=${CC} ${CFLAGS}
 

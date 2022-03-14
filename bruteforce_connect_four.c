@@ -134,9 +134,8 @@ internal void next_generation( const char* source_file, const char* destination_
 	sprintf( stats_file, "%s/stats.txt", destination_directory );
 	FILE* stats;
 	FOPEN_CHECK( stats, stats_file, "w" )
-	fprintf(stats, "CPU time: %f\n", counters.cpu_time_used );
+	fprintf(stats, "Create CPU time: %f\n", counters.cpu_time_used );
 	fprintf(stats, "Total boards: %ld\n", counters.total_boards );
-	fprintf(stats, "Unique boards: %ld\n", counters.unique_boards );
 	fprintf(stats, "Wins white: %ld\n", counters.wins_white );
 	fprintf(stats, "Wins black: %ld\n", counters.wins_black );
 	fprintf(stats, "Draws: %ld\n", counters.draws );

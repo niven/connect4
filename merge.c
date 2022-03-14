@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "base.h"
@@ -15,13 +16,16 @@ typedef struct merge_stats {
     uint64 read;
     uint64 emitted;
     uint64 skipped;
+    double cpu_time_used;
 } merge_stats;
 
 
 
 internal merge_stats merge( char* directory, glob_t files ) {
 
-    merge_stats stats = { .read = 0, .emitted = 0, .skipped = 0 };
+    merge_stats stats = { .read = 0, .emitted = 0, .skipped = 0, .cpu_time_used = 0.0 };
+
+	clock_t cpu_time_start = clock();
 
     uint16 count = (uint16) files.gl_pathc;
     entry stuff[ count ];
@@ -89,12 +93,12 @@ internal merge_stats merge( char* directory, glob_t files ) {
         }
     }
 
+	stats.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
+
     return stats;
 }
 
 int main( int argc, char** argv ) {
-
-    srand( 23898645 );
 
     char* directory;
     if( argc != 2 ) {
@@ -116,8 +120,18 @@ int main( int argc, char** argv ) {
     glob( pattern, GLOB_TILDE, NULL, &glob_result );
     printf("Merging %lu files from %s\n", glob_result.gl_pathc, directory);
 
-    merge_stats stats = merge( directory, glob_result );
-    printf("Read: %lu\t\tEmitted: %lu\t\tSkipped: %lu\n", stats.read, stats.emitted, stats.skipped);
+    merge_stats result = merge( directory, glob_result );
+
+	char stats_file[255];
+	sprintf( stats_file, "%s/stats.txt", directory );
+	FILE* stats;
+	FOPEN_CHECK( stats, stats_file, "a" )
+	fprintf(stats, "Merge CPU time: %f\n", result.cpu_time_used );
+	fprintf(stats, "Merge reads: %ld\n", result.read );
+	fprintf(stats, "Merge emits: %ld\n", result.emitted );
+	fprintf(stats, "Merge skips: %ld\n", result.skipped );
+	fclose( stats );
+
 
     exit( EXIT_SUCCESS );
 }

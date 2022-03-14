@@ -33,7 +33,6 @@ echo -e "\nResults:"
 for current in (seq 1 $NUM_GENERATIONS)
 	echo "Generation $current"
 	cat ./data/$current/stats.txt
-	ls -l ./data/$current/boards | awk '{print "Total unique boards " $5/8}'
 	echo
 end
 

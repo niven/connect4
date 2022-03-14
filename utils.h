@@ -5,8 +5,16 @@
 
 #include <sys/types.h>
 
+typedef struct entry {
+    uint64* head;
+    uint64* current;
+    uint64  remaining;
+} entry;
+
+
 FILE* open_and_seek( const char* filename, const char* mode, off_t offset );
 void create_empty_file( const char* filename );
+entry map( const char* file );
 void print_bits(unsigned char c);
 size_t hash(size_t i);
 

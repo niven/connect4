@@ -6,7 +6,6 @@
 
 #include <string.h>
 
-#include <sys/mman.h>
 #include <sys/stat.h>
 
 #include <unistd.h>
@@ -14,8 +13,7 @@
 #include <glob.h>
 
 #include "base.h"
-
-global_variable uint16 pagesize;
+#include "utils.h"
 
 typedef struct merge_stats {
     uint64 read;
@@ -23,49 +21,7 @@ typedef struct merge_stats {
     uint64 skipped;
 } merge_stats;
 
-typedef struct entry {
-    uint64* head;
-    uint64* current;
-    uint64  remaining;
-} entry;
 
-internal entry map( const char* file ) {
-
-    print("map %s", file);
-
-    entry result;
-
-    FILE* fp = fopen( file, "r" );
-    int fd = fileno( fp );
-    struct stat sb;
-    /* To obtain file size */
-    if( fstat(fd, &sb) == -1 ) {
-        perror("Could not fstat");
-        exit( EXIT_FAILURE );
-    }
-    printf("File %s elements %lu\n", file, sb.st_size / sizeof(uint64));
-
-    result.head = mmap(
-        NULL, // kernel picks mapping location. We don't care
-        pagesize,
-        PROT_READ,
-        MAP_PRIVATE,
-        fd,
-        0 // start of the file
-    );
-    fclose(fp); // mmap adds a ref
-
-
-    if( result.head == MAP_FAILED ) {
-        perror("Could not mmap");
-        exit( EXIT_FAILURE );
-    }
-
-    result.current = result.head;
-    result.remaining = (uint64) sb.st_size / sizeof(uint64);
-
-    return result;
-}
 
 internal merge_stats merge( char* directory, glob_t files ) {
 
@@ -133,8 +89,6 @@ internal merge_stats merge( char* directory, glob_t files ) {
 int main( int argc, char** argv ) {
 
     srand( 23898645 );
-    pagesize = (uint16) getpagesize();
-    printf( "Page size: %hu\n", pagesize );
 
     char* directory;
     if( argc != 2 ) {

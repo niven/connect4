@@ -18,13 +18,11 @@
 
 #include "board.h"
 #include "counter.h"
-#include "bplustree.h"
 
 
 internal void print_stats( const char* directory ) {
 
 	char genfilename[256];
-	printf("Node order: %d\tCache size: %zu\n", ORDER, CACHE_SIZE);
 	printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
 	for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 
@@ -53,11 +51,13 @@ internal void display_progress( size_t current, size_t total ) {
 	}
 }
 
-internal void next_generation( const char* database_from, const char* database_to ) {
+internal void next_generation( const char* source_file, const char* destination_directory ) {
 
-	database* from = database_open( database_from, DATABASE_READ );
-	database_create( database_to );
-	database* to = database_open( database_to, DATABASE_WRITE );
+	FILE* source;
+	FOPEN_CHECK( source, source_file, "r" )
+
+	// to number the blocks we output
+	uint16 block = 0;
 
 	// do all 7 moves in 1 drop, avoiding mallocing a brazillian new boards
 	board63 next_gen[7];
@@ -139,7 +139,7 @@ global_variable int option_index = 0;
 global_variable struct option long_options[] = {
 	{"command",  		required_argument, 0, 'c'},
 	{"source",  		required_argument, 0, 's'},
-	{"destination",	optional_argument, 0, 'd'},
+	{"destination",		optional_argument, 0, 'd'},
 	{0, 0, 0, 0}
 };
 
@@ -152,7 +152,7 @@ int main( int argc, char** argv ) {
 
 	int c;
 
-	while( (c = getopt_long (argc, argv, "ts:d:r:", long_options, &option_index) ) != -1 ) {
+	while( (c = getopt_long (argc, argv, "c:s:d:", long_options, &option_index) ) != -1 ) {
 
 		switch( c ) {
 		  case 's':
@@ -173,7 +173,7 @@ int main( int argc, char** argv ) {
 	assert( source );
 
 	if( source == NULL ) {
-		fprintf( stderr, "Required database name missing [--source name]\n");
+		fprintf( stderr, "Source file missing [--source name]\n");
 	}
 
 	if( strcmp("stats", command) == 0 ) {

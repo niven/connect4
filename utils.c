@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/mman.h>
+#include <sys/stat.h>
+
 #include "base.h"
 #include "utils.h"
 
@@ -86,3 +89,43 @@ void print_bits(unsigned char c) {
 	printf("%s\n", out);
 }
 
+
+entry map( const char* file ) {
+
+    uint16 pagesize = (uint16) getpagesize();
+
+    print("map %s", file);
+
+    entry result;
+
+    FILE* fp = fopen( file, "r" );
+    int fd = fileno( fp );
+    struct stat sb;
+    /* To obtain file size */
+    if( fstat(fd, &sb) == -1 ) {
+        perror("Could not fstat");
+        exit( EXIT_FAILURE );
+    }
+    printf("File %s elements %lu\n", file, sb.st_size / sizeof(uint64));
+
+    result.head = mmap(
+        NULL, // kernel picks mapping location. We don't care
+        pagesize,
+        PROT_READ,
+        MAP_PRIVATE,
+        fd,
+        0 // start of the file
+    );
+    fclose(fp); // mmap adds a ref
+
+
+    if( result.head == MAP_FAILED ) {
+        perror("Could not mmap");
+        exit( EXIT_FAILURE );
+    }
+
+    result.current = result.head;
+    result.remaining = (uint64) sb.st_size / sizeof(uint64);
+
+    return result;
+}

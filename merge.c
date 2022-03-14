@@ -34,8 +34,8 @@ internal merge_stats merge( char* directory, glob_t files ) {
     sprintf( destination, "%s/boards", directory );
     FILE* out = fopen( destination, "w" );
     entry* target = &stuff[0];
-    uint16 sentinel = 0;
-    while( target != NULL && sentinel++ < 1000) {
+    uint64 last_emitted = 0;
+    while( target != NULL ) {
 
         target = NULL;
 
@@ -61,13 +61,22 @@ internal merge_stats merge( char* directory, glob_t files ) {
                 stats.read++;
            }
         }
+
         if( target != NULL ) {
-            print("Emit: %lu", *(target->current) );
-            fwrite( target->current, sizeof(uint64), 1, out );
-            stats.emitted++;
-            stats.read++;
+
+            // Skip anything we already have emitted. This happens if there are multiple the same values in a single file
+            if( *(target->current) != last_emitted ) {
+                last_emitted = *(target->current);
+                print("Emit: %lu", last_emitted );
+                fwrite( target->current, sizeof(uint64), 1, out );
+                stats.emitted++;
+            } else {
+                stats.skipped++;
+            }
+
             target->current++;
             target->remaining--;
+            stats.read++;
         }
 
     }

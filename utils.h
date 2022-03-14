@@ -5,11 +5,25 @@
 
 #include <sys/types.h>
 
+/**
+ * @brief boards block file
+ * 
+ */
 typedef struct entry {
     uint64* head;
     uint64* current;
     uint64  remaining;
 } entry;
+
+
+typedef struct gen_counter {
+	double cpu_time_used;
+	unsigned long total_boards;
+	unsigned long unique_boards;
+	unsigned long wins_white;
+	unsigned long wins_black;
+	unsigned long draws;
+} gen_counter;
 
 
 FILE* open_and_seek( const char* filename, const char* mode, off_t offset );

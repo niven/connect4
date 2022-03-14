@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <ctype.h>
-#include <getopt.h>
 #include <math.h> /* ceil() */
 #include <stdarg.h>
 #include <stddef.h>
@@ -13,34 +12,12 @@
 #include <time.h>
 #include <unistd.h>
 
-
 #include "base.h"
-
-#include "board.h"
-#include "counter.h"
 #include "utils.h"
 
+#include "board.h"
+
 #define BLOCK_SIZE (1 * 1 * 1000)
-
-internal void print_stats( const char* directory ) {
-
-	char genfilename[256];
-	printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\n");
-	for( int g=1; g<=42; g++ ) { // just try all possible and break when done
-
-
-		sprintf(genfilename, "%s/gencounter_%d.gc", directory, g);
-		struct stat gstat;
-		if( stat( genfilename, &gstat ) == -1 ) {
-			break;
-		}
-		gen_counter* gc = read_counter( genfilename );
-
-		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used );
-
-	}
-
-}
 
 internal void display_progress( size_t current, size_t total ) {
 
@@ -128,61 +105,37 @@ internal void next_generation( const char* source_file, const char* destination_
 	}
 
 
-	write_counter( &counters, "gencounter.gc" );
+	char stats_file[255];
+	sprintf( stats_file, "%s/stats.txt", destination_directory );
+	FILE* stats;
+	FOPEN_CHECK( stats, stats_file, "w" )
+	fprintf(stats, "CPU time: %f\n", counters.cpu_time_used );
+	fprintf(stats, "Total boards: %ld\n", counters.total_boards );
+	fprintf(stats, "Unique boards: %ld\n", counters.unique_boards );
+	fprintf(stats, "Wins white: %ld\n", counters.wins_white );
+	fprintf(stats, "Wins black: %ld\n", counters.wins_black );
+	fprintf(stats, "Draws: %ld\n", counters.draws );
+	fclose( stats );
 
 }
 
-/* getopt_long stores the option index here. */
-global_variable int option_index = 0;
-
-global_variable struct option long_options[] = {
-	{"command",  		required_argument, 0, 'c'},
-	{"source",  		required_argument, 0, 's'},
-	{"destination",		optional_argument, 0, 'd'},
-	{0, 0, 0, 0}
-};
-
-
 int main( int argc, char** argv ) {
 
-	char* command = NULL;
-	char* source = NULL;
-	char* destination = NULL;
+	char* source_file = NULL;
+	char* destination_directory = NULL;
 
-	int c;
-
-	while( (c = getopt_long (argc, argv, "c:s:d:", long_options, &option_index) ) != -1 ) {
-
-		switch( c ) {
-		  case 's':
-			 source = optarg;
-		    break;
- 		  case 'd':
- 			 destination = optarg;
- 		    break;
-		  case 'c':
-			 command = optarg;
-		    break;
-		  default:
-		    abort();
-		}
+	if( argc != 3 ) {
+		printf("Usage: bfcf source_file destination_directory\n");
+		exit( EXIT_SUCCESS );
 	}
 
-	assert( command );
-	assert( source );
+	source_file = argv[1];
+	destination_directory = argv[2];
 
-	if( source == NULL ) {
-		fprintf( stderr, "Source file missing [--source name]\n");
-	}
+	// TODO: check file and dir
 
-	if( strcmp("stats", command) == 0 ) {
-		print_stats( source );
-	} else if( strcmp("nextgen", command) == 0 ) {
-		next_generation( source, destination );
-	} else {
-		printf("Unknown command: %s\n", command);
-	}
+	next_generation( source_file, destination_directory );
 
-	return EXIT_SUCCESS;
+	exit( EXIT_SUCCESS );
 }
 

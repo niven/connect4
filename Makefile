@@ -15,7 +15,7 @@ CFLAGS=-std=c99 -g -Weverything -pedantic -ferror-limit=3 ${DONTCARE_WARNINGS} -
 CMD=${CC} ${CFLAGS}
 
 all: libs
-	${CMD} bin/utils.o bin/counter.o bin/board.o bruteforce_connect_four.c -o bin/bfcf
+	${CMD} bin/utils.o bin/board.o bruteforce_connect_four.c -o bin/bfcf
 	${CMD} -o bin/samples samples.c
 	${CMD} bin/utils.o -o bin/merge merge.c
 
@@ -28,5 +28,4 @@ clean:
 
 libs:
 	${CMD} -c utils.c -o bin/utils.o
-	${CMD} -c counter.c -o bin/counter.o
 	${CMD} -c board.c -o bin/board.o

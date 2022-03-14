@@ -30,16 +30,27 @@ internal void display_progress( size_t current, size_t total ) {
 	}
 }
 
+internal int compare_boards(const void* a, const void* b) {
+    board63 arg1 = *(const board63*)a;
+    board63 arg2 = *(const board63*)b;
+ 
+    if (arg1 < arg2) return -1;
+    if (arg1 > arg2) return 1;
+    return 0;
+}
+ 
+
 internal void write_block( const char* destination_directory, uint16 index, uint64 count, board63 boards[] ) {
 
-	// sort
+	// sort so merging is easy and can eliminate duplicates
+	qsort(boards, count, sizeof(board63), compare_boards);
+
 	// write
 	char block_file[255];
 	sprintf( block_file, "%s/%016hu.block", destination_directory, index );
 	FILE* out = fopen( block_file, "w" );
 	fwrite( boards, sizeof(board63), count, out );
 	fclose( out );
-
 }
 
 internal void next_generation( const char* source_file, const char* destination_directory ) {
@@ -68,6 +79,7 @@ internal void next_generation( const char* source_file, const char* destination_
 		display_progress( total_boards - boards.remaining, total_boards );
 
 		board63 current_board63 = *(boards.current);
+		boards.current++;
 		boards.remaining--;
 
 		if( is_end_state( current_board63 ) ) {
@@ -92,10 +104,10 @@ internal void next_generation( const char* source_file, const char* destination_
 					counters.wins_black++;
 				}
 			}
-			// store
 			output_boards[created++] = next_gen[i]; // Could probably copy all in 1 go
 		}
 
+		// Store and ensure we never exceed the block size
 		if( created + 7 > BLOCK_SIZE ) {
 			write_block( destination_directory, block, created, output_boards);
 		}

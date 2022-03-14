@@ -26,7 +26,7 @@ internal void display_progress( size_t current, size_t total ) {
 	}
 	size_t one_percent = total / 100;
 	if( current % one_percent == 0 ) {
-		printf("\r%.2f%%", 100. * (double)current / (double)total);
+		printf("\r%.2f%%\t", 100. * (double)current / (double)total);
 	}
 }
 
@@ -41,6 +41,8 @@ internal int compare_boards(const void* a, const void* b) {
  
 
 internal void write_block( const char* destination_directory, uint16 index, uint64 count, board63 boards[] ) {
+
+	printf("Writing block %hu with %lu boards\n", index, count);
 
 	// sort so merging is easy and can eliminate duplicates
 	qsort(boards, count, sizeof(board63), compare_boards);
@@ -109,7 +111,8 @@ internal void next_generation( const char* source_file, const char* destination_
 
 		// Store and ensure we never exceed the block size
 		if( created + 7 > BLOCK_SIZE ) {
-			write_block( destination_directory, block, created, output_boards);
+			write_block( destination_directory, block++, created, output_boards);
+			created = 0;
 		}
 	}
 

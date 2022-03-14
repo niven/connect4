@@ -30,6 +30,18 @@ internal void display_progress( size_t current, size_t total ) {
 	}
 }
 
+internal void write_block( const char* destination_directory, uint16 index, uint64 count, board63 boards[] ) {
+
+	// sort
+	// write
+	char block_file[255];
+	sprintf( block_file, "%s/%016hu.block", destination_directory, index );
+	FILE* out = fopen( block_file, "w" );
+	fwrite( boards, sizeof(board63), count, out );
+	fclose( out );
+
+}
+
 internal void next_generation( const char* source_file, const char* destination_directory ) {
 
 	board63 output_boards[ BLOCK_SIZE ];
@@ -85,17 +97,15 @@ internal void next_generation( const char* source_file, const char* destination_
 		}
 
 		if( created + 7 > BLOCK_SIZE ) {
-			// sort
-			// write
-			char block_file[255];
-			sprintf( block_file, "%s/%016hu.block", destination_directory, block );
-			block++;
-			FILE* out = fopen( block_file, "w" );
-            fwrite( output_boards, sizeof(board63), created, out );
-		    fclose( out );
-			created = 0;
+			write_block( destination_directory, block, created, output_boards);
 		}
 	}
+
+	// write the final block
+	if( created > 0 ) {
+		write_block( destination_directory, block, created, output_boards);
+	}
+
 
 	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 

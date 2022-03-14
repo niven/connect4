@@ -18,7 +18,7 @@
 
 #include "board.h"
 #include "counter.h"
-
+#include "utils.h"
 
 internal void print_stats( const char* directory ) {
 
@@ -53,8 +53,6 @@ internal void display_progress( size_t current, size_t total ) {
 
 internal void next_generation( const char* source_file, const char* destination_directory ) {
 
-	FILE* source;
-	FOPEN_CHECK( source, source_file, "r" )
 
 	// to number the blocks we output
 	uint16 block = 0;
@@ -62,9 +60,9 @@ internal void next_generation( const char* source_file, const char* destination_
 	// do all 7 moves in 1 drop, avoiding mallocing a brazillian new boards
 	board63 next_gen[7];
 
-	// iterate over all boards in the db
-	struct database_cursor cursor;
-	database_init_cursor( from, &cursor );
+	// iterate over all boards
+	entry boards = map( source_file );
+	uint64 total_boards = boards.remaining;
 
 	// gen next
 	gen_counter counters;
@@ -73,9 +71,9 @@ internal void next_generation( const char* source_file, const char* destination_
 	// cpu timing
 	clock_t cpu_time_start = clock();
 
-	while( cursor.current < cursor.num_records ) {
+	while( boards.remaining > 0 ) {
 		print("Retrieving record %lu", cursor.current);
-		display_progress( cursor.current, cursor.num_records );
+		display_progress( total_boards - boards.remaining, total_boards );
 
 		board63 current_board63 = database_get_record( &cursor );
 

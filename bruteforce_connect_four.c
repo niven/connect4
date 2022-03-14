@@ -42,7 +42,7 @@ internal int compare_boards(const void* a, const void* b) {
 
 internal void write_block( const char* destination_directory, uint16 index, uint64 count, board63 boards[] ) {
 
-	printf("Writing block %hu with %lu boards\n", index, count);
+	print("Writing block %hu with %lu boards\n", index, count);
 
 	// sort so merging is easy and can eliminate duplicates
 	qsort(boards, count, sizeof(board63), compare_boards);

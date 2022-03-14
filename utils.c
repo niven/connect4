@@ -122,7 +122,7 @@ entry map( const char* file ) {
         perror("Could not fstat");
         exit( EXIT_FAILURE );
     }
-    printf("File %s elements %lu\n", file, (uint64) sb.st_size / sizeof(uint64));
+    print("File %s elements %lu\n", file, (uint64) sb.st_size / sizeof(uint64));
 
 	uint64 length = ( 1 + (uint64) sb.st_size / pagesize ) * pagesize;
 

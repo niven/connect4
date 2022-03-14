@@ -41,7 +41,7 @@ internal merge_stats merge( char* directory, glob_t files ) {
 
         for( uint16 i=0; i<count; i++ ) {
 
-            print("Entry %hu: r:%lu c:%lu", i, stuff[i].remaining, *(stuff[i].current));
+            print("Entry %hu: r:%lu c:%016lx", i, stuff[i].remaining, *(stuff[i].current));
 
             if( stuff[i].remaining == 0 ) {
                 continue;
@@ -49,12 +49,12 @@ internal merge_stats merge( char* directory, glob_t files ) {
 
             if( target == NULL ) {
                 target = &stuff[i];
-                print("Pick: %lu", *(target->current)  );
+                print("Pick: %016lx", *(target->current)  );
             } else if( *(stuff[i].current) < *(target->current) ) {
                 target = &stuff[i];
-                print("Lower: %lu", *(target->current)  );
+                print("Lower: %016lx", *(target->current)  );
             } else if( *(stuff[i].current) == *(target->current) ) {
-                print("Skip: %lu from entry %hu", *(stuff[i].current), i  );
+                print("Skip: %016lx from entry %hu", *(stuff[i].current), i  );
                 stuff[i].current++;
                 stuff[i].remaining--;
                 stats.skipped++;
@@ -67,10 +67,11 @@ internal merge_stats merge( char* directory, glob_t files ) {
             // Skip anything we already have emitted. This happens if there are multiple the same values in a single file
             if( *(target->current) != last_emitted ) {
                 last_emitted = *(target->current);
-                print("Emit: %lu", last_emitted );
+                print("Emit: %016lx", last_emitted );
                 fwrite( target->current, sizeof(uint64), 1, out );
                 stats.emitted++;
             } else {
+                print("Skip: %016lx from same stream", last_emitted );
                 stats.skipped++;
             }
 

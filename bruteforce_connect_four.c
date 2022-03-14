@@ -76,10 +76,9 @@ internal void next_generation( const char* source_file, const char* destination_
 	clock_t cpu_time_start = clock();
 
 	while( boards.remaining > 0 ) {
-		print("Retrieving record %lu", cursor.current);
 		display_progress( total_boards - boards.remaining, total_boards );
 
-		board63 current_board63 = boards.current;
+		board63 current_board63 = *(boards.current);
 		boards.remaining--;
 
 		if( is_end_state( current_board63 ) ) {
@@ -124,7 +123,7 @@ internal void next_generation( const char* source_file, const char* destination_
 	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 
 	// Note: mmap maps in multiples of page size, but why does unmap need it?
-	if( munmap( (void*)boards.head, (size_t) getpagesize() ) == -1 ){
+	if( munmap( (void*)boards.head, (size_t) sysconf(_SC_PAGESIZE) ) == -1 ){
 		perror("munmap");
 	}
 

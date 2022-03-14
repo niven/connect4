@@ -1,16 +1,12 @@
 #include <fcntl.h>
-
+#include <glob.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <string.h>
-
 #include <sys/stat.h>
-
+#include <sys/mman.h>
 #include <unistd.h>
-
-#include <glob.h>
 
 #include "base.h"
 #include "utils.h"
@@ -78,7 +74,7 @@ internal merge_stats merge( char* directory, glob_t files ) {
     fclose( out );
 
     for( uint16 i=0; i<count; i++ ) {
-        if( munmap( (void*)stuff[i].head, getpagesize() ) == -1 ){
+        if( munmap( (void*)stuff[i].head, (size_t) sysconf(_SC_PAGESIZE) ) == -1 ){
             perror("munmap");
         }
     }

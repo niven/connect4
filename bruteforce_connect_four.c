@@ -20,10 +20,12 @@
 #include "counter.h"
 #include "utils.h"
 
+#define BLOCK_SIZE (1 * 1 * 1000)
+
 internal void print_stats( const char* directory ) {
 
 	char genfilename[256];
-	printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\tCache hit %%\tfilesize (MB)\n");
+	printf("Gen\tTotal\tUnique\twins W\twins B\tCPU time (s)\n");
 	for( int g=1; g<=42; g++ ) { // just try all possible and break when done
 
 
@@ -34,7 +36,7 @@ internal void print_stats( const char* directory ) {
 		}
 		gen_counter* gc = read_counter( genfilename );
 
-		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used, 100.0*gc->cache_hit_ratio, (double)gc->database_size/(double)megabyte(1) );
+		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used );
 
 	}
 
@@ -53,6 +55,8 @@ internal void display_progress( size_t current, size_t total ) {
 
 internal void next_generation( const char* source_file, const char* destination_directory ) {
 
+	board63 output_boards[ BLOCK_SIZE ];
+	uint64 created = 0;
 
 	// to number the blocks we output
 	uint16 block = 0;
@@ -75,7 +79,8 @@ internal void next_generation( const char* source_file, const char* destination_
 		print("Retrieving record %lu", cursor.current);
 		display_progress( total_boards - boards.remaining, total_boards );
 
-		board63 current_board63 = database_get_record( &cursor );
+		board63 current_board63 = boards.current;
+		boards.remaining--;
 
 		if( is_end_state( current_board63 ) ) {
 			continue;
@@ -100,32 +105,29 @@ internal void next_generation( const char* source_file, const char* destination_
 				}
 			}
 			// store
-			bool was_insert = database_put( to, next_gen[i] );
-			if( was_insert ) {
-				counters.unique_boards++;
-			}
+			output_boards[created++] = next_gen[i]; // Could probably copy all in 1 go
 		}
 
+		if( created + 7 > BLOCK_SIZE ) {
+			// sort
+			// write
+			char block_file[255];
+			sprintf( block_file, "%s/%016hu.block", destination_directory, block );
+			block++;
+			FILE* out = fopen( block_file, "w" );
+            fwrite( output_boards, sizeof(board63), created, out );
+		    fclose( out );
+			created = 0;
+		}
 	}
 
 	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
-	cache_stats cstats = get_database_cache_stats( to );
-	counters.cache_hit_ratio = cstats.hit_ratio;
 
-	database_dispose_cursor( &cursor );
+	// Note: mmap maps in multiples of page size, but why does unmap need it?
+	if( munmap( (void*)boards.head, getpagesize() ) == -1 ){
+		perror("munmap");
+	}
 
-	print_database_stats( to );
-
-	database_close( from );
-	database_close( to );
-
-	struct stat gstat;
-	char index_filename[256];
-	sprintf(index_filename, "%s.c4_index", database_to);
-
-	int stat_result = stat( index_filename, &gstat);
-	assert( stat_result != -1 );
-	counters.database_size = (unsigned long)gstat.st_size;
 
 	write_counter( &counters, "gencounter.gc" );
 

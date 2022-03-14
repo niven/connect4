@@ -17,7 +17,7 @@ CMD=${CC} ${CFLAGS}
 all: libs
 	${CMD} bin/utils.o bin/counter.o bin/board.o bruteforce_connect_four.c -o bfcf
 	${CMD} -o bin/samples samples.c
-	${CMD} -o bin/merge merge.c
+	${CMD} bin/utils.o -o bin/merge merge.c
 
 tidy:
 	# removing trailing whitespace

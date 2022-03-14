@@ -78,7 +78,7 @@ internal merge_stats merge( char* directory, glob_t files ) {
     fclose( out );
 
     for( uint16 i=0; i<count; i++ ) {
-        if( munmap( (void*)stuff[i].head, pagesize ) == -1 ){
+        if( munmap( (void*)stuff[i].head, getpagesize() ) == -1 ){
             perror("munmap");
         }
     }

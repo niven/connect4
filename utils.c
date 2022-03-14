@@ -124,9 +124,11 @@ entry map( const char* file ) {
     }
     printf("File %s elements %lu\n", file, (uint64) sb.st_size / sizeof(uint64));
 
+	uint64 length = ( 1 + (uint64) sb.st_size / pagesize ) * pagesize;
+
     result.head = mmap(
         NULL, // kernel picks mapping location. We don't care
-        pagesize,
+        length,
         PROT_READ,
         MAP_PRIVATE,
         fd,

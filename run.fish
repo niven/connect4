@@ -23,15 +23,14 @@ for current in (seq 1 $NUM_GENERATIONS)
 	echo "########################## Generation $current ##########################"
 	set prev (math $current - 1)
 
-#	./bfcf --source=results/generation_$prev --destination=results/generation_$current --command=nextgen
-#	mv gencounter.gc results/gencounter_$current.gc
-	
-	# save diskspace by not keeping old stuff
-#	rm results/generation_$prev.c4_index
+	./bin/bfcf "./data/$prev/boards" "./data/$current"
+
 end
 
 echo -e "\nResults:"
 
 for current in (seq 1 $NUM_GENERATIONS)
+	echo "Generation $current"
 	cat "./data/$current/stats.txt"
+	echo
 end

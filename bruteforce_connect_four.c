@@ -17,7 +17,7 @@
 
 #include "board.h"
 
-#define BLOCK_SIZE (1 * 32 * 1000)
+global_variable const uint64 BLOCK_SIZE = 8 * 1014 * 1024 / sizeof(uint64);
 
 internal void display_progress( size_t current, size_t total ) {
 
@@ -57,6 +57,7 @@ internal void write_block( const char* destination_directory, uint16 index, uint
 
 internal void next_generation( const char* source_file, const char* destination_directory ) {
 
+
 	board63 output_boards[ BLOCK_SIZE ];
 	uint64 created = 0;
 
@@ -78,6 +79,7 @@ internal void next_generation( const char* source_file, const char* destination_
 	clock_t cpu_time_start = clock();
 
 	while( boards.remaining > 0 ) {
+
 		display_progress( total_boards - boards.remaining, total_boards );
 
 		board63 current_board63 = *(boards.current);
@@ -144,7 +146,6 @@ internal void next_generation( const char* source_file, const char* destination_
 }
 
 int main( int argc, char** argv ) {
-
 	char* source_file = NULL;
 	char* destination_directory = NULL;
 
@@ -159,6 +160,8 @@ int main( int argc, char** argv ) {
 	// TODO: check file and dir
 
 	next_generation( source_file, destination_directory );
+
+	printf("\n");
 
 	exit( EXIT_SUCCESS );
 }

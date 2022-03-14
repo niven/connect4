@@ -12,6 +12,7 @@
 #include "base.h"
 #include "utils.h"
 
+
 typedef struct merge_stats {
     uint64 read;
     uint64 emitted;
@@ -39,6 +40,8 @@ internal merge_stats merge( char* directory, glob_t files ) {
     FILE* out = fopen( destination, "w" );
     entry* target = &stuff[0];
     uint64 last_emitted = 0;
+
+
     while( target != NULL ) {
 
         target = NULL;
@@ -85,6 +88,7 @@ internal merge_stats merge( char* directory, glob_t files ) {
         }
 
     }
+
     fclose( out );
 
     for( uint16 i=0; i<count; i++ ) {

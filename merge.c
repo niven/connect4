@@ -31,7 +31,7 @@ internal merge_stats merge( char* directory, glob_t files ) {
     }
 
     char destination[255];
-    sprintf( destination, "%s/merged", directory );
+    sprintf( destination, "%s/boards", directory );
     FILE* out = fopen( destination, "w" );
     entry* target = &stuff[0];
     uint16 sentinel = 0;

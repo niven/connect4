@@ -24,6 +24,7 @@ for current in (seq 1 $NUM_GENERATIONS)
 	set prev (math $current - 1)
 
 	./bin/bfcf "./data/$prev/boards" "./data/$current"
+	./bin/merge "./data/$current"
 
 end
 

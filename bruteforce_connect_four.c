@@ -36,7 +36,7 @@ internal void print_stats( const char* directory ) {
 		}
 		gen_counter* gc = read_counter( genfilename );
 
-		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\t%f\t%.3f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used );
+		printf( "%d\t%lu\t%lu\t%lu\t%lu\t%f\n", g, gc->total_boards, gc->unique_boards, gc->wins_white, gc->wins_black, gc->cpu_time_used );
 
 	}
 
@@ -124,7 +124,7 @@ internal void next_generation( const char* source_file, const char* destination_
 	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 
 	// Note: mmap maps in multiples of page size, but why does unmap need it?
-	if( munmap( (void*)boards.head, getpagesize() ) == -1 ){
+	if( munmap( (void*)boards.head, (size_t) getpagesize() ) == -1 ){
 		perror("munmap");
 	}
 

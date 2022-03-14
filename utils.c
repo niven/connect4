@@ -58,7 +58,7 @@ size_t gcd(size_t m, size_t n) {
 FILE* open_and_seek( const char* filename, const char* mode, off_t offset ) {
 
 	FILE* f;
-	FOPEN_CHECK( f, filename, mode );
+	FOPEN_CHECK( f, filename, mode )
 
 	// fseek returns nonzero on failure
 	if( fseek( f, offset, SEEK_SET ) ) {
@@ -72,7 +72,7 @@ FILE* open_and_seek( const char* filename, const char* mode, off_t offset ) {
 void create_empty_file( const char* filename ) {
 
 	FILE* out;
-	FOPEN_CHECK( out, filename, "w" );
+	FOPEN_CHECK( out, filename, "w" )
 
 	fclose( out );
 
@@ -106,7 +106,7 @@ entry map( const char* file ) {
         perror("Could not fstat");
         exit( EXIT_FAILURE );
     }
-    printf("File %s elements %lu\n", file, sb.st_size / sizeof(uint64));
+    printf("File %s elements %lu\n", file, (uint64) sb.st_size / sizeof(uint64));
 
     result.head = mmap(
         NULL, // kernel picks mapping location. We don't care

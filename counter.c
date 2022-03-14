@@ -23,7 +23,7 @@ gen_counter* read_counter( const char* filename ) {
 	}
 
 	FILE* in;
-	FOPEN_CHECK( in, filename, "rb" );
+	FOPEN_CHECK( in, filename, "rb")
 
 	size_t objects_read = fread( gc, sizeof(gen_counter), 1, in );
 	if( objects_read != 1 ) {
@@ -39,7 +39,7 @@ gen_counter* read_counter( const char* filename ) {
 void write_counter( gen_counter* c, const char* filename ) {
 
 	FILE* out;
-	FOPEN_CHECK( out, filename, "wb" );
+	FOPEN_CHECK( out, filename, "wb" )
 
 	size_t bytes_written = fwrite( c, 1, sizeof(gen_counter), out );
 	if( bytes_written != sizeof(gen_counter) ) {

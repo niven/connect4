@@ -73,6 +73,38 @@ internal merge_stats merge( char* directory, glob_t files ) {
 
             // Skip anything we already have emitted. This happens if there are multiple the same values in a single file
             if( *(target->current) != last_emitted ) {
+                uint64 diff = *(target->current) - last_emitted;
+                uint8 bytes = 8;
+                if( diff < 0x10 ) {
+                    // 4 bit number 1 byte
+                    printf("Diff[1]: %016lx -> 0x0 . %02x\n", diff, (uint8) diff);
+                } else if( diff < 0x1000 ) {
+                    // 12 bit number 2 bytes
+                    printf("Diff[2]: %016lx -> 0x1 . %03x\n", diff, (uint16) diff);
+                } else if( diff < 0x100000 ) {
+                    // 20 bit number 3 bytes
+                    printf("Diff[3]: %016lx -> 0x2 . %06x\n", diff, (uint16) diff);
+                } else if( diff < 0x10000000 ) {
+                    // 28 bit number 4 bytes
+                    printf("Diff[4]: %016lx\n", diff);
+                } else if( diff < 0x1000000000 ) {
+                    // 36 bit number 5 bytes
+                    printf("Diff[5]: %016lx\n", diff);
+                } else if( diff < 0x100000000000 ) {
+                    // 44 bit number 6 bytes
+                    printf("Diff[6]: %016lx\n", diff);
+                } else if( diff < 0x10000000000000 ) {
+                    // 52 bit number 7 bytes
+                    printf("Diff[7]: %016lx\n", diff);
+                } else if( diff < 0x1000000000000000 ) {
+                    // 60 bit number 8 bytes
+                    printf("Diff[8]: %016lx\n", diff);
+                } else {
+                    // 64 bit number 8 bytes
+                    printf("Diff[9]: %016lx\n", diff);
+                }
+
+
                 last_emitted = *(target->current);
                 print("Emit: %016lx", last_emitted );
                 fwrite( target->current, sizeof(uint64), 1, out );

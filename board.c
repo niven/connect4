@@ -496,47 +496,6 @@ void render( board* b, const char* text, int show_winlines ) {
 	}
 }
 
-void read_board_record_from_buf( board63 b63, char* buf, off_t pos, board* b ) {
-
-	decode_board63( b63, b );
-
-	// read state
-	b->state = (uint8)buf[ pos ];
-
-	b->winlines = new_winbits();
-
-	// TODO(performance): why even have 2 of these? just have 1 array? (memcpy for both at the same time fails)
-	memcpy( &b->winlines->white, &buf[ (unsigned long long)pos + SIZE_BOARD_STATE_BYTES ], NUM_WINLINE_BYTES );
-	memcpy( &b->winlines->black, &buf[ (unsigned long long)pos + SIZE_BOARD_STATE_BYTES + NUM_WINLINE_BYTES], NUM_WINLINE_BYTES );
-
-}
-
-
-void write_board_record( board* b, FILE* out ) {
-
-	// write gamestate
-	fwrite( &b->state, sizeof(b->state), 1, out );
-
-	size_t elements_written = fwrite( b->winlines, NUM_WINLINE_BYTES, 2, out );
-	if( elements_written != 2 ) {
-		perror("fwrite()");
-		exit( EXIT_FAILURE );
-	}
-
-}
-
-// TODO(cleanup): This can go
-void write_board( char* filename, board* b ) {
-
-	FILE* out;
-	FOPEN_CHECK( out, filename, "wb" )
-
-	write_board_record( b, out );
-
-	fclose( out );
-
-}
-
 player is_win_for( board* b, player p ) {
 
 	if( b->state & OVER ) {

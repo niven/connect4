@@ -44,11 +44,4 @@ end
 
 echo -e "\nResults:"
 
-for current in (seq 1 $NUM_GENERATIONS)
-	echo "Generation $current"
-	cat $destination_directory/stats.txt
-	echo
-end
-
-echo -e "\nSize report:"
-du -h data/ | sort -k 2
+. stats.fish

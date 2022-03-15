@@ -17,6 +17,7 @@ typedef struct merge_stats {
     uint64 read;
     uint64 emitted;
     uint64 skipped;
+    uint64 delta_saved;
     double cpu_time_used;
 } merge_stats;
 
@@ -24,7 +25,7 @@ typedef struct merge_stats {
 
 internal merge_stats merge( char* directory, glob_t files ) {
 
-    merge_stats stats = { .read = 0, .emitted = 0, .skipped = 0, .cpu_time_used = 0.0 };
+    merge_stats stats = { .read = 0, .emitted = 0, .skipped = 0, .delta_saved = 0, .cpu_time_used = 0.0 };
 
 	clock_t cpu_time_start = clock();
 
@@ -40,7 +41,6 @@ internal merge_stats merge( char* directory, glob_t files ) {
     FILE* out = fopen( destination, "w" );
     entry* target = &stuff[0];
     uint64 last_emitted = 0;
-
 
     while( target != NULL ) {
 
@@ -74,34 +74,42 @@ internal merge_stats merge( char* directory, glob_t files ) {
             // Skip anything we already have emitted. This happens if there are multiple the same values in a single file
             if( *(target->current) != last_emitted ) {
                 uint64 diff = *(target->current) - last_emitted;
-                uint8 bytes = 8;
                 if( diff < 0x10 ) {
                     // 4 bit number 1 byte
-                    printf("Diff[1]: %016lx -> 0x0 . %02x\n", diff, (uint8) diff);
+                    print("Diff[1]: %016lx -> 0x0 . %02x\n", diff, (uint16) ((0x1 << 4) | diff));
+                    stats.delta_saved += 8 - 0;
                 } else if( diff < 0x1000 ) {
                     // 12 bit number 2 bytes
-                    printf("Diff[2]: %016lx -> 0x1 . %03x\n", diff, (uint16) diff);
+                    print("Diff[2]: %016lx -> %04x\n", diff, (uint16) ((0x1 << 12) | diff) );
+                    stats.delta_saved += 8 - 1;
                 } else if( diff < 0x100000 ) {
                     // 20 bit number 3 bytes
-                    printf("Diff[3]: %016lx -> 0x2 . %06x\n", diff, (uint16) diff);
+                    print("Diff[3]: %016lx -> 0x2 . %06x\n", diff, (uint32) diff);
+                    stats.delta_saved += 8 - 2;
                 } else if( diff < 0x10000000 ) {
                     // 28 bit number 4 bytes
-                    printf("Diff[4]: %016lx\n", diff);
+                    print("Diff[4]: %016lx\n", diff);
+                    stats.delta_saved += 8 - 3;
                 } else if( diff < 0x1000000000 ) {
                     // 36 bit number 5 bytes
-                    printf("Diff[5]: %016lx\n", diff);
+                    print("Diff[5]: %016lx\n", diff);
+                    stats.delta_saved += 8 - 4;
                 } else if( diff < 0x100000000000 ) {
                     // 44 bit number 6 bytes
-                    printf("Diff[6]: %016lx\n", diff);
+                    print("Diff[6]: %016lx\n", diff);
+                    stats.delta_saved += 8 - 5;
                 } else if( diff < 0x10000000000000 ) {
                     // 52 bit number 7 bytes
-                    printf("Diff[7]: %016lx\n", diff);
+                    print("Diff[7]: %016lx\n", diff);
+                    stats.delta_saved += 8 - 6;
                 } else if( diff < 0x1000000000000000 ) {
                     // 60 bit number 8 bytes
-                    printf("Diff[8]: %016lx\n", diff);
+                    print("Diff[8]: %016lx\n", diff);
+                    stats.delta_saved += 8 - 7;
                 } else {
-                    // 64 bit number 8 bytes
-                    printf("Diff[9]: %016lx\n", diff);
+                    // 64 bit number 9 bytes
+                    print("Diff[9]: %016lx\n", diff);
+                    stats.delta_saved += 8 - 8;
                 }
 
 
@@ -130,6 +138,8 @@ internal merge_stats merge( char* directory, glob_t files ) {
     }
 
 	stats.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
+
+    printf("Bytes saved: %lu\n", stats.delta_saved);
 
     return stats;
 }
@@ -163,9 +173,12 @@ int main( int argc, char** argv ) {
 	FILE* stats;
 	FOPEN_CHECK( stats, stats_file, "a" )
 	fprintf(stats, "Merge CPU time: %f\n", result.cpu_time_used );
-	fprintf(stats, "Merge reads: %ld\n", result.read );
-	fprintf(stats, "Merge emits: %ld\n", result.emitted );
-	fprintf(stats, "Merge skips: %ld\n", result.skipped );
+	fprintf(stats, "Merge reads: %lu\n", result.read );
+	fprintf(stats, "Merge emits: %lu\n", result.emitted );
+	fprintf(stats, "Merge skips: %lu\n", result.skipped );
+	fprintf(stats, "Delta encoding bytes saved: %lu\n", result.delta_saved - result.emitted );
+	fprintf(stats, "Delta encoding saved: %.2f%%\n",  100.0 * (double) ( result.delta_saved - result.emitted) /  (double)( sizeof(uint64) * result.emitted ) );
+    
 	fclose( stats );
 
 

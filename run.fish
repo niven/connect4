@@ -14,25 +14,39 @@ make MODE=NDEBUG all
 
 for current in (seq 1 $NUM_GENERATIONS)
 
-	if test ! -d ./data/$current
-		mkdir ./data/$current
+	set destination_directory ./data/$current
+	if test $current -lt 10
+		set destination_directory ./data/0$current
+	end
+
+	if test ! -d $destination_directory
+		mkdir $destination_directory
+	end
+
+	set prev (math $current - 1)
+	set source_directory ./data/$prev
+	if test $prev -lt 10
+		set source_directory ./data/0$prev
 	end
 
 
 	echo "########################## Generation $current ##########################"
-	set prev (math $current - 1)
+	echo "Reading from $source_directory and writing to $destination_directory"
 
-	./bin/bfcf ./data/$prev/boards ./data/$current
-	./bin/merge ./data/$current
-	rm -f ./data/$current/*.block
 
+
+	./bin/bfcf $source_directory/boards $destination_directory
+	./bin/merge $destination_directory
+	rm -f $destination_directory/*.block
+
+	echo
 end
 
 echo -e "\nResults:"
 
 for current in (seq 1 $NUM_GENERATIONS)
 	echo "Generation $current"
-	cat ./data/$current/stats.txt
+	cat $destination_directory/stats.txt
 	echo
 end
 

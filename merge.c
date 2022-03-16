@@ -30,23 +30,21 @@ internal merge_stats merge( char* directory, glob_t files ) {
 	clock_t cpu_time_start = clock();
 
     uint16 count = (uint16) files.gl_pathc;
-    entry stuff[ count ];
+    entry_v board_stream[ count ];
 
+    uint64 total_bytes = 0;
     for( uint16 i=0; i<count; i++ ) {
-        stuff[i] = map( files.gl_pathv[i] );
+        board_stream[i] = map( files.gl_pathv[i] );
+        total_bytes += board_stream[i].remaining_bytes;
     }
 
     char destination[255];
     sprintf( destination, "%s/boards", directory );
-    FILE* out = fopen( destination, "w" );
-
-    sprintf( destination, "%s/boards.delta", directory );
     FILE* out_delta = fopen( destination, "w" );
-    unsigned char varint[10]; // worst care scenario is uint64 max which is 9 * 7 bits + final byte
-    uint8 varint_bytes = 0;
 
-    entry* target = &stuff[0];
-    uint64 last_emitted = 0;
+    entry_v* target = &board_stream[0];
+    uint64 previous = 0;
+    uint64 progress_counter = 0;
 
     while( target != NULL ) {
 
@@ -54,22 +52,24 @@ internal merge_stats merge( char* directory, glob_t files ) {
 
         for( uint16 i=0; i<count; i++ ) {
 
-            print("Entry %hu: r:%lu c:%016lx", i, stuff[i].remaining, *(stuff[i].current));
+            print("Stream %hu: read: %lu consumed: %lu value: %016lx", i, board_stream[i].read, board_stream[i].consumed, board_stream[i].value );
 
-            if( stuff[i].remaining == 0 ) {
+            if( board_stream[i].remaining_bytes == 0 && board_stream[i].read == board_stream[i].consumed ) {
+                print("Stream %hu empty", i);
                 continue;
             }
 
             if( target == NULL ) {
-                target = &stuff[i];
-                print("Pick: %016lx", *(target->current)  );
-            } else if( *(stuff[i].current) < *(target->current) ) {
-                target = &stuff[i];
-                print("Lower: %016lx", *(target->current)  );
-            } else if( *(stuff[i].current) == *(target->current) ) {
-                print("Skip: %016lx from entry %hu", *(stuff[i].current), i  );
-                stuff[i].current++;
-                stuff[i].remaining--;
+                target = &board_stream[i];
+                print("Pick: %016lx", target->value );
+            } else if( board_stream[i].value < target->value ) {
+                target = &board_stream[i];
+                print("Lower: %016lx", target->value  );
+            } else if( board_stream[i].value == target->value ) {
+                print("Skip: %016lx from entry %hu", board_stream[i].value, i  );
+                board_stream[i].consumed++;
+                // CHECK IF THERE IS ANYHTING LEFT!
+                entry_next( &board_stream[i] );
                 stats.skipped++;
                 stats.read++;
            }
@@ -78,49 +78,51 @@ internal merge_stats merge( char* directory, glob_t files ) {
         if( target != NULL ) {
 
             // Skip anything we already have emitted. This happens if there are multiple the same values in a single file
-            if( *(target->current) != last_emitted ) {
+            if( target->value != previous ) {
 
                 // Varint encode the deltas to save space
-                varint_bytes = 0;
-                uint64 diff = *(target->current) - last_emitted;
+                stats.delta_bytes += varint_write( target->value - previous, out_delta );
 
-                while( diff > 0x7f ) {
-                    varint[varint_bytes++] = (uint8) ( ( diff & 0x7f ) | 0x80 ); // keep the bottom 7 bits, set the next byte bit
-                    diff >>= 7;
-                }
-                varint[varint_bytes] = (uint8) ( ( diff & 0x7f ) | 0x80 );
-                fwrite( varint, sizeof(uint8), varint_bytes, out_delta );
-                stats.delta_bytes += varint_bytes;
-
-                last_emitted = *(target->current);
-                print("Emit: %016lx", last_emitted );
-                fwrite( target->current, sizeof(uint64), 1, out );
+                previous = target->value;
+                print("Emit: %016lx", previous );
                 stats.emitted++;
+
             } else {
-                print("Skip: %016lx from same stream", last_emitted );
+                print("Skip: %016lx from same stream", previous );
                 stats.skipped++;
             }
 
-            target->current++;
-            target->remaining--;
+            entry_next( target );
+            target->consumed++;
             stats.read++;
+            progress_counter++;
+            if( progress_counter > 10000 ) {
+                uint64 bytes_remaining = 0;
+                for( uint16 i=0; i<count; i++ ) {
+                    bytes_remaining += board_stream[i].remaining_bytes;
+                }
+
+                display_progress( total_bytes - bytes_remaining, total_bytes );
+                progress_counter = 0;
+            }
+            print("Target read: %lu consumed: %lu value:%016lx", target->read, target->consumed, target->value );
+
         }
 
     }
 
-    fclose( out );
     fclose( out_delta );
 
     for( uint16 i=0; i<count; i++ ) {
-        if( munmap( (void*)stuff[i].head, (size_t) sysconf(_SC_PAGESIZE) ) == -1 ){
+        if( munmap( (void*)board_stream[i].head, (size_t) sysconf(_SC_PAGESIZE) ) == -1 ){
             perror("munmap");
         }
     }
 
 	stats.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 
-    printf("Uncompressed bytes out: %lu\n", stats.emitted * sizeof(uint64) );
-    printf("Delta varint bytes out: %lu\n", stats.delta_bytes);
+    print("Uncompressed bytes out: %lu\n", stats.emitted * sizeof(uint64) );
+    print("Delta varint bytes out: %lu\n", stats.delta_bytes);
 
     return stats;
 }
@@ -157,9 +159,9 @@ int main( int argc, char** argv ) {
 	fprintf(stats, "Merge reads: %lu\n", result.read );
 	fprintf(stats, "Merge emits: %lu\n", result.emitted );
 	fprintf(stats, "Merge skips: %lu\n", result.skipped );
-	fprintf(stats, "Uncompressed   bytes out: %lu\n", result.emitted * sizeof(uint64) );
-	fprintf(stats, "Delta encoding bytes out: %lu\n", result.delta_bytes );
-	fprintf(stats, "Delta encoding saved: %.2f%%\n",  100.0 * (double) ( result.emitted * sizeof(uint64) - result.delta_bytes ) /  (double)( sizeof(uint64) * result.emitted ) );
+	fprintf(stats, "Uncompressed bytes out: %lu\n", result.emitted * sizeof(uint64) );
+	fprintf(stats, "Delta varint bytes out: %lu\n", result.delta_bytes );
+	fprintf(stats, "Delta varint saved: %.2f%%\n",  100.0 * (double) ( result.emitted * sizeof(uint64) - result.delta_bytes ) /  (double)( sizeof(uint64) * result.emitted ) );
     
 	fclose( stats );
 

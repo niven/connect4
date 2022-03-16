@@ -1,7 +1,11 @@
 #!/usr/bin/fish
+if test -z $argv;
+	set NUM_GENERATIONS 42;
+else;
+	set NUM_GENERATIONS $argv;
+end
 
-
-for current in (seq 1 42)
+for current in (seq 1 $NUM_GENERATIONS)
 
 	set directory ./data/$current
 	if test $current -lt 10

@@ -17,6 +17,21 @@ typedef struct entry {
 } entry;
 
 
+/**
+ * @brief boards block file
+ * 
+ */
+typedef struct entry_v {
+    uint8* 	head;
+    uint8* 	pos;
+	uint64  value;
+    uint64  remaining_bytes;
+	uint64	read;
+	uint64	consumed;
+} entry_v;
+
+
+
 typedef struct gen_counter {
 	double cpu_time_used;
 	unsigned long total_boards;
@@ -25,8 +40,10 @@ typedef struct gen_counter {
 	unsigned long draws;
 } gen_counter;
 
-
-entry map( const char* file );
+void display_progress( size_t current, size_t total );
+entry_v map( const char* file );
+uint8 varint_write( uint64 n, FILE* dest );
+void entry_next( entry_v* e );
 void print_bits(unsigned char c);
 
 

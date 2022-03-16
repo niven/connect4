@@ -44,4 +44,4 @@ end
 
 echo -e "\nResults:"
 
-. stats.fish
+. stats.fish $NUM_GENERATIONS

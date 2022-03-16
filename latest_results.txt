@@ -1,6 +1,238 @@
-Node order: 4096	Cache size: 21834
-Gen	Total	Unique	wins W	wins B	CPU time (s)	Cache hit %	filesize (MB)
-1	7	7	0	0	0.000071	92.857143	0.047
-2	49	49	0	0	0.000219	98.979592	0.047
-3	343	238	0	0	0.000283	99.854227	0.047
-4	1666	1120	0	0	0.001205	99.969988	0.047
+Results:
+Generation 1
+Create CPU time: 0.000057
+Total boards: 7
+Wins white: 0
+Wins black: 0
+Draws: 0
+Merge CPU time: 0.000069
+Merge reads: 7
+Merge emits: 7
+Merge skips: 0
+Uncompressed bytes out: 56
+Delta varint bytes out: 38
+Delta varint saved: 32.14%
+
+Generation 2
+Create CPU time: 0.000052
+Total boards: 49
+Wins white: 0
+Wins black: 0
+Draws: 0
+Merge CPU time: 0.000061
+Merge reads: 49
+Merge emits: 49
+Merge skips: 0
+Uncompressed bytes out: 392
+Delta varint bytes out: 245
+Delta varint saved: 37.50%
+
+Generation 3
+Create CPU time: 0.000084
+Total boards: 343
+Wins white: 0
+Wins black: 0
+Draws: 0
+Merge CPU time: 0.000065
+Merge reads: 343
+Merge emits: 238
+Merge skips: 105
+Uncompressed bytes out: 1904
+Delta varint bytes out: 1055
+Delta varint saved: 44.59%
+
+Generation 4
+Create CPU time: 0.000231
+Total boards: 1666
+Wins white: 0
+Wins black: 0
+Draws: 0
+Merge CPU time: 0.000105
+Merge reads: 1666
+Merge emits: 1120
+Merge skips: 546
+Uncompressed bytes out: 8960
+Delta varint bytes out: 4489
+Delta varint saved: 49.90%
+
+Generation 5
+Create CPU time: 0.000869
+Total boards: 7840
+Wins white: 0
+Wins black: 0
+Draws: 0
+Merge CPU time: 0.000219
+Merge reads: 7840
+Merge emits: 4263
+Merge skips: 3577
+Uncompressed bytes out: 34104
+Delta varint bytes out: 15808
+Delta varint saved: 53.65%
+
+Generation 6
+Create CPU time: 0.003336
+Total boards: 29841
+Wins white: 0
+Wins black: 0
+Draws: 0
+Merge CPU time: 0.000750
+Merge reads: 29841
+Merge emits: 16422
+Merge skips: 13419
+Uncompressed bytes out: 131376
+Delta varint bytes out: 56855
+Delta varint saved: 56.72%
+
+Generation 7
+Create CPU time: 0.011976
+Total boards: 114947
+Wins white: 1288
+Wins black: 0
+Draws: 0
+Merge CPU time: 0.002472
+Merge reads: 114947
+Merge emits: 54859
+Merge skips: 60088
+Uncompressed bytes out: 438872
+Delta varint bytes out: 179141
+Delta varint saved: 59.18%
+
+Generation 8
+Create CPU time: 0.043732
+Total boards: 378623
+Wins white: 0
+Wins black: 2932
+Draws: 0
+Merge CPU time: 0.007835
+Merge reads: 378623
+Merge emits: 184275
+Merge skips: 194348
+Uncompressed bytes out: 1474200
+Delta varint bytes out: 569694
+Delta varint saved: 61.36%
+
+Generation 9
+Create CPU time: 0.144278
+Total boards: 1272355
+Wins white: 29054
+Wins black: 0
+Draws: 0
+Merge CPU time: 0.024555
+Merge reads: 1272355
+Merge emits: 558186
+Merge skips: 714169
+Uncompressed bytes out: 4465488
+Delta varint bytes out: 1640294
+Delta varint saved: 63.27%
+
+Generation 10
+Create CPU time: 0.417590
+Total boards: 3739434
+Wins white: 0
+Wins black: 61878
+Draws: 0
+Merge CPU time: 0.068295
+Merge reads: 3739434
+Merge emits: 1662623
+Merge skips: 2076811
+Uncompressed bytes out: 13300984
+Delta varint bytes out: 4650746
+Delta varint saved: 65.03%
+
+Generation 11
+Create CPU time: 1.228520
+Total boards: 11171052
+Wins white: 376035
+Wins black: 0
+Draws: 0
+Merge CPU time: 0.200856
+Merge reads: 11171052
+Merge emits: 4568683
+Merge skips: 6602369
+Uncompressed bytes out: 36549464
+Delta varint bytes out: 12186156
+Delta varint saved: 66.66%
+
+Generation 12
+Create CPU time: 3.316085
+Total boards: 29455198
+Wins white: 0
+Wins black: 763718
+Draws: 0
+Merge CPU time: 0.607031
+Merge reads: 29455198
+Merge emits: 12236101
+Merge skips: 17219097
+Uncompressed bytes out: 97888808
+Delta varint bytes out: 31168855
+Delta varint saved: 68.16%
+
+Generation 13
+Create CPU time: 8.772949
+Total boards: 79421938
+Wins white: 3570170
+Wins black: 0
+Draws: 0
+Merge CPU time: 2.021836
+Merge reads: 79421938
+Merge emits: 30929111
+Merge skips: 48492827
+Uncompressed bytes out: 247432888
+Delta varint bytes out: 75338876
+Delta varint saved: 69.55%
+
+Generation 14
+Create CPU time: 21.026069
+Total boards: 190468599
+Wins white: 0
+Wins black: 6912472
+Draws: 0
+Merge CPU time: 7.518700
+Merge reads: 190468599
+Merge emits: 75437595
+Merge skips: 115031004
+Uncompressed bytes out: 603500760
+Delta varint bytes out: 175924368
+Delta varint saved: 70.85%
+
+Generation 15
+Create CPU time: 51.655065
+Total boards: 469004241
+Wins white: 26717899
+Wins black: 0
+Draws: 0
+Merge CPU time: 30.676035
+Merge reads: 469004241
+Merge emits: 176541259
+Merge skips: 292462982
+Uncompressed bytes out: 1412330072
+Delta varint bytes out: 394536206
+Delta varint saved: 72.06%
+
+Generation 16
+Create CPU time: 115.228914
+Total boards: 1030080189
+Wins white: 0
+Wins black: 49242232
+Draws: 0
+Merge CPU time: 117.158280
+Merge reads: 1030080189
+Merge emits: 394591391
+Merge skips: 635488798
+Uncompressed bytes out: 3156731128
+Delta varint bytes out: 845768667
+Delta varint saved: 73.21%
+
+Generation 17
+Create CPU time: 293.530288
+Total boards: 2329243387
+Wins white: 163059502
+Wins black: 0
+Draws: 0
+Merge CPU time: 546.581062
+Merge reads: 2329243387
+Merge emits: 858218743
+Merge skips: 1471024644
+Uncompressed bytes out: 6865749944
+Delta varint bytes out: 1765814249
+Delta varint saved: 74.28%

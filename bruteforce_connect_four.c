@@ -17,18 +17,8 @@
 
 #include "board.h"
 
-global_variable const uint64 BLOCK_SIZE = 8 * 1014 * 1024 / sizeof(uint64);
+global_variable const uint64 BLOCK_SIZE = UINT64_C(8 * 1000 * 1000);
 
-internal void display_progress( size_t current, size_t total ) {
-
-	if( total < 100 ) {
-		return;
-	}
-	size_t one_percent = total / 100;
-	if( current % one_percent == 0 ) {
-		printf("\r%.2f%%\t", 100. * (double)current / (double)total);
-	}
-}
 
 internal int compare_boards(const void* a, const void* b) {
     board63 arg1 = *(const board63*)a;
@@ -42,7 +32,7 @@ internal int compare_boards(const void* a, const void* b) {
 
 internal void write_block( const char* destination_directory, uint16 index, uint64 count, board63 boards[] ) {
 
-	print("Writing block %hu with %lu boards\n", index, count);
+	print("Writing block %hu with %lu boards", index, count);
 
 	// sort so merging is easy and can eliminate duplicates
 	qsort(boards, count, sizeof(board63), compare_boards);
@@ -51,14 +41,24 @@ internal void write_block( const char* destination_directory, uint16 index, uint
 	char block_file[255];
 	sprintf( block_file, "%s/%016hu.block", destination_directory, index );
 	FILE* out = fopen( block_file, "w" );
-	fwrite( boards, sizeof(board63), count, out );
+	uint64 previous = 0;
+	for( uint64 i=0; i<count; i++ ) {
+		print("Writing %016lx", boards[i]);
+		varint_write( boards[i] - previous, out );
+		previous = boards[i];
+	}
 	fclose( out );
 }
 
 internal void next_generation( const char* source_file, const char* destination_directory ) {
 
 
-	board63 output_boards[ BLOCK_SIZE ];
+	board63* output_boards = malloc( sizeof(board63) * BLOCK_SIZE );
+	if( output_boards == NULL ) {
+		perror("Could not allocate memory for output boards. Maybe BLOCK_SIZE is too large");
+		exit( EXIT_FAILURE );
+	}
+
 	uint64 created = 0;
 
 	// to number the blocks we output
@@ -68,8 +68,8 @@ internal void next_generation( const char* source_file, const char* destination_
 	board63 next_gen[7];
 
 	// iterate over all boards
-	entry boards = map( source_file );
-	uint64 total_boards = boards.remaining;
+	entry_v boards = map( source_file );
+	uint64 boards_total_bytes = boards.remaining_bytes;
 
 	// gen next
 	gen_counter counters;
@@ -78,13 +78,14 @@ internal void next_generation( const char* source_file, const char* destination_
 	// cpu timing
 	clock_t cpu_time_start = clock();
 
-	while( boards.remaining > 0 ) {
+	while( boards.remaining_bytes > 0 || boards.consumed < boards.read ) {
+		print("Remaining bytes: %lu read: %lu consumed: %lu", boards.remaining_bytes, boards.read, boards.consumed );
 
-		display_progress( total_boards - boards.remaining, total_boards );
+		display_progress( boards_total_bytes - boards.remaining_bytes, boards_total_bytes );
 
-		board63 current_board63 = *(boards.current);
-		boards.current++;
-		boards.remaining--;
+		board63 current_board63 = boards.value;
+		entry_next( &boards ); // fetch the next one here, so we always have one before the end_state check
+		boards.consumed++; // always consume unlike merge
 
 		if( is_end_state( current_board63 ) ) {
 			continue;
@@ -92,8 +93,10 @@ internal void next_generation( const char* source_file, const char* destination_
 
 		board current_board;
 		decode_board63( current_board63, &current_board );
-		// render( &current_board, "Multidrop", false);
-		unsigned char player = current_player( &current_board );
+		// char title[255];
+		// sprintf(title, "Multidrop board %016lx", current_board63 );
+		// render( &current_board, title, false);
+		uint8 player = current_player( &current_board );
 
 		uint8 num_succesful_drops = multidrop( &current_board, next_gen );
 		print("Got %d drops", num_succesful_drops);
@@ -112,10 +115,11 @@ internal void next_generation( const char* source_file, const char* destination_
 		}
 
 		// Store and ensure we never exceed the block size
-		if( created + 7 > BLOCK_SIZE ) {
+		if( created > BLOCK_SIZE ) {
 			write_block( destination_directory, block++, created, output_boards);
 			created = 0;
 		}
+
 	}
 
 	// write the final block
@@ -125,6 +129,8 @@ internal void next_generation( const char* source_file, const char* destination_
 
 
 	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
+
+	free( output_boards );
 
 	// Note: mmap maps in multiples of page size, but why does unmap need it?
 	if( munmap( (void*)boards.head, (size_t) sysconf(_SC_PAGESIZE) ) == -1 ){

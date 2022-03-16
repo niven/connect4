@@ -12,6 +12,7 @@
 typedef struct entry {
     uint64* head;
     uint64* current;
+	uint64  value;
     uint64  remaining;
 } entry;
 

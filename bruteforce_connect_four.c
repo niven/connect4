@@ -39,7 +39,7 @@ internal void write_block( const char* destination_directory, uint16 index, uint
 
 	// write
 	char block_file[255];
-	sprintf( block_file, "%s/%016hu.block", destination_directory, index );
+	sprintf( block_file, "%s/%08hu.block", destination_directory, index );
 	FILE* out = fopen( block_file, "w" );
 	uint64 previous = 0;
 	for( uint64 i=0; i<count; i++ ) {

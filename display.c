@@ -16,16 +16,16 @@
 
 int main( int argc, char** argv ) {
 
-    int index;
+    uint64 index;
     if( argc != 3 ) {
         printf("Usage: show_board file index\n");
         exit( EXIT_SUCCESS );
     }
 
-    index = atoi( argv[2] );
+    index = (uint64) atoll( argv[2] );
 
     char title[255];
-    sprintf( title, "%s/%d", argv[1], index);
+    sprintf( title, "%s/%lu", argv[1], index);
 
 	entry_v boards = map( argv[1] );
     while( index --> 0 ) {

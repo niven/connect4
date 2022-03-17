@@ -1,10 +1,9 @@
 #!/usr/bin/fish
 
-
-if test -z $argv;
+if test -z $argv[1];
 	set NUM_GENERATIONS 8;
 else;
-	set NUM_GENERATIONS $argv;
+	set NUM_GENERATIONS $argv[1];
 end
 
 echo "Generating up to $NUM_GENERATIONS generations."
@@ -31,7 +30,7 @@ for current in (seq 1 $NUM_GENERATIONS)
 
 
 	echo "########################## Generation $current ##########################"
-	echo "Reading from $source_directory and writing to $destination_directory"
+	echo "Reading from $source_directory/boards and writing blocks to $destination_directory"
 
 	if test -e $destination_directory/boards
 		echo "Already completed"
@@ -47,4 +46,4 @@ end
 
 echo -e "\nResults:"
 
-# . stats.fish $NUM_GENERATIONS
+. stats.fish $NUM_GENERATIONS

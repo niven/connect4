@@ -33,7 +33,10 @@ for current in (seq 1 $NUM_GENERATIONS)
 	echo "########################## Generation $current ##########################"
 	echo "Reading from $source_directory and writing to $destination_directory"
 
-
+	if test -e $destination_directory/boards
+		echo "Already completed"
+		continue
+	end
 
 	./bin/bfcf $source_directory/boards $destination_directory
 	./bin/merge $destination_directory
@@ -44,4 +47,4 @@ end
 
 echo -e "\nResults:"
 
-. stats.fish $NUM_GENERATIONS
+# . stats.fish $NUM_GENERATIONS

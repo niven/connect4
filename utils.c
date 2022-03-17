@@ -37,10 +37,7 @@ void print_bits(unsigned char c) {
 }
 
 void display_progress( size_t current, size_t total ) {
-
-	if( current % 10000 == 0 ) {
-		printf("\r%.2f%%\t", 100. * (double)current / (double)total);
-	}
+    printf("\r%.2f%%\t", 100. * (double)current / (double)total);
 }
 
 

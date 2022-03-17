@@ -96,7 +96,7 @@ internal merge_stats merge( char* directory, glob_t files ) {
             target->consumed++;
             stats.read++;
             progress_counter++;
-            if( progress_counter > 10000 ) {
+            if( progress_counter > 10 * 1000 ) {
                 uint64 bytes_remaining = 0;
                 for( uint16 i=0; i<count; i++ ) {
                     bytes_remaining += board_stream[i].remaining_bytes;
@@ -120,6 +120,8 @@ internal merge_stats merge( char* directory, glob_t files ) {
     }
 
 	stats.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
+	// write a 100% completeness
+	display_progress( total_bytes, total_bytes );
 
     print("Uncompressed bytes out: %lu\n", stats.emitted * sizeof(uint64) );
     print("Delta varint bytes out: %lu\n", stats.delta_bytes);

@@ -17,7 +17,7 @@
 
 #include "board.h"
 
-global_variable const uint64 BLOCK_SIZE = UINT64_C(8 * 1000 * 1000);
+global_variable const uint64 BLOCK_SIZE = UINT64_C(16 * 1000 * 1000);
 
 
 internal int compare_boards(const void* a, const void* b) {
@@ -78,10 +78,16 @@ internal void next_generation( const char* source_file, const char* destination_
 	// cpu timing
 	clock_t cpu_time_start = clock();
 
+	// to display progress percentage
+	uint16 progress_counter = 0;
+
 	while( boards.remaining_bytes > 0 || boards.consumed < boards.read ) {
 		print("Remaining bytes: %lu read: %lu consumed: %lu", boards.remaining_bytes, boards.read, boards.consumed );
 
-		display_progress( boards_total_bytes - boards.remaining_bytes, boards_total_bytes );
+		if( progress_counter++ > 10 * 1000 ) {
+			display_progress( boards_total_bytes - boards.remaining_bytes, boards_total_bytes );
+			progress_counter = 0;
+		}
 
 		board63 current_board63 = boards.value;
 		entry_next( &boards ); // fetch the next one here, so we always have one before the end_state check
@@ -126,6 +132,8 @@ internal void next_generation( const char* source_file, const char* destination_
 	if( created > 0 ) {
 		write_block( destination_directory, block, created, output_boards);
 	}
+	// write a 100% completeness
+	display_progress( boards_total_bytes, boards_total_bytes );
 
 
 	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );

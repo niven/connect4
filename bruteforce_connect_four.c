@@ -17,7 +17,8 @@
 
 #include "board.h"
 
-global_variable const uint64 BLOCK_SIZE = UINT64_C(16 * 1000 * 1000);
+global_variable const uint64 BLOCK_SIZE = UINT64_C(32 * 1000 * 1000);
+global_variable gen_counter counters;
 
 
 internal int compare_boards(const void* a, const void* b) {
@@ -35,7 +36,9 @@ internal void write_block( const char* destination_directory, uint16 index, uint
 	print("Writing block %hu with %lu boards", index, count);
 
 	// sort so merging is easy and can eliminate duplicates
+	clock_t cpu_time_start = clock();
 	qsort(boards, count, sizeof(board63), compare_boards);
+	counters.cpu_time_sort = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 
 	// write
 	char block_file[255];
@@ -72,7 +75,6 @@ internal void next_generation( const char* source_file, const char* destination_
 	uint64 boards_total_bytes = boards.remaining_bytes;
 
 	// gen next
-	gen_counter counters;
 	memset( &counters, 0, sizeof(gen_counter) );
 
 	// cpu timing
@@ -136,7 +138,7 @@ internal void next_generation( const char* source_file, const char* destination_
 	display_progress( boards_total_bytes, boards_total_bytes );
 
 
-	counters.cpu_time_used = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
+	counters.cpu_time_generate = ((double)( clock() - cpu_time_start ) / CLOCKS_PER_SEC );
 
 	free( output_boards );
 
@@ -150,7 +152,8 @@ internal void next_generation( const char* source_file, const char* destination_
 	sprintf( stats_file, "%s/stats.txt", destination_directory );
 	FILE* stats;
 	FOPEN_CHECK( stats, stats_file, "w" )
-	fprintf(stats, "Create CPU time: %f\n", counters.cpu_time_used );
+	fprintf(stats, "CPU time generate: %f\n", counters.cpu_time_generate );
+	fprintf(stats, "CPU time sorting:  %f\n", counters.cpu_time_sort );
 	fprintf(stats, "Total boards: %ld\n", counters.total_boards );
 	fprintf(stats, "Wins white: %ld\n", counters.wins_white );
 	fprintf(stats, "Wins black: %ld\n", counters.wins_black );

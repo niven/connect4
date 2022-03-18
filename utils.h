@@ -34,7 +34,8 @@ typedef struct entry_v {
 
 
 typedef struct gen_counter {
-	double cpu_time_used;
+	double cpu_time_generate;
+	double cpu_time_sort;
 	unsigned long total_boards;
 	unsigned long wins_white;
 	unsigned long wins_black;

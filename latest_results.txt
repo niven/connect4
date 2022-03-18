@@ -264,3 +264,18 @@ Merge skips: 6222964914
 Uncompressed bytes out: 28546078416
 Delta varint bytes out: 6780995133
 Delta varint saved: 76.25%
+
+Generation 20
+Create CPU time: 3161.402554
+Total boards: 18204116165
+Wins white: 0
+Wins black: 1359820437
+Draws: 0
+Merge CPU time: 14253.529285
+Merge reads: 18204116165
+Merge emits: 6746155945
+Merge skips: 11457960220
+Uncompressed bytes out: 53969247560
+Delta varint bytes out: 12335346568
+Delta varint saved: 77.14%
+

@@ -44,7 +44,8 @@ internal merge_stats merge( char* directory, glob_t files ) {
 
     entry_v* target = &board_stream[0];
     uint64 previous = 0;
-    uint64 progress_counter = 0;
+    uint64 progress_counter = 0; // show progress percentage when this hits some number
+    uint64 bytes_remaining = 0; // used for showing progress percentage
 
     while( target != NULL ) {
 
@@ -59,12 +60,9 @@ internal merge_stats merge( char* directory, glob_t files ) {
                 continue;
             }
 
-            if( target == NULL ) {
+            if( target == NULL || board_stream[i].value < target->value ) {
                 target = &board_stream[i];
-                print("Pick: %016lx", target->value );
-            } else if( board_stream[i].value < target->value ) {
-                target = &board_stream[i];
-                print("Lower: %016lx", target->value  );
+                print("Pick/Lower: %016lx", target->value  );
             } else if( board_stream[i].value == target->value ) {
                 print("Skip: %016lx from entry %hu", board_stream[i].value, i  );
                 board_stream[i].consumed++;
@@ -72,7 +70,7 @@ internal merge_stats merge( char* directory, glob_t files ) {
                 entry_next( &board_stream[i] );
                 stats.skipped++;
                 stats.read++;
-           }
+           } // else: value from stream is bigger
         }
 
         if( target != NULL ) {
@@ -97,7 +95,7 @@ internal merge_stats merge( char* directory, glob_t files ) {
             stats.read++;
             progress_counter++;
             if( progress_counter > 10 * 1000 ) {
-                uint64 bytes_remaining = 0;
+                bytes_remaining = 0;
                 for( uint16 i=0; i<count; i++ ) {
                     bytes_remaining += board_stream[i].remaining_bytes;
                 }

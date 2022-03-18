@@ -34,7 +34,7 @@ for current in (seq 1 $NUM_GENERATIONS)
 
 	if test -e $destination_directory/boards
 		echo "Already completed"
-		# continue
+		continue
 	end
 
 	./bin/bfcf $source_directory/boards $destination_directory

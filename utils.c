@@ -25,10 +25,6 @@
 #include "base.h"
 #include "utils.h"
 
-// 32mb for 4K page sizes
-global_variable uint64 unmap_limit = 8192ULL; // pages. pagesize set on map()
-
-
 void print_bits(unsigned char c) {
 	char out[11];
 	out[0] = '0';
@@ -44,35 +40,9 @@ void display_progress( size_t current, size_t total ) {
     printf("\r%.2f%%\t", 100. * (double)current / (double)total);
 }
 
-entry_2 open_board_stream( const char* file ) {
-
-    entry_2 result;
-
-    result.file = fopen( file, "r" );
-    int fd = fileno( result.file );
-    struct stat sb;
-    /* To obtain file size */
-    if( fstat(fd, &sb) == -1 ) {
-        perror("Could not fstat");
-        exit( EXIT_FAILURE );
-    }
-    print("File %s size %lu\n", file, (uint64) sb.st_size );
-
-    result.remaining_bytes = (uint64) sb.st_size;
-    result.value = 0;
-    result.read = 0;
-    result.consumed = 0;
-    
-    entry_next_2( &result );
-
-    return result;
-}
-
 entry_v map( const char* file ) {
 
     uint16 pagesize = (uint16) sysconf(_SC_PAGESIZE);
-
-    unmap_limit *= pagesize;
 
     print("map %s", file);
 
@@ -116,38 +86,6 @@ entry_v map( const char* file ) {
     return result;
 }
 
-
-void entry_next_2( entry_2* e ) {
-
-    if( e->remaining_bytes == 0 ) {
-        print("Stream empty after %lu reads", e->read);
-        return;
-    }
-    uint8 i = 0;
-    uint64 diff = 0;
-
-    uint8 buf;
-    fread( &buf, sizeof(uint8), 1, e->file );
-
-    while( buf > 0x7f ) {
-        // print("Varint read byte: %02x", *(e->pos + i) );
-        diff |= (uint64) ( buf & 0x7f ) << ( 7 * i );
-        i++;
-        fread( &buf, sizeof(uint8), 1, e->file );
-    }
-
-    diff |= (uint64) ( buf & 0x7f ) << ( 7 * i );
-    // print("Varint read byte: %02x", *(e->pos + i) );
-
-    e->value += diff;
-    print("Varint result: %016lx", e->value);
-    e->remaining_bytes -= (i + 1);
-    e->read++;
-
-    print("Remaining bytes: %lu read: %lu consumed: %lu", e->remaining_bytes, e->read, e->consumed );
-}
-
-
 void entry_next( entry_v* e ) {
 
     if( e->remaining_bytes == 0 ) {
@@ -172,15 +110,6 @@ void entry_next( entry_v* e ) {
     e->read++;
 
     print("Remaining bytes: %lu read: %lu consumed: %lu", e->remaining_bytes, e->read, e->consumed );
-
-    // if( (uint64) (e->pos - e->head) > unmap_limit ) {
-    //     print("Consumed %lu bytes, unmapping front of file", unmap_limit);
-    //     if( munmap( (void*)e->head, (size_t) unmap_limit ) == -1 ){
-    //         perror("munmap");
-    //     }
-    //     e->head += unmap_limit;
-    // }
-
 }
 
 

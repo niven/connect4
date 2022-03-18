@@ -44,8 +44,6 @@ internal merge_stats merge( char* directory, glob_t files ) {
 
     entry_v* target = &board_stream[0];
     uint64 previous = 0;
-    uint64 progress_counter = 0; // show progress percentage when this hits some number
-    uint64 bytes_remaining = 0; // used for showing progress percentage
 
     while( target != NULL ) {
 
@@ -93,15 +91,9 @@ internal merge_stats merge( char* directory, glob_t files ) {
             entry_next( target );
             target->consumed++;
             stats.read++;
-            progress_counter++;
-            if( progress_counter > 10 * 1000 ) {
-                bytes_remaining = 0;
-                for( uint16 i=0; i<count; i++ ) {
-                    bytes_remaining += board_stream[i].remaining_bytes;
-                }
-
-                display_progress( total_bytes - bytes_remaining, total_bytes );
-                progress_counter = 0;
+            if( ( target->remaining_bytes % (10 * 1000) ) == 0) {
+                // every stream will on average have about the same amount of bytes left
+                display_progress( target->remaining_bytes * count, total_bytes );
             }
             print("Target read: %lu consumed: %lu value:%016lx", target->read, target->consumed, target->value );
 

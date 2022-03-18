@@ -83,15 +83,15 @@ internal void next_generation( const char* source_file, const char* destination_
 	// to display progress percentage
 	uint16 progress_counter = 0;
 
+	board63 current_board63;
+	board current_board;
+	uint8 player;
+	uint8 num_succesful_drops;
+
 	while( boards.remaining_bytes > 0 || boards.consumed < boards.read ) {
 		print("Remaining bytes: %lu read: %lu consumed: %lu", boards.remaining_bytes, boards.read, boards.consumed );
 
-		if( progress_counter++ > 10 * 1000 ) {
-			display_progress( boards_total_bytes - boards.remaining_bytes, boards_total_bytes );
-			progress_counter = 0;
-		}
-
-		board63 current_board63 = boards.value;
+		current_board63 = boards.value;
 		entry_next( &boards ); // fetch the next one here, so we always have one before the end_state check
 		boards.consumed++; // always consume unlike merge
 
@@ -99,20 +99,19 @@ internal void next_generation( const char* source_file, const char* destination_
 			continue;
 		}
 
-		board current_board;
 		decode_board63( current_board63, &current_board );
 		// char title[255];
 		// sprintf(title, "Multidrop board %016lx", current_board63 );
 		// render( &current_board, title, false);
-		uint8 player = current_player( &current_board );
 
-		uint8 num_succesful_drops = multidrop( &current_board, next_gen );
+		num_succesful_drops = multidrop( &current_board, next_gen );
 		print("Got %d drops", num_succesful_drops);
 		counters.total_boards += num_succesful_drops;
 		for( int i=0; i<num_succesful_drops; i++ ) {
 			// do stats
 			// TODO(performance): the counting can go when calculating all generations as you never need them
 			if( is_end_state( next_gen[i] ) ) {
+				player = current_player( &current_board );
 				if( player == WHITE ) {
 					counters.wins_white++;
 				} else {
@@ -124,6 +123,7 @@ internal void next_generation( const char* source_file, const char* destination_
 
 		// Store and ensure we never exceed the block size
 		if( created > BLOCK_SIZE ) {
+			display_progress( boards_total_bytes - boards.remaining_bytes, boards_total_bytes );
 			write_block( destination_directory, block++, created, output_boards);
 			created = 0;
 		}
